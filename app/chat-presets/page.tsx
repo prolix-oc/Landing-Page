@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { downloadFile } from '@/lib/download';
 
 interface Preset {
   name: string;
@@ -288,9 +289,8 @@ function ChatPresetsContent() {
                                 </div>
                               </div>
                               <div className="flex gap-2 w-full sm:w-auto">
-                                <motion.a
-                                  href={version.downloadUrl}
-                                  download
+                                <motion.button
+                                  onClick={() => downloadFile(version.downloadUrl, version.name)}
                                   className="bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors whitespace-nowrap shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-center gap-2 flex-1 sm:flex-initial"
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
@@ -299,7 +299,7 @@ function ChatPresetsContent() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                   </svg>
                                   <span className="hidden sm:inline">Download</span>
-                                </motion.a>
+                                </motion.button>
                                 <motion.a
                                   href={version.htmlUrl}
                                   target="_blank"
@@ -366,9 +366,8 @@ function ChatPresetsContent() {
                                   </div>
                                 </div>
                                 <div className="flex gap-2 w-full sm:w-auto">
-                                  <motion.a
-                                    href={version.downloadUrl}
-                                    download
+                                  <motion.button
+                                    onClick={() => downloadFile(version.downloadUrl, version.name)}
                                     className="bg-gray-700 hover:bg-gray-600 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center justify-center gap-2 flex-1 sm:flex-initial"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -377,7 +376,7 @@ function ChatPresetsContent() {
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                     </svg>
                                     <span className="hidden sm:inline">Download</span>
-                                  </motion.a>
+                                  </motion.button>
                                   <motion.a
                                     href={version.htmlUrl}
                                     target="_blank"

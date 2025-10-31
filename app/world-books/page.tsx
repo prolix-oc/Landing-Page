@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { downloadFile } from '@/lib/download';
 
 interface Category {
   name: string;
@@ -165,13 +166,12 @@ function WorldBooksContent() {
                         </h3>
                       <p className="text-sm text-gray-400 mb-4">{formatFileSize(file.size)}</p>
                       <div className="flex gap-2">
-                        <a
-                          href={file.downloadUrl}
-                          download
+                        <button
+                          onClick={() => downloadFile(file.downloadUrl, file.name)}
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-center"
                         >
                           Download
-                        </a>
+                        </button>
                         <a
                           href={file.htmlUrl}
                           target="_blank"
