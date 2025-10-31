@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,7 +20,7 @@ interface Version {
   isLatest: boolean;
 }
 
-export default function ChatPresetsPage() {
+function ChatPresetsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [presets, setPresets] = useState<Preset[]>([]);
@@ -406,5 +406,24 @@ export default function ChatPresetsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ChatPresetsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen relative">
+        <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 overflow-hidden pointer-events-none -z-10">
+          <div className="absolute top-1/4 -left-48 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+          <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s', animationDelay: '2s' }}></div>
+        </div>
+        <div className="relative container mx-auto px-4 py-16">
+          <div className="text-center text-gray-400 py-12">Loading...</div>
+        </div>
+      </div>
+    }>
+      <ChatPresetsContent />
+    </Suspense>
   );
 }
