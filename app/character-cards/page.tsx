@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Category {
@@ -20,6 +21,8 @@ interface CharacterCard {
 }
 
 export default function CharacterCardsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cards, setCards] = useState<CharacterCard[]>([]);
@@ -27,6 +30,14 @@ export default function CharacterCardsPage() {
   const [filesLoading, setFilesLoading] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Check URL parameters on mount
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(decodeURIComponent(categoryParam));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -85,6 +96,8 @@ export default function CharacterCardsPage() {
   const handleCategoryChange = (categoryName: string) => {
     if (categoryName !== selectedCategory) {
       setSelectedCategory(categoryName);
+      // Update URL with category parameter
+      router.push(`/character-cards?category=${encodeURIComponent(categoryName)}`, { scroll: false });
     }
   };
 

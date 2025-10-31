@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Preset {
@@ -20,12 +21,22 @@ interface Version {
 }
 
 export default function ChatPresetsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [presets, setPresets] = useState<Preset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Check URL parameters on mount
+  useEffect(() => {
+    const presetParam = searchParams.get('preset');
+    if (presetParam) {
+      setSelectedPreset(decodeURIComponent(presetParam));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     async function fetchPresets() {
@@ -93,6 +104,8 @@ export default function ChatPresetsPage() {
   const handlePresetChange = (presetName: string) => {
     if (presetName !== selectedPreset) {
       setSelectedPreset(presetName);
+      // Update URL with preset parameter
+      router.push(`/chat-presets?preset=${encodeURIComponent(presetName)}`, { scroll: false });
     }
   };
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface Category {
   name: string;
@@ -18,11 +19,21 @@ interface FileItem {
 }
 
 export default function WorldBooksPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filesLoading, setFilesLoading] = useState(false);
+
+  // Check URL parameters on mount
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(decodeURIComponent(categoryParam));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -106,7 +117,10 @@ export default function WorldBooksPage() {
                   {categories.map((category) => (
                     <button
                       key={category.name}
-                      onClick={() => setSelectedCategory(category.name)}
+                      onClick={() => {
+                        setSelectedCategory(category.name);
+                        router.push(`/world-books?category=${encodeURIComponent(category.name)}`, { scroll: false });
+                      }}
                       className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
                         selectedCategory === category.name
                           ? 'bg-green-600 text-white'
