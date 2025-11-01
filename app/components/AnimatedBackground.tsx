@@ -45,7 +45,7 @@ const THEME_COLORS = [
 export default function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapesRef = useRef<Shape[]>([]);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
 
   useEffect(() => {
@@ -143,8 +143,9 @@ export default function AnimatedBackground() {
         
         // Check if shape has died
         if (shape.age >= shape.maxLifetime) {
-          // Replace with new shape
-          shapesRef.current[index] = createShape(shape.id);
+          // Replace with new shape - use a counter to ensure unique IDs
+          const newId = Date.now() + index;
+          shapesRef.current[index] = createShape(newId);
           return; // Skip rendering this frame
         }
         
