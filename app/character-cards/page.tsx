@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
+import LazyImage from '@/app/components/LazyImage';
 
 interface Category {
   name: string;
@@ -232,14 +233,17 @@ function CharacterCardsContent() {
                             href={`/character-cards/${encodeURIComponent(selectedCategory)}/${encodeURIComponent(card.name)}`}
                             className="block relative aspect-square bg-gray-900/50 overflow-hidden cursor-pointer"
                           >
-                            <motion.img
-                              src={card.thumbnailUrl}
-                              alt={card.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
+                            <motion.div
                               whileHover={{ scale: 1.03 }}
                               transition={{ duration: 0.2 }}
-                            />
+                              className="w-full h-full"
+                            >
+                              <LazyImage
+                                src={card.thumbnailUrl}
+                                alt={card.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </motion.div>
                             {/* Alternate Scenarios Badge */}
                             {card.alternateCount && card.alternateCount > 0 && (
                               <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">

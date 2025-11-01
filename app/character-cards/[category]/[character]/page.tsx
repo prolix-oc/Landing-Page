@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
+import LazyImage from '@/app/components/LazyImage';
 
 interface CharacterCardData {
   spec: string;
@@ -55,6 +56,7 @@ export default function CharacterDetailsPage() {
     description: true,
     personality: true
   });
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -89,6 +91,23 @@ export default function CharacterDetailsPage() {
 
     fetchCharacter();
   }, [params.category, params.character]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show button when scrolled past 300px
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   if (loading) {
     return (
@@ -142,6 +161,26 @@ export default function CharacterDetailsPage() {
 
   return (
     <div className="min-h-screen relative">
+      {/* Scroll to Top Button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={scrollToTop}
+            className="fixed bottom-8 right-8 z-50 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white p-4 rounded-full shadow-lg shadow-blue-500/50 hover:shadow-blue-500/70 transition-all duration-200"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            aria-label="Scroll to top"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       <div className="relative container mx-auto px-4 py-16">
         {/* Header with Back Button */}
         <motion.div 
@@ -189,7 +228,9 @@ export default function CharacterDetailsPage() {
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
-                  <span className="relative z-10 text-sm">{alt.name}</span>
+                  <span className="relative z-10 text-sm">
+                    {alt.name.includes(' - ') ? alt.name.split(' - ')[1] : alt.name}
+                  </span>
                 </motion.button>
               ))}
             </div>
@@ -207,31 +248,22 @@ export default function CharacterDetailsPage() {
           >
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden sticky top-4">
               <div className="relative aspect-square bg-gray-900/50 overflow-hidden">
-                <AnimatePresence initial={false}>
+                <AnimatePresence mode="wait" initial={false}>
                   {currentScenario.thumbnailUrl && (
-                    <motion.img
+                    <motion.div
                       key={currentScenario.id}
-                      src={currentScenario.thumbnailUrl}
-                      alt={charData.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      initial={{ opacity: 0, filter: "blur(8px)" }}
-                      animate={{ 
-                        opacity: 1, 
-                        filter: "blur(0px)",
-                        transition: { 
-                          opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                          filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
-                        }
-                      }}
-                      exit={{ 
-                        opacity: 0,
-                        filter: "blur(8px)",
-                        transition: { 
-                          opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
-                          filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
-                        }
-                      }}
-                    />
+                      className="absolute inset-0 w-full h-full"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <LazyImage
+                        src={currentScenario.thumbnailUrl}
+                        alt={charData.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </div>

@@ -164,13 +164,13 @@ export default function WorldBookDetailsPage() {
       // Smart pagination: "1 2 ... middle numbers ... 41 42" format
       const edgePages = 2; // Always show first 2 and last 2 pages
       const middlePages = 5; // Always show 5 pages in the middle range
-      const startRange = 6; // Pages 0-5 are the "beginning range"
-      const endRangeStart = totalPages - 7; // Last 7 pages are "end range"
+      const startRange = 5; // Pages 0-4 are the "beginning range"
+      const endRangeStart = totalPages - 6; // Last 6 pages are "end range"
       
       // Determine which range we're in
       if (currentPage < startRange) {
-        // Beginning range: show 1 2 3 4 5 6 7 ... 41 42
-        for (let i = 0; i < 7; i++) {
+        // Beginning range: show 1 2 3 4 5 6 ... 41 42
+        for (let i = 0; i < 6; i++) {
           pages.push(i);
         }
         pages.push('ellipsis-end');
@@ -185,30 +185,28 @@ export default function WorldBookDetailsPage() {
           pages.push(i);
         }
         pages.push('ellipsis-start');
-        // Last 7 pages
-        for (let i = totalPages - 7; i < totalPages; i++) {
+        // Last 6 pages
+        for (let i = totalPages - 6; i < totalPages; i++) {
           pages.push(i);
         }
       } else {
-        // Middle range: show 1 2 ... middle 5 pages ... 41 42
+        // Middle range: show 1 2 ... middle 4 pages ... 41 42
         // First 2 pages
         for (let i = 0; i < 2; i++) {
           pages.push(i);
         }
         pages.push('ellipsis-start');
         
-        // Middle 5 pages centered on current page
-        const middleStart = currentPage - 2;
+        // Middle 4 pages with current page at position 2 (third spot)
+        const middleStart = currentPage - 1;
         const middleEnd = currentPage + 2;
         for (let i = middleStart; i <= middleEnd; i++) {
           pages.push(i);
         }
         
         pages.push('ellipsis-end');
-        // Last 2 pages
-        for (let i = totalPages - 2; i < totalPages; i++) {
-          pages.push(i);
-        }
+        // Last page only
+        pages.push(totalPages - 1);
       }
     }
     
@@ -218,8 +216,8 @@ export default function WorldBookDetailsPage() {
   const pageNumbers = getPageNumbers();
   
   // Determine which range we're in for highlight positioning
-  const startRange = 6;
-  const endRangeStart = totalPages - 7;
+  const startRange = 5;
+  const endRangeStart = totalPages - 6;
   const isInBeginningRange = currentPage < startRange;
   const isInEndRange = currentPage >= endRangeStart;
   const isInMiddleRange = !isInBeginningRange && !isInEndRange;
@@ -320,10 +318,19 @@ export default function WorldBookDetailsPage() {
                       layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
                     }}
                     className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                    data-framer-motion
                   >
-                    <button
+                    <div
                       onClick={() => toggleEntry(entry.uid)}
-                      className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors text-left"
+                      className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 cursor-pointer text-left"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggleEntry(entry.uid);
+                        }
+                      }}
                     >
                       <div className="flex-1">
                         <h3 className="text-xl font-bold text-white mb-2">
@@ -367,7 +374,7 @@ export default function WorldBookDetailsPage() {
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </motion.svg>
-                    </button>
+                    </div>
                     
                     <AnimatePresence>
                       {expandedEntries[entry.uid] && (
@@ -382,8 +389,9 @@ export default function WorldBookDetailsPage() {
                             layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
                           }}
                           className="overflow-hidden"
+                          data-framer-motion
                         >
-                          <motion.div layout className="px-6 pb-6 pt-2 space-y-4">
+                          <motion.div layout className="px-6 pb-6 pt-2 space-y-4" data-framer-motion>
                             {/* Content */}
                             <div>
                               <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -470,8 +478,11 @@ export default function WorldBookDetailsPage() {
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
                     currentPage === 0
                       ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
                   }`}
+                  style={currentPage > 0 ? {
+                    boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)'
+                  } : undefined}
                   whileHover={currentPage > 0 ? { scale: 1.1 } : {}}
                   whileTap={currentPage > 0 ? { scale: 0.9 } : {}}
                 >
@@ -481,43 +492,55 @@ export default function WorldBookDetailsPage() {
                 </motion.button>
 
                 {/* Page Tabs */}
-                <div 
-                  className="relative flex bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-full p-1 gap-1 overflow-hidden transition-all duration-300" 
-                  style={{ 
+                <motion.div 
+                  className="relative flex bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-full p-1 gap-1 overflow-hidden" 
+                  animate={{ 
                     width: `${Math.min(pageNumbers.length * 52 + 8, 480)}px` // Dynamic width: 52px per item + 8px padding, max 480px
                   }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30
+                  }}
                 >
-                  {/* Highlight Circle - Position changes based on range */}
+                  {/* Highlight Circle - Position based on actual page button index (excluding ellipsis) */}
                   {(() => {
-                    // Find the current page's position in the pageNumbers array
-                    const currentPageIndex = pageNumbers.findIndex(p => p === currentPage);
-                    
-                    // Calculate position based on range
-                    let highlightPosition = currentPageIndex;
-                    
-                    // For middle range, keep highlight at position 4 (centered in the 9-item array: 1 2 ... X X X X X ... 41 42)
-                    if (isInMiddleRange && pageNumbers.length >= 9) {
-                      highlightPosition = 4; // 0-indexed: [0, 1, 2, 3, 4, 5, 6, 7, 8] -> position 4 is center
+                    // Count only the actual page buttons before the current page (not ellipsis)
+                    let visualPosition = 0;
+                    for (let i = 0; i < pageNumbers.length; i++) {
+                      if (pageNumbers[i] === currentPage) {
+                        break;
+                      }
+                      visualPosition++;
                     }
-                    // For end range, calculate position in the layout
-                    else if (isInEndRange) {
-                      // In end range: 1 2 ... 36 37 38 39 40 41 42
-                      // Items are at positions: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-                      highlightPosition = currentPageIndex;
-                    }
-                    // For beginning range, position is simply the page index
                     
                     return (
                       <motion.div
-                        className="absolute top-1 bottom-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full shadow-lg shadow-blue-500/50 pointer-events-none z-10"
-                        style={{ width: '48px' }}
+                        className="absolute top-1 bottom-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full pointer-events-none z-10"
+                        style={{ 
+                          width: '48px',
+                          boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)'
+                        }}
                         animate={{ 
-                          left: `calc(${highlightPosition * 52}px + 0.25rem)`
+                          left: `calc(${visualPosition * 52}px + 0.25rem)`,
+                          boxShadow: [
+                            '0 0 20px rgba(59, 130, 246, 0.4)',
+                            '0 0 25px rgba(59, 130, 246, 0.5)',
+                            '0 0 20px rgba(59, 130, 246, 0.4)'
+                          ]
                         }}
                         transition={{ 
-                          type: "spring", 
-                          bounce: 0.15, 
-                          duration: 0.5
+                          left: {
+                            type: "spring", 
+                            stiffness: 400,
+                            damping: 35,
+                            mass: 0.8
+                          },
+                          boxShadow: {
+                            duration: 3,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }
                         }}
                       />
                     );
@@ -525,44 +548,69 @@ export default function WorldBookDetailsPage() {
                   
                   {/* Page Number Buttons */}
                   <div className="relative flex gap-1">
-                    {pageNumbers.map((pageNum, idx) => {
-                      if (typeof pageNum === 'string' && pageNum.startsWith('ellipsis')) {
+                    <AnimatePresence mode="popLayout">
+                      {pageNumbers.map((pageNum, idx) => {
+                        if (typeof pageNum === 'string' && pageNum.startsWith('ellipsis')) {
+                          return (
+                            <motion.div
+                              key={pageNum}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              className="px-2 py-2 flex items-center justify-center flex-shrink-0 gap-0.5"
+                              style={{ width: '48px' }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                            </motion.div>
+                          );
+                        }
+                      
+                        const page = pageNum as number;
+                        const isActive = currentPage === page;
+                        
                         return (
-                          <div
-                            key={pageNum}
-                            className="px-4 py-2 text-gray-400 flex items-center justify-center flex-shrink-0"
+                          <motion.button
+                            key={`page-${page}`}
+                            layout="position"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            onClick={() => {
+                              setCurrentPage(page);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`relative px-4 py-2 rounded-full font-medium flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
+                              isActive
+                                ? 'text-white'
+                                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/30'
+                            }`}
                             style={{ width: '48px' }}
+                            whileHover={{ scale: isActive ? 1 : 1.08 }}
+                            whileTap={{ scale: 0.92 }}
+                            transition={{ 
+                              layout: { 
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 40
+                              },
+                              opacity: { duration: 0.15 },
+                              y: { 
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 40
+                              }
+                            }}
                           >
-                            <span className="text-sm">...</span>
-                          </div>
+                            <span className="relative z-10 text-sm font-semibold">{page + 1}</span>
+                          </motion.button>
                         );
-                      }
-                    
-                      const page = pageNum as number;
-                      return (
-                        <motion.button
-                          key={`page-${page}`}
-                          layout
-                          onClick={() => {
-                            setCurrentPage(page);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className={`relative px-4 py-2 rounded-full font-medium transition-colors flex items-center justify-center flex-shrink-0 ${
-                            currentPage === page
-                              ? 'text-white'
-                              : 'text-gray-400 hover:text-gray-200'
-                          }`}
-                          style={{ width: '48px' }}
-                          whileHover={{ scale: currentPage === page ? 1 : 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
-                        >
-                          <span className="relative z-10 text-sm">{page + 1}</span>
-                        </motion.button>
-                      );
-                    })}
+                      })}
+                    </AnimatePresence>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Next Button */}
                 <motion.button
@@ -571,8 +619,11 @@ export default function WorldBookDetailsPage() {
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
                     currentPage === totalPages - 1
                       ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
                   }`}
+                  style={currentPage < totalPages - 1 ? {
+                    boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)'
+                  } : undefined}
                   whileHover={currentPage < totalPages - 1 ? { scale: 1.1 } : {}}
                   whileTap={currentPage < totalPages - 1 ? { scale: 0.9 } : {}}
                 >
