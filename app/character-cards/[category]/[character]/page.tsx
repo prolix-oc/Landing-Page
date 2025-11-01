@@ -207,17 +207,30 @@ export default function CharacterDetailsPage() {
           >
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden sticky top-4">
               <div className="relative aspect-square bg-gray-900/50 overflow-hidden">
-                <AnimatePresence mode="wait">
+                <AnimatePresence initial={false}>
                   {currentScenario.thumbnailUrl && (
                     <motion.img
                       key={currentScenario.id}
                       src={currentScenario.thumbnailUrl}
                       alt={charData.name}
-                      className="w-full h-full object-cover"
-                      initial={{ opacity: 0, scale: 1.05 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      initial={{ opacity: 0, filter: "blur(8px)" }}
+                      animate={{ 
+                        opacity: 1, 
+                        filter: "blur(0px)",
+                        transition: { 
+                          opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                          filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+                        }
+                      }}
+                      exit={{ 
+                        opacity: 0,
+                        filter: "blur(8px)",
+                        transition: { 
+                          opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
+                          filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
+                        }
+                      }}
                     />
                   )}
                 </AnimatePresence>
@@ -265,19 +278,17 @@ export default function CharacterDetailsPage() {
           </motion.div>
 
           {/* Character Details */}
-          <motion.div
-            className="lg:col-span-2 space-y-6"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
+          <div className="lg:col-span-2 space-y-6">
             {/* First Message */}
             {charData.first_mes && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
+              <motion.div 
+                layout
+                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
+              >
                 <button
                   onClick={() => toggleSection('firstMessage')}
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
-                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,28 +310,60 @@ export default function CharacterDetailsPage() {
                 <AnimatePresence>
                   {expandedSections.firstMessage && (
                     <motion.div
+                      layout
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ 
+                        height: { duration: 0.2 },
+                        opacity: { duration: 0.2 },
+                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
+                      }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6 pt-2">
-                        <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.first_mes}</p>
-                      </div>
+                      <motion.div layout className="px-6 pb-6 pt-2">
+                        <AnimatePresence mode="wait">
+                          <motion.p
+                            key={currentScenario.id + '-firstmes'}
+                            initial={{ opacity: 0, filter: "blur(4px)" }}
+                            animate={{ 
+                              opacity: 1, 
+                              filter: "blur(0px)",
+                              transition: { 
+                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+                              }
+                            }}
+                            exit={{ 
+                              opacity: 0,
+                              filter: "blur(4px)",
+                              transition: { 
+                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
+                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
+                              }
+                            }}
+                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                          >
+                            {charData.first_mes}
+                          </motion.p>
+                        </AnimatePresence>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             )}
 
             {/* Scenario */}
             {charData.scenario && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
+              <motion.div 
+                layout
+                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
+              >
                 <button
                   onClick={() => toggleSection('scenario')}
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
-                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -342,28 +385,60 @@ export default function CharacterDetailsPage() {
                 <AnimatePresence>
                   {expandedSections.scenario && (
                     <motion.div
+                      layout
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ 
+                        height: { duration: 0.2 },
+                        opacity: { duration: 0.2 },
+                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
+                      }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6 pt-2">
-                        <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.scenario}</p>
-                      </div>
+                      <motion.div layout className="px-6 pb-6 pt-2">
+                        <AnimatePresence mode="wait">
+                          <motion.p
+                            key={currentScenario.id + '-scenario'}
+                            initial={{ opacity: 0, filter: "blur(4px)" }}
+                            animate={{ 
+                              opacity: 1, 
+                              filter: "blur(0px)",
+                              transition: { 
+                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+                              }
+                            }}
+                            exit={{ 
+                              opacity: 0,
+                              filter: "blur(4px)",
+                              transition: { 
+                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
+                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
+                              }
+                            }}
+                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                          >
+                            {charData.scenario}
+                          </motion.p>
+                        </AnimatePresence>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             )}
 
             {/* Description */}
             {charData.description && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
+              <motion.div 
+                layout
+                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
+              >
                 <button
                   onClick={() => toggleSection('description')}
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
-                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -385,28 +460,60 @@ export default function CharacterDetailsPage() {
                 <AnimatePresence>
                   {expandedSections.description && (
                     <motion.div
+                      layout
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ 
+                        height: { duration: 0.2 },
+                        opacity: { duration: 0.2 },
+                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
+                      }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6 pt-2">
-                        <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.description}</p>
-                      </div>
+                      <motion.div layout className="px-6 pb-6 pt-2">
+                        <AnimatePresence mode="wait">
+                          <motion.p
+                            key={currentScenario.id + '-description'}
+                            initial={{ opacity: 0, filter: "blur(4px)" }}
+                            animate={{ 
+                              opacity: 1, 
+                              filter: "blur(0px)",
+                              transition: { 
+                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+                              }
+                            }}
+                            exit={{ 
+                              opacity: 0,
+                              filter: "blur(4px)",
+                              transition: { 
+                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
+                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
+                              }
+                            }}
+                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                          >
+                            {charData.description}
+                          </motion.p>
+                        </AnimatePresence>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             )}
 
             {/* Personality */}
             {charData.personality && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
+              <motion.div 
+                layout
+                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
+              >
                 <button
                   onClick={() => toggleSection('personality')}
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
-                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,21 +535,50 @@ export default function CharacterDetailsPage() {
                 <AnimatePresence>
                   {expandedSections.personality && (
                     <motion.div
+                      layout
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ 
+                        height: { duration: 0.2 },
+                        opacity: { duration: 0.2 },
+                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
+                      }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6 pt-2">
-                        <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.personality}</p>
-                      </div>
+                      <motion.div layout className="px-6 pb-6 pt-2">
+                        <AnimatePresence mode="wait">
+                          <motion.p
+                            key={currentScenario.id + '-personality'}
+                            initial={{ opacity: 0, filter: "blur(4px)" }}
+                            animate={{ 
+                              opacity: 1, 
+                              filter: "blur(0px)",
+                              transition: { 
+                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
+                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+                              }
+                            }}
+                            exit={{ 
+                              opacity: 0,
+                              filter: "blur(4px)",
+                              transition: { 
+                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
+                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
+                              }
+                            }}
+                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                          >
+                            {charData.personality}
+                          </motion.p>
+                        </AnimatePresence>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             )}
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
