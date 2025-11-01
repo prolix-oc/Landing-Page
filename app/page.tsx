@@ -43,8 +43,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
-
+    <div className="min-h-screen relative overflow-hidden">
       {/* Main content container - centered for desktop/tablet */}
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 max-w-7xl">
         {/* Header with enhanced animation */}

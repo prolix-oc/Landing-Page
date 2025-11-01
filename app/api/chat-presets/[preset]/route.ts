@@ -12,18 +12,44 @@ export async function GET(
     
     const versions = await getFileVersions(path);
     
+    // Separate standard and Prolix files but maintain isLatest per category
+    const standardVersions: any[] = [];
+    const prolixVersions: any[] = [];
+    
+    versions.forEach(({ file, commit }) => {
+      const versionData = {
+        name: file.name,
+        path: file.path,
+        downloadUrl: file.download_url,
+        size: file.size,
+        htmlUrl: file.html_url,
+        lastModified: commit?.commit.author.date || null,
+        isLatest: false // Will be set below
+      };
+      
+      // Check if filename contains "Prolix" (case-insensitive)
+      if (file.name.toLowerCase().includes('prolix')) {
+        prolixVersions.push(versionData);
+      } else {
+        standardVersions.push(versionData);
+      }
+    });
+    
+    // Mark the first item in each category as latest
+    if (standardVersions.length > 0) {
+      standardVersions[0].isLatest = true;
+    }
+    if (prolixVersions.length > 0) {
+      prolixVersions[0].isLatest = true;
+    }
+    
     return NextResponse.json(
       {
         success: true,
-        versions: versions.map(({ file, commit }, index) => ({
-          name: file.name,
-          path: file.path,
-          downloadUrl: file.download_url,
-          size: file.size,
-          htmlUrl: file.html_url,
-          lastModified: commit?.commit.author.date || null,
-          isLatest: index === 0 // First item after sorting by date is the latest
-        }))
+        versions: {
+          standard: standardVersions,
+          prolix: prolixVersions
+        }
       },
       {
         headers: {

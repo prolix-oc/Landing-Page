@@ -12,19 +12,48 @@ export async function GET() {
     const standardPresets: { name: string; path: string; category: string }[] = [];
     const prolixPresets: { name: string; path: string; category: string }[] = [];
     
-    allPresets.forEach(preset => {
-      const presetData = {
-        name: preset.name,
-        path: preset.path,
-        category: preset.name.toLowerCase().includes('prolix') ? 'prolix' : 'standard'
-      };
-      
-      if (presetData.category === 'prolix') {
-        prolixPresets.push(presetData);
-      } else {
-        standardPresets.push(presetData);
+    // Check each category folder for files containing "prolix"
+    for (const preset of allPresets) {
+      try {
+        // Get files in this category folder
+        const files = await getDirectoryContents(preset.path);
+        
+        // Check if any file contains "prolix" in its name
+        const hasProlixFiles = files.some(file => 
+          file.type === 'file' && file.name.toLowerCase().includes('prolix')
+        );
+        
+        const hasStandardFiles = files.some(file => 
+          file.type === 'file' && !file.name.toLowerCase().includes('prolix')
+        );
+        
+        // Add to standard presets if there are standard files
+        if (hasStandardFiles) {
+          standardPresets.push({
+            name: preset.name,
+            path: preset.path,
+            category: 'standard'
+          });
+        }
+        
+        // Add to prolix presets if there are prolix files
+        if (hasProlixFiles) {
+          prolixPresets.push({
+            name: preset.name,
+            path: preset.path,
+            category: 'prolix'
+          });
+        }
+      } catch (error) {
+        console.error(`Error checking files in ${preset.name}:`, error);
+        // If we can't check files, assume it's a standard preset
+        standardPresets.push({
+          name: preset.name,
+          path: preset.path,
+          category: 'standard'
+        });
       }
-    });
+    }
     
     return NextResponse.json(
       {
