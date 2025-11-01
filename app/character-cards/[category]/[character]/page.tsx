@@ -209,7 +209,7 @@ export default function CharacterDetailsPage() {
               <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('firstMessage')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors flex-shrink-0"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,7 +251,7 @@ export default function CharacterDetailsPage() {
               <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('scenario')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors flex-shrink-0"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,7 +293,7 @@ export default function CharacterDetailsPage() {
               <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('description')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors flex-shrink-0"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,7 +335,7 @@ export default function CharacterDetailsPage() {
               <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('personality')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors flex-shrink-0"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
