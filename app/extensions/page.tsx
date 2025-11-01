@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -20,7 +20,7 @@ const CATEGORIES = [
   { id: 'recommended', name: 'Recommended Extensions' }
 ];
 
-export default function ExtensionsPage() {
+function ExtensionsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [extensions, setExtensions] = useState<Extension[]>([]);
