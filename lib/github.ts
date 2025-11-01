@@ -32,15 +32,37 @@ export interface ThumbnailCache {
   timestamp: number;
 }
 
+export interface CharacterCardData {
+  spec: string;
+  spec_version: string;
+  data: {
+    name: string;
+    description?: string;
+    personality?: string;
+    scenario?: string;
+    first_mes?: string;
+    mes_example?: string;
+    [key: string]: any;
+  };
+}
+
+export interface CharacterCardCache {
+  data: CharacterCardData;
+  sha: string;
+  timestamp: number;
+}
+
 const GITHUB_API_BASE = 'https://api.github.com';
 const REPO_OWNER = 'prolix-oc';
 const REPO_NAME = 'ST-Presets';
 const CACHE_DURATION = 30 * 1000; // 30 seconds in milliseconds
 const THUMBNAIL_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for thumbnails
+const CHARACTER_CARD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for character card JSON
 
 // In-memory cache
 const cache = new Map<string, CachedData>();
 const thumbnailCache = new Map<string, ThumbnailCache>();
+const characterCardCache = new Map<string, CharacterCardCache>();
 
 // Track ongoing background refreshes to prevent duplicate requests
 const refreshingKeys = new Set<string>();
@@ -209,6 +231,7 @@ export async function getFileVersions(dirPath: string): Promise<Array<{ file: Gi
 export function clearCache(): void {
   cache.clear();
   thumbnailCache.clear();
+  characterCardCache.clear();
 }
 
 export function getThumbnailFromCache(path: string, sha: string): string | null {
@@ -246,4 +269,61 @@ export async function getCharacterThumbnail(
   cacheThumbnail(pngFile.path, pngFile.download_url, pngFile.sha);
   
   return pngFile.download_url;
+}
+
+/**
+ * Fetches and caches character card JSON data
+ */
+export async function getCharacterCardData(
+  jsonFile: GitHubFile
+): Promise<CharacterCardData | null> {
+  if (!jsonFile) return null;
+  
+  const cached = characterCardCache.get(jsonFile.path);
+  const now = Date.now();
+  
+  // If cached, SHA matches, and not expired, return cached data
+  if (cached && cached.sha === jsonFile.sha && now - cached.timestamp < CHARACTER_CARD_CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  // Fetch fresh data
+  try {
+    const response = await fetch(jsonFile.download_url, {
+      cache: 'no-store'
+    });
+    
+    if (!response.ok) {
+      console.error(`Failed to fetch character card JSON: ${response.status}`);
+      return null;
+    }
+    
+    const data: CharacterCardData = await response.json();
+    
+    // Cache the data
+    characterCardCache.set(jsonFile.path, {
+      data,
+      sha: jsonFile.sha,
+      timestamp: now
+    });
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching character card data:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets character card data from cache only (for checking if refresh needed)
+ */
+export function getCharacterCardFromCache(path: string, sha: string): CharacterCardData | null {
+  const cached = characterCardCache.get(path);
+  
+  // If cached and SHA matches and not expired, return cached data
+  if (cached && cached.sha === sha && Date.now() - cached.timestamp < CHARACTER_CARD_CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  return null;
 }

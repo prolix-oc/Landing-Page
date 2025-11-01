@@ -227,7 +227,10 @@ function CharacterCardsContent() {
                       >
                         {/* Thumbnail */}
                         {card.thumbnailUrl && (
-                          <div className="relative aspect-square bg-gray-900/50 overflow-hidden">
+                          <Link 
+                            href={`/character-cards/${encodeURIComponent(selectedCategory)}/${encodeURIComponent(card.name)}`}
+                            className="block relative aspect-square bg-gray-900/50 overflow-hidden cursor-pointer"
+                          >
                             <motion.img
                               src={card.thumbnailUrl}
                               alt={card.name}
@@ -236,7 +239,7 @@ function CharacterCardsContent() {
                               whileHover={{ scale: 1.03 }}
                               transition={{ duration: 0.2 }}
                             />
-                          </div>
+                          </Link>
                         )}
                         
                         {/* Card Info */}
