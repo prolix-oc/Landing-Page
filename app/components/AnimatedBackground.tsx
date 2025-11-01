@@ -8,9 +8,7 @@ export default function AnimatedBackground() {
         style={{ 
           animationDuration: '4s',
           willChange: 'opacity',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          backfaceVisibility: 'hidden',
-          transform: 'translate3d(0, 0, 0)'
+          backfaceVisibility: 'hidden'
         }}
       ></div>
       <div 
@@ -19,9 +17,7 @@ export default function AnimatedBackground() {
           animationDuration: '6s', 
           animationDelay: '1s',
           willChange: 'opacity',
-          backgroundColor: 'rgba(168, 85, 247, 0.1)',
-          backfaceVisibility: 'hidden',
-          transform: 'translate3d(0, 0, 0)'
+          backfaceVisibility: 'hidden'
         }}
       ></div>
       <div 
@@ -30,9 +26,7 @@ export default function AnimatedBackground() {
           animationDuration: '8s', 
           animationDelay: '2s',
           willChange: 'opacity',
-          backgroundColor: 'rgba(6, 182, 212, 0.05)',
-          backfaceVisibility: 'hidden',
-          transform: 'translate3d(0, 0, 0)'
+          backfaceVisibility: 'hidden'
         }}
       ></div>
     </div>

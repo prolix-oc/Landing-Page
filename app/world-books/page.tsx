@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { downloadFile } from '@/lib/download';
-import AnimatedBackground from '../components/AnimatedBackground';
 
 interface Category {
   name: string;
@@ -87,8 +86,6 @@ function WorldBooksContent() {
 
   return (
     <div className="min-h-screen relative">
-      <AnimatedBackground />
-
       <div className="relative container mx-auto px-4 py-16">
         {/* Header */}
         <div className="mb-8">
@@ -197,7 +194,6 @@ export default function WorldBooksPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen relative">
-        <AnimatedBackground />
         <div className="relative container mx-auto px-4 py-16">
           <div className="text-center text-gray-400 py-12">Loading...</div>
         </div>

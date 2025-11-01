@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import AnimatedBackground from '../components/AnimatedBackground';
 
 interface Extension {
   id: string;
@@ -37,8 +36,6 @@ export default function ExtensionsPage() {
 
   return (
     <div className="min-h-screen relative">
-      <AnimatedBackground />
-
       <div className="relative container mx-auto px-4 py-16">
         {/* Header */}
         <div className="mb-8">

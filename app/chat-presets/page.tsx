@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
-import AnimatedBackground from '../components/AnimatedBackground';
 
 interface Preset {
   name: string;
@@ -148,8 +147,6 @@ function ChatPresetsContent() {
 
   return (
     <div className="min-h-screen relative">
-      <AnimatedBackground />
-
       <div className="relative container mx-auto px-4 py-16">
         {/* Header */}
         <motion.div 
@@ -496,7 +493,6 @@ export default function ChatPresetsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen relative">
-        <AnimatedBackground />
         <div className="relative container mx-auto px-4 py-16">
           <div className="text-center text-gray-400 py-12">Loading...</div>
         </div>

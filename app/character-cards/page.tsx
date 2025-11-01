@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
-import AnimatedBackground from '../components/AnimatedBackground';
 
 interface Category {
   name: string;
@@ -105,8 +104,6 @@ function CharacterCardsContent() {
 
   return (
     <div className="min-h-screen relative">
-      <AnimatedBackground />
-
       <div className="relative container mx-auto px-4 py-16">
         {/* Header */}
         <motion.div 
@@ -338,7 +335,6 @@ export default function CharacterCardsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen relative">
-        <AnimatedBackground />
         <div className="relative container mx-auto px-4 py-16">
           <div className="text-center text-gray-400 py-12">Loading...</div>
         </div>
