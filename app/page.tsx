@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import AnimatedBackground from './components/AnimatedBackground';
 
 export default function Home() {
   const categories = [
@@ -44,37 +45,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
-      {/* Animated background elements - optimized for Safari */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute top-1/4 -left-48 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" 
-          style={{ 
-            animationDuration: '4s',
-            willChange: 'opacity',
-            backfaceVisibility: 'hidden',
-            transform: 'translateZ(0)'
-          }}
-        ></div>
-        <div 
-          className="absolute bottom-1/4 -right-48 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" 
-          style={{ 
-            animationDuration: '6s', 
-            animationDelay: '1s',
-            willChange: 'opacity',
-            backfaceVisibility: 'hidden',
-            transform: 'translateZ(0)'
-          }}
-        ></div>
-        <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" 
-          style={{ 
-            animationDuration: '8s', 
-            animationDelay: '2s',
-            willChange: 'opacity',
-            backfaceVisibility: 'hidden'
-          }}
-        ></div>
-      </div>
+      <AnimatedBackground />
 
       {/* Main content container - centered for desktop/tablet */}
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 max-w-7xl">
