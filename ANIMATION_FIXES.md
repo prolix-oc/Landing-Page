@@ -89,6 +89,72 @@ layout
 
 4. **Page Load**: Initial page load animations should play once without repeating.
 
+## Cross-Browser Animation Quality (Firefox vs. Chrome/Edge)
+
+### Issue Identified
+
+Firefox renders Framer Motion spring animations differently than Chrome/Edge, particularly for scale and position transforms. The SmartPagination component's navigation errors (number scaling) appeared rough/choppy in Firefox while smooth in Edge.
+
+### Root Causes
+
+1. **GPU Acceleration Differences**: Firefox has different thresholds for triggering GPU acceleration on animated elements
+2. **Transform Rendering**: Firefox's rendering engine handles CSS transforms and spring animations differently
+3. **Spring Physics**: Different browsers interpret spring stiffness/damping values slightly differently
+4. **Font Rendering**: Text within animated elements needs specific hints for smooth rendering across browsers
+
+### Fixes Applied to SmartPagination
+
+**1. Hardware Acceleration Triggers**
+```tsx
+style={{
+  transform: 'translate3d(0, 0, 0)',  // Forces GPU layer
+  backfaceVisibility: 'hidden',        // Prevents flickering
+  willChange: 'transform'              // Hints browser optimization
+}}
+```
+
+**2. Optimized Spring Physics**
+- Reduced damping from 35 to 30 for highlight circle (smoother in Firefox)
+- Increased mass to 1 (from 0.8) for more consistent cross-browser feel
+- Unified spring stiffness at 400 for all interactive elements
+
+**3. Cross-Browser Font Smoothing**
+```tsx
+style={{
+  WebkitFontSmoothing: 'subpixel-antialiased',
+  MozOsxFontSmoothing: 'grayscale'
+}}
+```
+
+**4. Perspective Context**
+```tsx
+style={{
+  perspective: '1000px'  // Creates 3D rendering context for children
+}}
+```
+
+**5. Smart willChange Usage**
+- Only apply `willChange: 'transform'` to elements that will animate
+- Remove on active elements to reduce memory overhead
+- Apply to container width animations: `willChange: 'width'`
+
+### Performance Benefits
+
+1. **Smoother Scaling**: Navigation buttons and page numbers now scale smoothly in Firefox
+2. **Consistent Spring Feel**: Spring animations behave similarly across browsers
+3. **Reduced Jank**: GPU acceleration prevents layout thrashing
+4. **Better Font Rendering**: Text remains crisp during animations
+
+### Testing Recommendations
+
+Test the following in both Firefox and Chrome/Edge:
+
+1. **Page Navigation**: Click through pages rapidly - numbers should scale smoothly
+2. **Hover Effects**: Hover over page buttons - scale animations should be fluid
+3. **Container Resize**: Watch pagination container width change - should be smooth
+4. **Highlight Movement**: The blue highlight circle should glide smoothly between positions
+5. **Text Clarity**: Page numbers should remain sharp during all animations
+
 ## Future Best Practices
 
 1. **Separate Concerns**: Use Framer Motion for complex animations (mount/unmount, layout changes, gestures) and CSS for simple state changes (hover, focus).
@@ -98,3 +164,14 @@ layout
 3. **Layout Prop**: Always add `layout` to Framer Motion elements that might change position or size.
 
 4. **Data Attributes**: Use `data-*` attributes to exclude specific elements from global styles when needed.
+
+5. **Cross-Browser GPU Acceleration**: 
+   - Always use `transform: 'translate3d(0, 0, 0)'` to trigger GPU acceleration
+   - Add `backfaceVisibility: 'hidden'` to prevent flickering
+   - Use `willChange` sparingly and only for properties that will actually animate
+   - Test spring physics in both Firefox and Chrome - they may need different damping values
+
+6. **Font Rendering in Animations**:
+   - Include both `-webkit-font-smoothing` and `-moz-osx-font-smoothing`
+   - Use `subpixel-antialiased` for WebKit, `grayscale` for Firefox
+   - Apply `transform: 'translate3d(0, 0, 0)'` to text elements in animations

@@ -161,10 +161,19 @@ export default function SmartPagination({
             : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
         }`}
         style={currentPage > 0 ? {
-          boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)'
-        } : undefined}
+          boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)',
+          willChange: 'transform',
+          transform: 'translate3d(0, 0, 0)'
+        } : {
+          transform: 'translate3d(0, 0, 0)'
+        }}
         whileHover={currentPage > 0 ? { scale: 1.1 } : {}}
         whileTap={currentPage > 0 ? { scale: 0.9 } : {}}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 25
+        }}
         aria-label="Previous page"
       >
         <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,22 +183,32 @@ export default function SmartPagination({
 
       {/* Desktop Pagination */}
       <motion.div 
-        className="hidden md:flex relative bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-full p-1 gap-1 overflow-hidden" 
-        animate={{ 
+        className="hidden md:flex relative border border-gray-700/20 rounded-full p-1 gap-1 frosted-glass-pagination"
+        style={{
+          willChange: 'width',
+          transform: 'translate3d(0, 0, 0)',
+          perspective: '1000px'
+        }}
+        animate={{
           width: `${Math.min(pageNumbers.length * 52 + 8, 480)}px`
         }}
         transition={{
           type: "spring",
-          stiffness: 300,
-          damping: 30
+          stiffness: 350,
+          damping: 32,
+          mass: 1
         }}
       >
+
         {/* Highlight Circle */}
         <motion.div
           className="absolute top-1 bottom-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full pointer-events-none z-10"
           style={{ 
             width: '48px',
-            boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)'
+            boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)',
+            willChange: 'left, box-shadow',
+            transform: 'translate3d(0, 0, 0)',
+            backfaceVisibility: 'hidden'
           }}
           animate={{ 
             left: `calc(${getHighlightPosition(pageNumbers) * 52}px + 0.25rem)`,
@@ -203,8 +222,8 @@ export default function SmartPagination({
             left: {
               type: "spring", 
               stiffness: 400,
-              damping: 35,
-              mass: 0.8
+              damping: 30,
+              mass: 1
             },
             boxShadow: {
               duration: 3,
@@ -243,10 +262,21 @@ export default function SmartPagination({
                     layout="position"
                     onClick={() => handlePageChange(page)}
                     className="relative px-4 py-2 rounded-full font-medium flex items-center justify-center flex-shrink-0 text-white hover:bg-gray-700/30"
-                    style={{ width: '48px', willChange: 'transform', zIndex: 20 }}
+                    style={{ 
+                      width: '48px',
+                      zIndex: 20,
+                      willChange: isActive ? 'auto' : 'transform',
+                      transform: 'translate3d(0, 0, 0)',
+                      backfaceVisibility: 'hidden'
+                    }}
                     initial={false}
                     whileHover={{ scale: isActive ? 1 : 1.08 }}
                     whileTap={{ scale: 0.92 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 25
+                    }}
                     aria-label={`Go to page ${page + 1}`}
                     aria-current={isActive ? 'page' : undefined}
                   >
@@ -255,7 +285,10 @@ export default function SmartPagination({
                       style={{ 
                         opacity: 1,
                         pointerEvents: 'none',
-                        willChange: 'auto'
+                        transform: 'translate3d(0, 0, 0)',
+                        backfaceVisibility: 'hidden',
+                        WebkitFontSmoothing: 'subpixel-antialiased',
+                        MozOsxFontSmoothing: 'grayscale'
                       }}
                     >
                       {page + 1}
@@ -270,22 +303,32 @@ export default function SmartPagination({
 
       {/* Mobile Pagination */}
       <motion.div 
-        className="flex md:hidden relative bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-full p-1 gap-1 overflow-hidden" 
-        animate={{ 
+        className="flex md:hidden relative border border-gray-700/20 rounded-full p-1 gap-1 frosted-glass-pagination"
+        style={{
+          willChange: 'width',
+          transform: 'translate3d(0, 0, 0)',
+          perspective: '1000px'
+        }}
+        animate={{
           width: `${Math.min(mobilePageNumbers.length * 44 + 8, 280)}px`
         }}
         transition={{
           type: "spring",
-          stiffness: 300,
-          damping: 30
+          stiffness: 350,
+          damping: 32,
+          mass: 1
         }}
       >
+
         {/* Highlight Circle - Mobile */}
         <motion.div
           className="absolute top-1 bottom-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full pointer-events-none z-10"
           style={{ 
             width: '40px',
-            boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)'
+            boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)',
+            willChange: 'left, box-shadow',
+            transform: 'translate3d(0, 0, 0)',
+            backfaceVisibility: 'hidden'
           }}
           animate={{ 
             left: `calc(${getHighlightPosition(mobilePageNumbers) * 44}px + 0.25rem)`,
@@ -299,8 +342,8 @@ export default function SmartPagination({
             left: {
               type: "spring", 
               stiffness: 400,
-              damping: 35,
-              mass: 0.8
+              damping: 30,
+              mass: 1
             },
             boxShadow: {
               duration: 3,
@@ -339,10 +382,21 @@ export default function SmartPagination({
                     layout="position"
                     onClick={() => handlePageChange(page)}
                     className="relative px-2 py-2 rounded-full font-medium flex items-center justify-center flex-shrink-0 text-white hover:bg-gray-700/30"
-                    style={{ width: '40px', willChange: 'transform', zIndex: 20 }}
+                    style={{ 
+                      width: '40px',
+                      zIndex: 20,
+                      willChange: isActive ? 'auto' : 'transform',
+                      transform: 'translate3d(0, 0, 0)',
+                      backfaceVisibility: 'hidden'
+                    }}
                     initial={false}
                     whileHover={{ scale: isActive ? 1 : 1.08 }}
                     whileTap={{ scale: 0.92 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 25
+                    }}
                     aria-label={`Go to page ${page + 1}`}
                     aria-current={isActive ? 'page' : undefined}
                   >
@@ -351,7 +405,10 @@ export default function SmartPagination({
                       style={{ 
                         opacity: 1,
                         pointerEvents: 'none',
-                        willChange: 'auto'
+                        transform: 'translate3d(0, 0, 0)',
+                        backfaceVisibility: 'hidden',
+                        WebkitFontSmoothing: 'subpixel-antialiased',
+                        MozOsxFontSmoothing: 'grayscale'
                       }}
                     >
                       {page + 1}
@@ -374,10 +431,19 @@ export default function SmartPagination({
             : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
         }`}
         style={currentPage < totalPages - 1 ? {
-          boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)'
-        } : undefined}
+          boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)',
+          willChange: 'transform',
+          transform: 'translate3d(0, 0, 0)'
+        } : {
+          transform: 'translate3d(0, 0, 0)'
+        }}
         whileHover={currentPage < totalPages - 1 ? { scale: 1.1 } : {}}
         whileTap={currentPage < totalPages - 1 ? { scale: 0.9 } : {}}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 25
+        }}
         aria-label="Next page"
       >
         <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

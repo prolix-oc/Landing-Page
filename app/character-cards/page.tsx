@@ -410,7 +410,7 @@ function CharacterCardsContent() {
       {/* Sticky Pagination at Bottom */}
       {!loading && totalPages > 1 && isContentLoaded && (
         <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-          <div className="bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent pt-6 pb-6">
+          <div className="pt-6 pb-6">
             <div className="container mx-auto px-4">
               <SmartPagination
                 currentPage={currentPage}
