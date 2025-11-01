@@ -75,8 +75,8 @@ a:focus-visible {
   background: #4a4a4a;
 }
 
-/* Smooth transitions for interactive elements - exclude elements with data-framer-motion */
-*:not([data-framer-motion]) {
+/* Smooth transitions for interactive elements - exclude elements with data-framer-motion and breathing gradients */
+*:not([data-framer-motion]):not([data-breathing-gradient]) {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
@@ -263,4 +263,25 @@ a:active {
 
 .blur-pulse {
   animation: blurPulse 8s ease-in-out infinite;
+}
+
+/* Breathing gradient animation for cards - continuously loops the gradient position */
+@keyframes breathingGradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Apply the breathing animation and handle opacity fade separately */
+[data-breathing-gradient] {
+  animation: breathingGradient 4s ease-in-out infinite;
+  transition: opacity 0.5s ease-in-out !important;
+}
+
+/* Fade in opacity on hover */
+.group:hover [data-breathing-gradient] {
+  opacity: 0.3 !important;
 }

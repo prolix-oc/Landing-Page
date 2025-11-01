@@ -8,37 +8,58 @@ export default function Home() {
       title: 'Character Cards',
       description: 'Browse and download my character cards',
       href: '/character-cards',
-      icon: '👤',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
       gradient: 'from-blue-500 via-cyan-500 to-blue-600',
-      hoverGradient: 'from-blue-600 via-cyan-600 to-blue-700',
-      accentColor: 'bg-cyan-500'
+      accentColor: 'bg-cyan-500',
+      iconBg: 'bg-cyan-600',
+      iconColor: 'text-cyan-100'
     },
     {
       title: 'Chat Completion Presets',
       description: 'Get the latest and greatest in ST Chat Presets',
       href: '/chat-presets',
-      icon: '💬',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      ),
       gradient: 'from-purple-500 via-pink-500 to-purple-600',
-      hoverGradient: 'from-purple-600 via-pink-600 to-purple-700',
-      accentColor: 'bg-pink-500'
+      accentColor: 'bg-pink-500',
+      iconBg: 'bg-pink-600',
+      iconColor: 'text-pink-100'
     },
     {
       title: 'World Books',
       description: 'Enhance your RPs with detailed world information',
       href: '/world-books',
-      icon: '📚',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
       gradient: 'from-green-500 via-emerald-500 to-green-600',
-      hoverGradient: 'from-green-600 via-emerald-600 to-green-700',
-      accentColor: 'bg-emerald-500'
+      accentColor: 'bg-emerald-500',
+      iconBg: 'bg-emerald-600',
+      iconColor: 'text-emerald-100'
     },
     {
       title: 'Extensions',
       description: 'Custom extensions by me for SillyTavern',
       href: '/extensions',
-      icon: '🔧',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
       gradient: 'from-orange-500 via-red-500 to-orange-600',
-      hoverGradient: 'from-orange-600 via-red-600 to-orange-700',
-      accentColor: 'bg-red-500'
+      accentColor: 'bg-red-500',
+      iconBg: 'bg-red-600',
+      iconColor: 'text-red-100'
     }
   ];
 
@@ -85,19 +106,22 @@ export default function Home() {
               
               {/* Card */}
               <div 
-                className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 group-hover:bg-gray-900/90 backdrop-blur-xl border border-gray-800 transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-2xl"
+                className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 group-hover:bg-gray-900/90 backdrop-blur-xl border border-gray-800 transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl"
                 style={{
                   willChange: 'transform, background-color, border-color',
                   backfaceVisibility: 'hidden',
                   transform: 'translateZ(0)'
                 }}
               >
-                {/* Gradient overlay */}
+                {/* Breathing gradient overlay - only animates on hover */}
                 <div 
-                  className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 group-hover:opacity-30 transition-opacity duration-500`}
+                  data-breathing-gradient="true"
+                  className={`absolute inset-0 bg-gradient-to-br ${category.gradient} breathing-gradient-hover`}
                   style={{
                     willChange: 'opacity',
-                    backfaceVisibility: 'hidden'
+                    backfaceVisibility: 'hidden',
+                    backgroundSize: '200% 200%',
+                    opacity: 0
                   }}
                 ></div>
                 
@@ -113,8 +137,8 @@ export default function Home() {
                 <div className="relative p-6 sm:p-8 lg:p-10">
                   {/* Icon with enhanced styling */}
                   <div className="mb-4 sm:mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 group-hover:scale-110 transition-transform duration-300">
-                      <span className="text-4xl sm:text-5xl filter drop-shadow-lg">{category.icon}</span>
+                    <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${category.iconBg} ${category.iconColor} group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                      {category.icon}
                     </div>
                   </div>
 
