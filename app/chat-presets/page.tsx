@@ -141,10 +141,10 @@ function ChatPresetsContent() {
   const getNameWithoutVersion = (name: string) => {
     // Remove .json extension first
     let formatted = name.replace('.json', '');
-    // First, remove the version number and any descriptors (Hotfix, Quick Fix, etc.) but NOT Prolix
-    formatted = formatted.replace(/\s*v\d+\.\d+(?:\s+(?:Hotfix|Quick\s+Fix|Repatch|[A-Z][a-z]+))?\s*/g, '').trim();
     // Then remove everything from "Prolix" onwards (Prolix Preferred, Prolix Edition, etc.)
     formatted = formatted.replace(/\s*Prolix.*$/i, '').trim();
+    // Finally, remove the version number and any descriptors (Hotfix, Quick Fix, etc.)
+    formatted = formatted.replace(/\s*v\d+\.\d+(?:\s+(?:Hotfix|Quick\s+Fix|Repatch|[A-Z][a-z]+))?\s*/g, '').trim();
     return formatted;
   };
 
