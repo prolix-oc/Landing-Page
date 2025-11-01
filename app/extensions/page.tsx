@@ -240,22 +240,6 @@ function ExtensionsContent() {
             </div>
           </div>
         )}
-
-        {/* Info Box */}
-        <motion.div 
-          className="mt-12 max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="bg-blue-900/20 border border-blue-700/50 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-blue-300 mb-2">📝 Note for Extension Developers</h3>
-            <p className="text-gray-300">
-              To add your extension to this list, please contact Prolix OCs or submit a pull request 
-              with your extension details.
-            </p>
-          </div>
-        </motion.div>
       </div>
     </div>
   );
