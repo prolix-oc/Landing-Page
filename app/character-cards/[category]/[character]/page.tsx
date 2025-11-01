@@ -237,7 +237,7 @@ export default function CharacterDetailsPage() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6">
+                      <div className="px-6 pb-6 pt-2">
                         <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.first_mes}</p>
                       </div>
                     </motion.div>
@@ -279,7 +279,7 @@ export default function CharacterDetailsPage() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6">
+                      <div className="px-6 pb-6 pt-2">
                         <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.scenario}</p>
                       </div>
                     </motion.div>
@@ -321,7 +321,7 @@ export default function CharacterDetailsPage() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6">
+                      <div className="px-6 pb-6 pt-2">
                         <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.description}</p>
                       </div>
                     </motion.div>
@@ -363,7 +363,7 @@ export default function CharacterDetailsPage() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-6">
+                      <div className="px-6 pb-6 pt-2">
                         <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{charData.personality}</p>
                       </div>
                     </motion.div>
