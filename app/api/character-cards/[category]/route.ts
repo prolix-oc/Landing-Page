@@ -8,6 +8,7 @@ interface CharacterCard {
   jsonUrl: string | null;
   size: number;
   lastModified: string | null;
+  alternateCount?: number;
 }
 
 export async function GET(
@@ -24,44 +25,72 @@ export async function GET(
     // Filter for directories (character card subdirectories)
     const characterDirs = contents.filter(item => item.type === 'dir');
     
-    // Process each character card directory
+    // Group directories by base name (without V2, V3, etc.)
+    const groupedDirs = new Map<string, typeof characterDirs>();
+    characterDirs.forEach(dir => {
+      // Remove V2, V3, etc. from the end to get base name
+      const baseName = dir.name.replace(/\s+V\d+$/i, '');
+      if (!groupedDirs.has(baseName)) {
+        groupedDirs.set(baseName, []);
+      }
+      groupedDirs.get(baseName)!.push(dir);
+    });
+    
+    // Process each character card directory group
     const characterCards: CharacterCard[] = await Promise.all(
-      characterDirs.map(async (dir) => {
+      Array.from(groupedDirs.entries()).map(async ([baseName, dirs]) => {
+        // Use the first directory (or the one without V suffix) as the primary
+        const primaryDir = dirs.find(d => d.name === baseName) || dirs[0];
         try {
-          // Get contents of the character directory
-          const dirContents = await getDirectoryContents(dir.path);
+          // Get contents of the primary character directory
+          const dirContents = await getDirectoryContents(primaryDir.path);
           
           // Find .png and .json files (exclude .md files)
           const pngFile = dirContents.find(file => 
             file.type === 'file' && file.name.toLowerCase().endsWith('.png')
           );
-          const jsonFile = dirContents.find(file => 
+          const jsonFiles = dirContents.filter(file => 
             file.type === 'file' && file.name.toLowerCase().endsWith('.json')
           );
+          const jsonFile = jsonFiles[0];
           
           // Get cached thumbnail URL
-          const thumbnailUrl = pngFile ? await getCharacterThumbnail(dir.path, pngFile) : null;
+          const thumbnailUrl = pngFile ? await getCharacterThumbnail(primaryDir.path, pngFile) : null;
           
           // Get last modification date
-          const commit = await getLatestCommit(dir.path);
+          const commit = await getLatestCommit(primaryDir.path);
+          
+          // Calculate alternate count:
+          // - Multiple directories (V2, V3, etc.): count additional directories
+          // - Multiple JSON files in same directory: count additional files
+          // - Total alternates is the sum minus 1 (the primary)
+          let totalScenarios = 0;
+          for (const dir of dirs) {
+            const contents = await getDirectoryContents(dir.path);
+            const jsonCount = contents.filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.json')).length;
+            totalScenarios += jsonCount;
+          }
+          const alternateCount = totalScenarios > 1 ? totalScenarios - 1 : 0;
           
           return {
-            name: dir.name,
-            path: dir.path,
+            name: baseName,
+            path: primaryDir.path,
             thumbnailUrl,
             jsonUrl: jsonFile?.download_url || null,
             size: (pngFile?.size || 0) + (jsonFile?.size || 0),
-            lastModified: commit?.commit.author.date || null
+            lastModified: commit?.commit.author.date || null,
+            alternateCount
           };
         } catch (error) {
-          console.error(`Error processing character card ${dir.name}:`, error);
+          console.error(`Error processing character card ${baseName}:`, error);
           return {
-            name: dir.name,
-            path: dir.path,
+            name: baseName,
+            path: primaryDir.path,
             thumbnailUrl: null,
             jsonUrl: null,
             size: 0,
-            lastModified: null
+            lastModified: null,
+            alternateCount: dirs.length > 1 ? dirs.length - 1 : 0
           };
         }
       })

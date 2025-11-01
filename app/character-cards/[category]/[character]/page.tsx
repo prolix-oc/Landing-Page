@@ -20,6 +20,17 @@ interface CharacterCardData {
   };
 }
 
+interface AlternateScenario {
+  id: string;
+  name: string;
+  path: string;
+  thumbnailUrl: string | null;
+  pngUrl: string | null;
+  jsonUrl: string;
+  cardData: CharacterCardData;
+  lastModified: string | null;
+}
+
 interface Character {
   name: string;
   category: string;
@@ -29,6 +40,7 @@ interface Character {
   jsonUrl: string;
   cardData: CharacterCardData;
   lastModified: string | null;
+  alternates?: AlternateScenario[];
 }
 
 export default function CharacterDetailsPage() {
@@ -36,6 +48,7 @@ export default function CharacterDetailsPage() {
   const [character, setCharacter] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAlternate, setSelectedAlternate] = useState<number>(0);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     firstMessage: true,
     scenario: true,
@@ -112,7 +125,19 @@ export default function CharacterDetailsPage() {
     );
   }
 
-  const { cardData } = character;
+  // Get the current alternate scenario to display
+  const currentScenario = character.alternates ? character.alternates[selectedAlternate] : {
+    id: 'primary',
+    name: character.cardData.data.name,
+    path: character.path,
+    thumbnailUrl: character.thumbnailUrl,
+    pngUrl: character.pngUrl,
+    jsonUrl: character.jsonUrl,
+    cardData: character.cardData,
+    lastModified: character.lastModified
+  };
+  
+  const { cardData } = currentScenario;
   const charData = cardData.data;
 
   return (
@@ -136,6 +161,41 @@ export default function CharacterDetailsPage() {
           </Link>
         </motion.div>
 
+        {/* Alternate Scenarios Tabs */}
+        {character.alternates && character.alternates.length > 1 && (
+          <motion.div
+            className="mb-8 flex justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="inline-flex bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-full p-1 gap-1">
+              {character.alternates.map((alt, index) => (
+                <motion.button
+                  key={alt.id}
+                  onClick={() => setSelectedAlternate(index)}
+                  className={`relative px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-colors ${
+                    selectedAlternate === index
+                      ? 'text-white'
+                      : 'text-gray-400 hover:text-gray-200'
+                  }`}
+                  whileHover={{ scale: selectedAlternate === index ? 1 : 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {selectedAlternate === index && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full shadow-lg shadow-blue-500/50"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10 text-sm">{alt.name}</span>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Character Image and Download */}
@@ -146,30 +206,37 @@ export default function CharacterDetailsPage() {
             transition={{ duration: 0.5, delay: 0.1 }}
           >
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden sticky top-4">
-              {character.thumbnailUrl && (
-                <div className="relative aspect-square bg-gray-900/50">
-                  <img
-                    src={character.thumbnailUrl}
-                    alt={charData.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+              <div className="relative aspect-square bg-gray-900/50 overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {currentScenario.thumbnailUrl && (
+                    <motion.img
+                      key={currentScenario.id}
+                      src={currentScenario.thumbnailUrl}
+                      alt={charData.name}
+                      className="w-full h-full object-cover"
+                      initial={{ opacity: 0, scale: 1.05 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
               
               <div className="p-6 space-y-3">
                 <h1 className="text-3xl font-bold text-white">{charData.name}</h1>
                 
-                {character.lastModified && (
+                {currentScenario.lastModified && (
                   <p className="text-sm text-gray-400">
-                    Updated: {new Date(character.lastModified).toLocaleDateString()}
+                    Updated: {new Date(currentScenario.lastModified).toLocaleDateString()}
                   </p>
                 )}
 
                 {/* Download Buttons */}
                 <div className="space-y-2 pt-4">
-                  {character.pngUrl && (
+                  {currentScenario.pngUrl && (
                     <motion.button
-                      onClick={() => downloadFile(character.pngUrl!, `${character.name}.png`)}
+                      onClick={() => downloadFile(currentScenario.pngUrl!, `${charData.name}.png`)}
                       className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-4 py-3 rounded-lg transition-all duration-200 font-medium shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-center gap-2"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -182,7 +249,7 @@ export default function CharacterDetailsPage() {
                   )}
                   
                   <motion.button
-                    onClick={() => downloadFile(character.jsonUrl, `${character.name}.json`)}
+                    onClick={() => downloadFile(currentScenario.jsonUrl, `${charData.name}.json`)}
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 py-3 rounded-lg transition-all duration-200 font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -206,10 +273,11 @@ export default function CharacterDetailsPage() {
           >
             {/* First Message */}
             {charData.first_mes && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden transform-none">
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('firstMessage')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 active:bg-gray-700/30 active:scale-100 transition-colors transform-none"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,10 +316,11 @@ export default function CharacterDetailsPage() {
 
             {/* Scenario */}
             {charData.scenario && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden transform-none">
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('scenario')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 active:bg-gray-700/30 active:scale-100 transition-colors transform-none"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,10 +359,11 @@ export default function CharacterDetailsPage() {
 
             {/* Description */}
             {charData.description && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden transform-none">
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('description')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 active:bg-gray-700/30 active:scale-100 transition-colors transform-none"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,10 +402,11 @@ export default function CharacterDetailsPage() {
 
             {/* Personality */}
             {charData.personality && (
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden transform-none">
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection('personality')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 active:bg-gray-700/30 active:scale-100 transition-colors transform-none"
+                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors"
+                  style={{ transform: 'none' }}
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

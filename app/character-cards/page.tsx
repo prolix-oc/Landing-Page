@@ -19,6 +19,7 @@ interface CharacterCard {
   jsonUrl: string | null;
   size: number;
   lastModified: string | null;
+  alternateCount?: number;
 }
 
 function CharacterCardsContent() {
@@ -239,6 +240,12 @@ function CharacterCardsContent() {
                               whileHover={{ scale: 1.03 }}
                               transition={{ duration: 0.2 }}
                             />
+                            {/* Alternate Scenarios Badge */}
+                            {card.alternateCount && card.alternateCount > 0 && (
+                              <div className="absolute top-2 right-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                                +{card.alternateCount} alt{card.alternateCount > 1 ? 's' : ''}
+                              </div>
+                            )}
                           </Link>
                         )}
                         
