@@ -260,3 +260,17 @@ function ExtensionsContent() {
     </div>
   );
 }
+
+export default function ExtensionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen relative">
+        <div className="relative container mx-auto px-4 py-16">
+          <div className="text-center text-gray-400 py-12">Loading...</div>
+        </div>
+      </div>
+    }>
+      <ExtensionsContent />
+    </Suspense>
+  );
+}
