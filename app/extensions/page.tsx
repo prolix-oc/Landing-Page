@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import LoadingSpinner from '@/app/components/LoadingSpinner';
 
 interface Extension {
   id: string;
@@ -98,12 +99,7 @@ function ExtensionsContent() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <motion.div
-              className="inline-block w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            />
-            <p className="mt-4 text-lg">Loading extensions...</p>
+            <LoadingSpinner message="Loading extensions..." />
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -152,12 +148,7 @@ function ExtensionsContent() {
                     transition={{ duration: 0.3 }}
                     className="text-center text-gray-400 py-12"
                   >
-                    <motion.div
-                      className="inline-block w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    />
-                    <p className="mt-4 text-lg">Loading extensions...</p>
+                    <LoadingSpinner message="Loading extensions..." />
                   </motion.div>
                 ) : filteredExtensions.length === 0 ? (
                   <motion.div

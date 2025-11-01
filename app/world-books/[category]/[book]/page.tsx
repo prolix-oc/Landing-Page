@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
+import SmartPagination from '@/app/components/SmartPagination';
 
 interface WorldBookEntry {
   uid: number;
@@ -136,91 +137,10 @@ export default function WorldBookDetailsPage() {
   const endIndex = startIndex + ENTRIES_PER_PAGE;
   const currentEntries = entriesArray.slice(startIndex, endIndex);
 
-  const goToNextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(currentPage + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const goToPrevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  // Generate smart pagination array with ellipsis that shifts based on current page
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 9; // Maximum number of page buttons to show
-    
-    if (totalPages <= maxVisible) {
-      // Show all pages if total is less than max
-      for (let i = 0; i < totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Smart pagination: "1 2 ... middle numbers ... 41 42" format
-      const edgePages = 2; // Always show first 2 and last 2 pages
-      const middlePages = 5; // Always show 5 pages in the middle range
-      const startRange = 5; // Pages 0-4 are the "beginning range"
-      const endRangeStart = totalPages - 6; // Last 6 pages are "end range"
-      
-      // Determine which range we're in
-      if (currentPage < startRange) {
-        // Beginning range: show 1 2 3 4 5 6 ... 41 42
-        for (let i = 0; i < 6; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis-end');
-        // Last 2 pages
-        for (let i = totalPages - 2; i < totalPages; i++) {
-          pages.push(i);
-        }
-      } else if (currentPage >= endRangeStart) {
-        // End range: show 1 2 ... 36 37 38 39 40 41 42
-        // First 2 pages
-        for (let i = 0; i < 2; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis-start');
-        // Last 6 pages
-        for (let i = totalPages - 6; i < totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        // Middle range: show 1 2 ... middle 4 pages ... 41 42
-        // First 2 pages
-        for (let i = 0; i < 2; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis-start');
-        
-        // Middle 4 pages with current page at position 2 (third spot)
-        const middleStart = currentPage - 1;
-        const middleEnd = currentPage + 2;
-        for (let i = middleStart; i <= middleEnd; i++) {
-          pages.push(i);
-        }
-        
-        pages.push('ellipsis-end');
-        // Last page only
-        pages.push(totalPages - 1);
-      }
-    }
-    
-    return pages;
-  };
-
-  const pageNumbers = getPageNumbers();
-  
-  // Determine which range we're in for highlight positioning
-  const startRange = 5;
-  const endRangeStart = totalPages - 6;
-  const isInBeginningRange = currentPage < startRange;
-  const isInEndRange = currentPage >= endRangeStart;
-  const isInMiddleRange = !isInBeginningRange && !isInEndRange;
 
   return (
     <div className="min-h-screen relative">
@@ -463,179 +383,28 @@ export default function WorldBookDetailsPage() {
               </AnimatePresence>
             </div>
 
-            {/* Pagination Controls */}
+            {/* Bottom padding to prevent content from being hidden behind sticky pagination */}
             {totalPages > 1 && (
-              <motion.div
-                className="mt-8 flex items-center justify-center gap-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                {/* Previous Button */}
-                <motion.button
-                  onClick={goToPrevPage}
-                  disabled={currentPage === 0}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                    currentPage === 0
-                      ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
-                  }`}
-                  style={currentPage > 0 ? {
-                    boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)'
-                  } : undefined}
-                  whileHover={currentPage > 0 ? { scale: 1.1 } : {}}
-                  whileTap={currentPage > 0 ? { scale: 0.9 } : {}}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </motion.button>
-
-                {/* Page Tabs */}
-                <motion.div 
-                  className="relative flex bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-full p-1 gap-1 overflow-hidden" 
-                  animate={{ 
-                    width: `${Math.min(pageNumbers.length * 52 + 8, 480)}px` // Dynamic width: 52px per item + 8px padding, max 480px
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30
-                  }}
-                >
-                  {/* Highlight Circle - Position based on actual page button index (excluding ellipsis) */}
-                  {(() => {
-                    // Count only the actual page buttons before the current page (not ellipsis)
-                    let visualPosition = 0;
-                    for (let i = 0; i < pageNumbers.length; i++) {
-                      if (pageNumbers[i] === currentPage) {
-                        break;
-                      }
-                      visualPosition++;
-                    }
-                    
-                    return (
-                      <motion.div
-                        className="absolute top-1 bottom-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full pointer-events-none z-10"
-                        style={{ 
-                          width: '48px',
-                          boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)'
-                        }}
-                        animate={{ 
-                          left: `calc(${visualPosition * 52}px + 0.25rem)`,
-                          boxShadow: [
-                            '0 0 20px rgba(59, 130, 246, 0.4)',
-                            '0 0 25px rgba(59, 130, 246, 0.5)',
-                            '0 0 20px rgba(59, 130, 246, 0.4)'
-                          ]
-                        }}
-                        transition={{ 
-                          left: {
-                            type: "spring", 
-                            stiffness: 400,
-                            damping: 35,
-                            mass: 0.8
-                          },
-                          boxShadow: {
-                            duration: 3,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }
-                        }}
-                      />
-                    );
-                  })()}
-                  
-                  {/* Page Number Buttons */}
-                  <div className="relative flex gap-1">
-                    <AnimatePresence mode="popLayout">
-                      {pageNumbers.map((pageNum, idx) => {
-                        if (typeof pageNum === 'string' && pageNum.startsWith('ellipsis')) {
-                          return (
-                            <motion.div
-                              key={pageNum}
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.8 }}
-                              className="px-2 py-2 flex items-center justify-center flex-shrink-0 gap-0.5"
-                              style={{ width: '48px' }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                              <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                            </motion.div>
-                          );
-                        }
-                      
-                        const page = pageNum as number;
-                        const isActive = currentPage === page;
-                        
-                        return (
-                          <motion.button
-                            key={`page-${page}`}
-                            layout="position"
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            onClick={() => {
-                              setCurrentPage(page);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className={`relative px-4 py-2 rounded-full font-medium flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                              isActive
-                                ? 'text-white'
-                                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/30'
-                            }`}
-                            style={{ width: '48px' }}
-                            whileHover={{ scale: isActive ? 1 : 1.08 }}
-                            whileTap={{ scale: 0.92 }}
-                            transition={{ 
-                              layout: { 
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 40
-                              },
-                              opacity: { duration: 0.15 },
-                              y: { 
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 40
-                              }
-                            }}
-                          >
-                            <span className="relative z-10 text-sm font-semibold">{page + 1}</span>
-                          </motion.button>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-
-                {/* Next Button */}
-                <motion.button
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages - 1}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                    currentPage === totalPages - 1
-                      ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
-                  }`}
-                  style={currentPage < totalPages - 1 ? {
-                    boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)'
-                  } : undefined}
-                  whileHover={currentPage < totalPages - 1 ? { scale: 1.1 } : {}}
-                  whileTap={currentPage < totalPages - 1 ? { scale: 0.9 } : {}}
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </motion.button>
-              </motion.div>
+              <div className="h-24" />
             )}
           </div>
         </div>
       </div>
+
+      {/* Sticky Pagination at Bottom */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
+          <div className="bg-gradient-to-t from-gray-900 via-gray-900/95 to-transparent pt-6 pb-6">
+            <div className="container mx-auto px-4">
+              <SmartPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

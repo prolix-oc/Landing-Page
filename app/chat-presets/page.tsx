@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
+import LoadingSpinner from '@/app/components/LoadingSpinner';
 
 interface Preset {
   name: string;
@@ -42,11 +43,14 @@ function ChatPresetsContent() {
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Check URL parameters on mount
+  // Check URL parameters on mount and set default to "Lucid Loom"
   useEffect(() => {
     const presetParam = searchParams.get('preset');
     if (presetParam) {
       setSelectedPreset(decodeURIComponent(presetParam));
+    } else {
+      // Default to "Lucid Loom" if no preset parameter is present
+      setSelectedPreset('Lucid Loom');
     }
   }, [searchParams]);
 
@@ -181,7 +185,9 @@ function ChatPresetsContent() {
         </motion.div>
 
         {loading ? (
-          <div className="text-center text-gray-400 py-12">Loading presets...</div>
+          <div className="text-center text-gray-400 py-12">
+            <LoadingSpinner message="Loading presets..." />
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Presets Sidebar */}
@@ -246,12 +252,7 @@ function ChatPresetsContent() {
                     transition={{ duration: 0.3 }}
                     className="text-center text-gray-400 py-12"
                   >
-                    <motion.div
-                      className="inline-block w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    />
-                    <p className="mt-4 text-lg">Loading versions...</p>
+                    <LoadingSpinner message="Loading versions..." />
                   </motion.div>
                 ) : !hasVersions ? (
                   <motion.div

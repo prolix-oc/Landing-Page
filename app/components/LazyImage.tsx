@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import LoadingSpinner from './LoadingSpinner';
 
 interface LazyImageProps {
   src: string;
@@ -50,24 +51,7 @@ export default function LazyImage({ src, alt, className = '', onLoad }: LazyImag
             transition={{ duration: 0.2 }}
             className="absolute inset-0 flex items-center justify-center bg-gray-900/50"
           >
-            {/* Cute spinning loading indicator */}
-            <div className="relative">
-              {/* Outer rotating ring */}
-              <motion.div
-                className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
-              
-              {/* Inner pulsing dot */}
-              <motion.div
-                className="absolute inset-0 flex items-center justify-center"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <div className="w-3 h-3 bg-blue-400 rounded-full shadow-lg shadow-blue-400/50" />
-              </motion.div>
-            </div>
+            <LoadingSpinner size="md" />
           </motion.div>
         )}
 

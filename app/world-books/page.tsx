@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
+import LoadingSpinner from '@/app/components/LoadingSpinner';
 
 interface Category {
   name: string;
@@ -149,7 +150,9 @@ function WorldBooksContent() {
         </motion.div>
 
         {loading ? (
-          <div className="text-center text-gray-400 py-12">Loading categories...</div>
+          <div className="text-center text-gray-400 py-12">
+            <LoadingSpinner message="Loading categories..." />
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Categories Sidebar */}
@@ -215,12 +218,7 @@ function WorldBooksContent() {
                     transition={{ duration: 0.3 }}
                     className="text-center text-gray-400 py-12"
                   >
-                    <motion.div
-                      className="inline-block w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    />
-                    <p className="mt-4 text-lg">Loading world books...</p>
+                    <LoadingSpinner message="Loading world books..." />
                   </motion.div>
                 ) : !hasFiles ? (
                   <motion.div
