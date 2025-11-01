@@ -9,6 +9,12 @@ import { downloadFile } from '@/lib/download';
 interface Preset {
   name: string;
   path: string;
+  category: string;
+}
+
+interface PresetCategories {
+  standard: Preset[];
+  prolix: Preset[];
 }
 
 interface Version {
@@ -24,7 +30,7 @@ interface Version {
 function ChatPresetsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [presets, setPresets] = useState<Preset[]>([]);
+  const [presetCategories, setPresetCategories] = useState<PresetCategories>({ standard: [], prolix: [] });
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +51,7 @@ function ChatPresetsContent() {
         const response = await fetch('/api/chat-presets');
         const data = await response.json();
         if (data.success) {
-          setPresets(data.presets);
+          setPresetCategories(data.presets);
         }
       } catch (error) {
         console.error('Error fetching presets:', error);
@@ -110,8 +116,34 @@ function ChatPresetsContent() {
     }
   };
 
+  // Helper function to format version name (remove .json and extract version)
+  const formatVersionName = (name: string) => {
+    // Remove .json extension
+    let formatted = name.replace('.json', '');
+    return formatted;
+  };
+
+  // Helper function to extract version number and descriptors (e.g., v1.0, v1.0 Hotfix)
+  const extractVersion = (name: string) => {
+    // Match version pattern with optional descriptors (but not "Prolix Edition")
+    const versionMatch = name.match(/v\d+\.\d+(?:\s+(?!Prolix\s+Edition)[A-Za-z]+)?/);
+    return versionMatch ? versionMatch[0] : null;
+  };
+
+  // Helper function to get name without version
+  const getNameWithoutVersion = (name: string) => {
+    // Remove .json extension first
+    let formatted = name.replace('.json', '');
+    // Remove version pattern with optional descriptor (but not "Prolix Edition") and any trailing spaces
+    formatted = formatted.replace(/\s*v\d+\.\d+(?:\s+(?!Prolix\s+Edition)[A-Za-z]+)?\s*/g, '').trim();
+    return formatted;
+  };
+
   const latestVersions = versions.filter(v => v.isLatest);
   const historicalVersions = versions.filter(v => !v.isLatest);
+
+  // Combine all presets for rendering
+  const allPresets = [...presetCategories.standard, ...presetCategories.prolix];
 
   return (
     <div className="min-h-screen relative">
@@ -151,29 +183,65 @@ function ChatPresetsContent() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 sticky top-4">
-                <h2 className="text-xl font-bold text-white mb-4">Presets</h2>
-                <div className="space-y-2">
-                  {presets.map((preset, index) => (
-                    <motion.button
-                      key={preset.name}
-                      onClick={() => handlePresetChange(preset.name)}
-                      className={`w-full text-left px-4 py-3 rounded-lg ${
-                        selectedPreset === preset.name
-                          ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
-                      }`}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      layout
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {preset.name}
-                    </motion.button>
-                  ))}
-                </div>
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 sticky top-4 space-y-6">
+                <h2 className="text-xl font-bold text-white">Presets</h2>
+                
+                {/* Standard Presets */}
+                {presetCategories.standard.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide px-2">Standard</h3>
+                    {presetCategories.standard.map((preset, index) => (
+                      <motion.button
+                        key={preset.name}
+                        onClick={() => handlePresetChange(preset.name)}
+                        className={`w-full text-left px-4 py-3 rounded-lg text-sm ${
+                          selectedPreset === preset.name
+                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        }`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        layout
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {preset.name}
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Prolix Preferred Presets */}
+                {presetCategories.prolix.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wide px-2 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      Prolix Preferred
+                    </h3>
+                    {presetCategories.prolix.map((preset, index) => (
+                      <motion.button
+                        key={preset.name}
+                        onClick={() => handlePresetChange(preset.name)}
+                        className={`w-full text-left px-4 py-3 rounded-lg text-sm ${
+                          selectedPreset === preset.name
+                            ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                            : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                        }`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: (presetCategories.standard.length + index) * 0.05 }}
+                        layout
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {preset.name}
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -253,7 +321,10 @@ function ChatPresetsContent() {
                           </motion.svg>
                           <h2 className="text-xl font-bold text-white">Latest Version</h2>
                         </div>
-                        {latestVersions.map((version) => (
+                        {latestVersions.map((version) => {
+                          const versionNum = extractVersion(version.name);
+                          const displayName = getNameWithoutVersion(version.name);
+                          return (
                           <motion.div
                             key={version.path}
                             className="bg-linear-to-br from-purple-900/30 to-gray-800/50 backdrop-blur-sm border-2 border-purple-500/50 rounded-xl p-4 sm:p-6 hover:border-purple-400 transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30"
@@ -262,9 +333,14 @@ function ChatPresetsContent() {
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 sm:gap-3 mb-3 flex-wrap">
-                                  <h3 className="text-base sm:text-lg font-semibold text-white wrap-break-word" title={version.name}>
-                                    {version.name}
+                                  <h3 className="text-base sm:text-lg font-semibold text-white wrap-break-word" title={formatVersionName(version.name)}>
+                                    {displayName}
                                   </h3>
+                                  {versionNum && (
+                                    <span className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded font-mono">
+                                      {versionNum}
+                                    </span>
+                                  )}
                                   <motion.span 
                                     className="bg-linear-to-r from-purple-600 to-purple-500 text-white text-xs px-2 sm:px-3 py-1 rounded-full font-medium shadow-lg whitespace-nowrap"
                                     animate={{ scale: [1, 1.05, 1] }}
@@ -316,7 +392,8 @@ function ChatPresetsContent() {
                               </div>
                             </div>
                           </motion.div>
-                        ))}
+                          );
+                        })}
                       </motion.div>
                     )}
 
@@ -335,7 +412,10 @@ function ChatPresetsContent() {
                           <span className="text-sm text-gray-500 ml-auto">({historicalVersions.length})</span>
                         </div>
                         <div className="space-y-3">
-                          {historicalVersions.map((version, index) => (
+                          {historicalVersions.map((version, index) => {
+                            const versionNum = extractVersion(version.name);
+                            const displayName = getNameWithoutVersion(version.name);
+                            return (
                             <motion.div
                               key={version.path}
                               initial={{ opacity: 0, x: -20 }}
@@ -346,9 +426,16 @@ function ChatPresetsContent() {
                             >
                               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="text-base sm:text-lg font-semibold text-white mb-2 wrap-break-word" title={version.name}>
-                                    {version.name}
-                                  </h3>
+                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                    <h3 className="text-base sm:text-lg font-semibold text-white wrap-break-word" title={formatVersionName(version.name)}>
+                                      {displayName}
+                                    </h3>
+                                    {versionNum && (
+                                      <span className="bg-gray-700/70 text-gray-300 text-xs px-2 py-1 rounded font-mono">
+                                        {versionNum}
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="flex flex-col sm:flex-row sm:gap-4 gap-2 text-xs sm:text-sm text-gray-400">
                                     <span className="flex items-center gap-1">
                                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,7 +480,8 @@ function ChatPresetsContent() {
                                 </div>
                               </div>
                             </motion.div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </motion.div>
                     )}

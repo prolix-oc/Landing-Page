@@ -6,15 +6,33 @@ export async function GET() {
     const contents = await getDirectoryContents('Chat Completion');
     
     // Filter out directories only, these are the preset categories
-    const presets = contents.filter(item => item.type === 'dir');
+    const allPresets = contents.filter(item => item.type === 'dir');
+    
+    // Categorize presets into standard and Prolix Preferred
+    const standardPresets: { name: string; path: string; category: string }[] = [];
+    const prolixPresets: { name: string; path: string; category: string }[] = [];
+    
+    allPresets.forEach(preset => {
+      const presetData = {
+        name: preset.name,
+        path: preset.path,
+        category: preset.name.toLowerCase().includes('prolix') ? 'prolix' : 'standard'
+      };
+      
+      if (presetData.category === 'prolix') {
+        prolixPresets.push(presetData);
+      } else {
+        standardPresets.push(presetData);
+      }
+    });
     
     return NextResponse.json(
       {
         success: true,
-        presets: presets.map(preset => ({
-          name: preset.name,
-          path: preset.path
-        }))
+        presets: {
+          standard: standardPresets,
+          prolix: prolixPresets
+        }
       },
       {
         headers: {

@@ -44,11 +44,36 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
-      {/* Animated background elements */}
+      {/* Animated background elements - optimized for Safari */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-48 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
-        <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s', animationDelay: '2s' }}></div>
+        <div 
+          className="absolute top-1/4 -left-48 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" 
+          style={{ 
+            animationDuration: '4s',
+            willChange: 'opacity',
+            backfaceVisibility: 'hidden',
+            transform: 'translateZ(0)'
+          }}
+        ></div>
+        <div 
+          className="absolute bottom-1/4 -right-48 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" 
+          style={{ 
+            animationDuration: '6s', 
+            animationDelay: '1s',
+            willChange: 'opacity',
+            backfaceVisibility: 'hidden',
+            transform: 'translateZ(0)'
+          }}
+        ></div>
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" 
+          style={{ 
+            animationDuration: '8s', 
+            animationDelay: '2s',
+            willChange: 'opacity',
+            backfaceVisibility: 'hidden'
+          }}
+        ></div>
       </div>
 
       {/* Main content container - centered for desktop/tablet */}
@@ -75,18 +100,47 @@ export default function Home() {
               key={category.href}
               href={category.href}
               className="stagger-item group relative"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              style={{ 
+                animationDelay: `${index * 0.1}s`,
+                willChange: 'transform'
+              }}
             >
               {/* Glow effect on hover */}
-              <div className={`absolute -inset-0.5 bg-gradient-to-r ${category.gradient} rounded-2xl opacity-0 group-hover:opacity-75 blur transition-opacity duration-500`}></div>
+              <div 
+                className={`absolute -inset-0.5 bg-gradient-to-r ${category.gradient} rounded-2xl opacity-0 group-hover:opacity-75 blur transition-opacity duration-500`}
+                style={{
+                  willChange: 'opacity',
+                  backfaceVisibility: 'hidden',
+                  transform: 'translateZ(0)'
+                }}
+              ></div>
               
               {/* Card */}
-              <div className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 group-hover:bg-gray-900/90 backdrop-blur-xl border border-gray-800 group-hover:border-gray-700 transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-2xl">
+              <div 
+                className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 group-hover:bg-gray-900/90 backdrop-blur-xl border border-gray-800 transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-2xl"
+                style={{
+                  willChange: 'transform, background-color, border-color',
+                  backfaceVisibility: 'hidden',
+                  transform: 'translateZ(0)'
+                }}
+              >
                 {/* Gradient overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 group-hover:opacity-30 transition-opacity duration-500`}></div>
+                <div 
+                  className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 group-hover:opacity-30 transition-opacity duration-500`}
+                  style={{
+                    willChange: 'opacity',
+                    backfaceVisibility: 'hidden'
+                  }}
+                ></div>
                 
                 {/* Accent bar */}
-                <div className={`absolute top-0 left-0 right-0 h-1 ${category.accentColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}></div>
+                <div 
+                  className={`absolute top-0 left-0 right-0 h-1 ${category.accentColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}
+                  style={{
+                    willChange: 'transform',
+                    backfaceVisibility: 'hidden'
+                  }}
+                ></div>
                 
                 <div className="relative p-6 sm:p-8 lg:p-10">
                   {/* Icon with enhanced styling */}
