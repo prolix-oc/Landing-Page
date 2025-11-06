@@ -4,6 +4,15 @@ export interface ComponentData {
   data: Record<string, any>;
 }
 
+export interface AltCard {
+  id: string;
+  name: string;
+  description?: string;
+  fileUrl: string;
+  thumbnail?: string;
+  tags?: string[];
+}
+
 export interface CharacterData {
   name: string;
   slug: string;
@@ -17,6 +26,7 @@ export interface CharacterData {
     font: string;
   };
   layout: ComponentData[];
+  altCards?: AltCard[];
   createdAt: string;
   updatedAt: string;
 }
