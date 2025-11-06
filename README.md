@@ -1,13 +1,12 @@
-# ST Presets Landing Page
+# BunnyWorks
 
-A Next.js landing page for browsing and downloading SillyTavern presets from the [prolix-oc/ST-Presets](https://github.com/prolix-oc/ST-Presets) GitHub repository.
+A Next.js landing page for browsing and downloading SillyTavern content from the [Coneja-Chibi/BunnyWorks](https://github.com/Coneja-Chibi/BunnyWorks) GitHub repository.
 
 ## Features
 
-- 🎭 **Character Cards** - Browse character cards organized by categories (ZZZ, Umamusume, Original Content)
-- 💬 **Chat Completion Presets** - Download the latest chat completion presets with version tracking
-- 📚 **World Books** - Access world books for enhanced storytelling
-- 🔧 **Extensions** - Discover community-created extensions
+- 🎭 **Character Cards** - Browse character cards organized by categories
+- 📚 **Worldbooks** - Access worldbooks for enhanced storytelling
+- 🔧 **Extensions** - Discover custom extensions
 - 🚀 **GitHub API Integration** - Automatically fetches the latest content from GitHub
 - ⚡ **Server-Side Caching** - Reduces API calls with 5-minute cache duration
 - 🎨 **Modern UI** - Built with Tailwind CSS for a beautiful, responsive design
@@ -170,6 +169,6 @@ This project is open source and available under the MIT License.
 
 ## Credits
 
-- Data sourced from [prolix-oc/ST-Presets](https://github.com/prolix-oc/ST-Presets)
+- Data sourced from [Coneja-Chibi/BunnyWorks](https://github.com/Coneja-Chibi/BunnyWorks)
 - Built with [Next.js](https://nextjs.org/)
 - Styled with [Tailwind CSS](https://tailwindcss.com/)

@@ -19,21 +19,7 @@ export default function Home() {
       iconColor: 'text-cyan-100'
     },
     {
-      title: 'Chat Completion Presets',
-      description: 'Get the latest and greatest in ST Chat Presets',
-      href: '/chat-presets',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      ),
-      gradient: 'from-purple-500 via-pink-500 to-purple-600',
-      accentColor: 'bg-pink-500',
-      iconBg: 'bg-pink-600',
-      iconColor: 'text-pink-100'
-    },
-    {
-      title: 'World Books',
+      title: 'Worldbooks',
       description: 'Enhance your RPs with detailed world information',
       href: '/world-books',
       icon: (
@@ -72,13 +58,13 @@ export default function Home() {
           <div className="inline-block mb-6">
             <div className="relative">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">
-                Prolix's Preset Stash
+                BunnyWorks
               </h1>
               <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 opacity-20 blur-lg"></div>
             </div>
           </div>
           <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            A collection of character cards, chat presets, world books, and extensions for <span className="text-cyan-400 font-semibold">SillyTavern</span>—made by yours truly.
+            A collection of character cards, worldbooks, and extensions for <span className="text-cyan-400 font-semibold">SillyTavern</span>—made by yours truly.
           </p>
         </div>
 
@@ -167,13 +153,13 @@ export default function Home() {
           <div className="inline-block px-6 py-3 rounded-full bg-gray-900/50 backdrop-blur-sm border border-gray-800">
             <p className="text-gray-400 text-sm sm:text-base">
               Data sourced from{' '}
-              <a 
-                href="https://github.com/prolix-oc/ST-Presets" 
-                target="_blank" 
+              <a
+                href="https://github.com/Coneja-Chibi/BunnyWorks"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium inline-flex items-center gap-1 group"
               >
-                prolix-oc/ST-Presets
+                Coneja-Chibi/BunnyWorks
                 <svg className="w-4 h-4 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
                   <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"></path>

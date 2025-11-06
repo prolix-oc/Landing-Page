@@ -53,8 +53,8 @@ export interface CharacterCardCache {
 }
 
 const GITHUB_API_BASE = 'https://api.github.com';
-const REPO_OWNER = 'prolix-oc';
-const REPO_NAME = 'ST-Presets';
+const REPO_OWNER = 'Coneja-Chibi';
+const REPO_NAME = 'BunnyMo';
 const CACHE_DURATION = 30 * 1000; // 30 seconds in milliseconds
 const THUMBNAIL_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for thumbnails
 const CHARACTER_CARD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for character card JSON

@@ -315,3 +315,45 @@ a:active {
   background: rgba(17, 24, 39, 0.5); /* gray-900/50 equivalent */
   backdrop-filter: blur(24px);
 }
+
+/* RGB animated border for primary variants - smooth rainbow slide */
+@keyframes rgb-slide {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-rgb-border {
+  background: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff7f00,
+    #ffff00,
+    #00ff00,
+    #0000ff,
+    #4b0082,
+    #9400d3
+  );
+  background-size: 300% 100%;
+  animation: rgb-slide 3s linear infinite;
+}
+
+/* Subtle glow pulse for primary badge */
+@keyframes bunny-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(168, 85, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.8), 0 0 60px rgba(168, 85, 247, 0.6);
+  }
+}
+
+.bunny-glow {
+  animation: bunny-glow 2s ease-in-out infinite;
+}
