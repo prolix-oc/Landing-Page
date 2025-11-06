@@ -37,7 +37,8 @@
       "id": "1",
       "name": "Default Portrait",
       "url": "/characters/example-bunny/variant-default.png",
-      "thumbnail": "/characters/example-bunny/variant-default-thumb.png"
+      "thumbnail": "/characters/example-bunny/variant-default-thumb.png",
+      "isPrimary": true
     },
     {
       "id": "2",

@@ -79,36 +79,59 @@ export default function VariantGallery({
             whileTap={{ scale: 0.95 }}
             onClick={() => handleVariantClick(variant)}
             className={`relative rounded-xl overflow-hidden cursor-pointer transition-all ${
-              selectedVariantId === variant.id
+              variant.isPrimary
+                ? 'ring-4 animate-rgb-border shadow-2xl shadow-purple-500/50'
+                : selectedVariantId === variant.id
                 ? 'ring-4 ring-purple-500 shadow-2xl shadow-purple-500/50'
                 : 'ring-2 ring-gray-700 hover:ring-purple-400'
             }`}
+            style={variant.isPrimary ? {
+              background: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3) 0 0 / 300% 100%',
+              animation: 'rgb-slide 3s linear infinite',
+              padding: '4px',
+            } : undefined}
           >
-            {/* Protection overlay */}
-            <div
-              className="absolute inset-0 z-10"
-              onContextMenu={preventImageActions}
-              onDragStart={preventImageActions}
-              style={{ userSelect: 'none', pointerEvents: 'auto' }}
-            />
-            <img
-              src={variant.thumbnail || variant.url}
-              alt={variant.name}
-              className="w-full aspect-square object-cover select-none"
-              draggable="false"
-              onContextMenu={preventImageActions}
-              onDragStart={preventImageActions}
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-              <p className="text-white font-medium text-sm truncate">{variant.name}</p>
-            </div>
-            {selectedVariantId === variant.id && (
-              <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+            {/* Inner container to create border effect */}
+            <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-900">
+              {/* Primary bunny badge */}
+              {variant.isPrimary && (
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  className="absolute top-2 left-2 z-20 bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 text-white rounded-full p-2 shadow-lg animate-pulse"
+                  title="Primary Variant"
+                >
+                  <span className="text-2xl">🐰</span>
+                </motion.div>
+              )}
+
+              {/* Protection overlay */}
+              <div
+                className="absolute inset-0 z-10"
+                onContextMenu={preventImageActions}
+                onDragStart={preventImageActions}
+                style={{ userSelect: 'none', pointerEvents: 'auto' }}
+              />
+              <img
+                src={variant.thumbnail || variant.url}
+                alt={variant.name}
+                className="w-full aspect-square object-cover select-none"
+                draggable="false"
+                onContextMenu={preventImageActions}
+                onDragStart={preventImageActions}
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                <p className="text-white font-medium text-sm truncate">{variant.name}</p>
               </div>
-            )}
+              {selectedVariantId === variant.id && !variant.isPrimary && (
+                <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-2 z-20">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
           </motion.div>
         ))}
       </div>

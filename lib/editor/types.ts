@@ -41,6 +41,7 @@ export interface VariantImage {
   name: string;
   url: string;
   thumbnail?: string;
+  isPrimary?: boolean; // Mark as featured/primary variant
 }
 
 export interface CharacterData {
