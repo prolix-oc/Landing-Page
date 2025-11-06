@@ -13,6 +13,36 @@ export interface AltCard {
   tags?: string[];
 }
 
+// Character card data for AI chat (SillyTavern, etc.)
+export interface CharacterCardData {
+  spec: string; // "chara_card_v2"
+  spec_version: string; // "2.0"
+  data: {
+    name: string;
+    description: string;
+    personality: string;
+    scenario: string;
+    first_mes: string;
+    mes_example: string;
+    creator_notes?: string;
+    system_prompt?: string;
+    post_history_instructions?: string;
+    alternate_greetings?: string[];
+    tags?: string[];
+    creator?: string;
+    character_version?: string;
+    extensions?: Record<string, any>;
+  };
+}
+
+// Variant images for the character
+export interface VariantImage {
+  id: string;
+  name: string;
+  url: string;
+  thumbnail?: string;
+}
+
 export interface CharacterData {
   name: string;
   slug: string;
@@ -26,7 +56,9 @@ export interface CharacterData {
     font: string;
   };
   layout: ComponentData[];
-  altCards?: AltCard[];
+  altCards?: AltCard[]; // Legacy, keeping for backwards compatibility
+  cardData?: CharacterCardData; // AI chat card data
+  variants?: VariantImage[]; // Variant images for download
   createdAt: string;
   updatedAt: string;
 }
