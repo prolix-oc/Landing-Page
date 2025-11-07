@@ -131,10 +131,11 @@ function WorldBooksContent() {
 
   return (
     <div className="min-h-screen relative retro-scanlines">
-      {/* Retro floating shapes background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-15">
-        <div className="absolute top-20 right-20 w-32 h-32 rounded-full bg-gradient-to-br from-[var(--y2k-pink)] to-[var(--y2k-lavender)] blur-3xl animate-float"></div>
-        <div className="absolute bottom-40 left-20 w-40 h-40 rounded-full bg-gradient-to-br from-[var(--y2k-mint)] to-[var(--y2k-blue)] blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
+      {/* RGB floating shapes background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-20">
+        <div className="absolute top-20 right-20 w-32 h-32 rounded-full bg-gradient-to-br from-[var(--hot-pink)] to-[var(--deep-magenta)] blur-3xl animate-float"></div>
+        <div className="absolute bottom-40 left-20 w-40 h-40 rounded-full bg-gradient-to-br from-[var(--electric-blue)] to-[var(--rgb-cyan)] blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-36 h-36 rounded-full bg-gradient-to-br from-[var(--deep-purple)] to-[var(--rgb-magenta)] blur-3xl animate-float" style={{ animationDelay: '1.5s' }}></div>
       </div>
 
       <div className="relative container mx-auto px-4 py-16">
@@ -176,7 +177,7 @@ function WorldBooksContent() {
             >
               <div className="retro-box p-6 sticky top-4">
                 <div className="retro-window-controls"></div>
-                <h2 className="text-xl font-bold mb-4 pt-6" style={{ color: 'var(--y2k-pink)' }}>
+                <h2 className="text-xl font-bold mb-4 pt-6" style={{ color: 'var(--hot-pink)' }}>
                   📁 Packs
                 </h2>
                 <div className="space-y-2">
@@ -187,7 +188,7 @@ function WorldBooksContent() {
                       className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-all ${
                         selectedCategory === category.name
                           ? 'retro-button'
-                          : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border-2 border-transparent hover:border-[var(--y2k-purple)]'
+                          : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border-2 border-transparent hover:border-[var(--deep-purple)]'
                       }`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -266,7 +267,7 @@ function WorldBooksContent() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
                       >
-                        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--y2k-mint)' }}>
+                        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--electric-blue)' }}>
                           <span className="text-2xl">📄</span>
                           Files
                         </h3>
@@ -286,8 +287,8 @@ function WorldBooksContent() {
                                   <span className="text-3xl group-hover:scale-110 transition-transform">📋</span>
                                   <div className="flex-1 min-w-0">
                                     <Link href={`/world-books/${encodeURIComponent(selectedCategory as string)}/${encodeURIComponent(file.name)}`}>
-                                      <h4 className="text-base font-bold mb-1 truncate hover:text-[var(--y2k-blue)] transition-colors cursor-pointer"
-                                          style={{ color: 'var(--y2k-mint)' }}
+                                      <h4 className="text-base font-bold mb-1 truncate hover:text-[var(--rgb-cyan)] transition-colors cursor-pointer"
+                                          style={{ color: 'var(--electric-blue)' }}
                                           title={displayName}>
                                         {displayName}
                                       </h4>
@@ -301,7 +302,7 @@ function WorldBooksContent() {
                                     className="flex-1"
                                   >
                                     <motion.button
-                                      className="w-full bg-gradient-to-r from-[var(--y2k-blue)] to-[var(--y2k-mint)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--y2k-purple)] shadow-lg"
+                                      className="w-full bg-gradient-to-r from-[var(--electric-blue)] to-[var(--rgb-cyan)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--deep-purple)] shadow-lg"
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
                                     >
@@ -310,7 +311,7 @@ function WorldBooksContent() {
                                   </Link>
                                   <motion.button
                                     onClick={() => downloadFile(file.downloadUrl, file.name)}
-                                    className="bg-gradient-to-r from-[var(--y2k-pink)] to-[var(--y2k-lavender)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--y2k-purple)] shadow-lg"
+                                    className="bg-gradient-to-r from-[var(--hot-pink)] to-[var(--deep-magenta)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--rgb-magenta)] shadow-lg"
                                     title="Download"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -334,7 +335,7 @@ function WorldBooksContent() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.15 }}
                       >
-                        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--y2k-pink)' }}>
+                        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--neon-pink)' }}>
                           <span className="text-2xl">⭐</span>
                           Featured
                         </h3>
@@ -347,15 +348,15 @@ function WorldBooksContent() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.4, delay: index * 0.05 }}
-                                className="retro-card group hover:scale-105 transition-transform duration-200 border-2 border-[var(--y2k-pink)]"
+                                className="retro-card group hover:scale-105 transition-transform duration-200 border-2 border-[var(--neon-pink)]"
                                 whileHover={{ y: -5 }}
                               >
                                 <div className="flex items-start gap-3 mb-3">
                                   <span className="text-3xl group-hover:scale-110 transition-transform">✨</span>
                                   <div className="flex-1 min-w-0">
                                     <Link href={`/world-books/${encodeURIComponent(selectedCategory as string)}/${encodeURIComponent(file.name)}`}>
-                                      <h4 className="text-base font-bold mb-1 truncate hover:text-[var(--y2k-pink)] transition-colors cursor-pointer"
-                                          style={{ color: 'var(--y2k-lavender)' }}
+                                      <h4 className="text-base font-bold mb-1 truncate hover:text-[var(--hot-pink)] transition-colors cursor-pointer"
+                                          style={{ color: 'var(--deep-magenta)' }}
                                           title={displayName}>
                                         {displayName}
                                       </h4>
@@ -369,7 +370,7 @@ function WorldBooksContent() {
                                     className="flex-1"
                                   >
                                     <motion.button
-                                      className="w-full bg-gradient-to-r from-[var(--y2k-blue)] to-[var(--y2k-mint)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--y2k-purple)] shadow-lg"
+                                      className="w-full bg-gradient-to-r from-[var(--electric-blue)] to-[var(--rgb-cyan)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--deep-purple)] shadow-lg"
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
                                     >
@@ -378,7 +379,7 @@ function WorldBooksContent() {
                                   </Link>
                                   <motion.button
                                     onClick={() => downloadFile(file.downloadUrl, file.name)}
-                                    className="bg-gradient-to-r from-[var(--y2k-pink)] to-[var(--y2k-lavender)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--y2k-purple)] shadow-lg"
+                                    className="bg-gradient-to-r from-[var(--hot-pink)] to-[var(--deep-magenta)] text-black px-3 py-2 rounded-lg font-semibold text-sm border-2 border-[var(--rgb-magenta)] shadow-lg"
                                     title="Download"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}

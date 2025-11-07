@@ -73,63 +73,76 @@ function ExtensionsContent() {
   const filteredExtensions = extensions.filter(ext => ext.category === selectedCategory);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative retro-scanlines">
+      {/* RGB floating shapes background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-20">
+        <div className="absolute top-20 left-20 w-32 h-32 rounded-full bg-gradient-to-br from-[var(--deep-purple)] to-[var(--rgb-magenta)] blur-3xl animate-float"></div>
+        <div className="absolute bottom-40 right-20 w-40 h-40 rounded-full bg-gradient-to-br from-[var(--neon-green)] to-[var(--rgb-lime)] blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 right-1/4 w-36 h-36 rounded-full bg-gradient-to-br from-[var(--rgb-cyan)] to-[var(--electric-blue)] blur-3xl animate-float" style={{ animationDelay: '1.5s' }}></div>
+      </div>
+
       <div className="relative container mx-auto px-4 py-16">
-        {/* Header */}
-        <motion.div 
+        {/* Retro Header */}
+        <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link href="/" className="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center mb-4">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/" className="retro-button inline-flex items-center mb-6 text-sm">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Home
+            Back Home
           </Link>
-          <h1 className="text-5xl font-bold text-white mb-4">Extensions</h1>
+          <h1 className="text-5xl font-bold retro-glow-text mb-4 flex items-center gap-3">
+            <span className="text-6xl">⚙️</span>
+            Extensions
+          </h1>
           <p className="text-xl text-gray-300">Extend functionality with custom extensions</p>
         </motion.div>
 
+        {/* Retro divider */}
+        <div className="retro-divider mb-8"></div>
+
         {loading ? (
-          <motion.div 
-            className="text-center text-gray-400 py-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
+          <div className="retro-box text-center py-12">
             <LoadingSpinner message="Loading extensions..." />
-          </motion.div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Categories Sidebar */}
-            <motion.div 
+            {/* Retro Categories Sidebar */}
+            <motion.div
               className="lg:col-span-1"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 sticky top-4">
-                <h2 className="text-xl font-bold text-white mb-4">Categories</h2>
+              <div className="retro-box p-6 sticky top-4">
+                <div className="retro-window-controls"></div>
+                <h2 className="text-xl font-bold mb-4 pt-6" style={{ color: 'var(--neon-green)' }}>
+                  🎛️ Categories
+                </h2>
                 <div className="space-y-2">
                   {CATEGORIES.map((category, index) => (
                     <motion.button
                       key={category.id}
                       onClick={() => handleCategoryChange(category.id)}
-                      className={`w-full text-left px-4 py-3 rounded-lg ${
+                      className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-all ${
                         selectedCategory === category.id
-                          ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/30'
-                          : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+                          ? 'retro-button'
+                          : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 border-2 border-transparent hover:border-[var(--neon-green)]'
                       }`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
-                      layout
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, x: 4 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      {category.name}
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">{category.id === 'prolix' ? '⭐' : '💫'}</span>
+                        <span>{category.name}</span>
+                      </span>
                     </motion.button>
                   ))}
                 </div>
@@ -146,7 +159,7 @@ function ExtensionsContent() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="text-center text-gray-400 py-12"
+                    className="retro-box text-center py-12"
                   >
                     <LoadingSpinner message="Loading extensions..." />
                   </motion.div>
@@ -157,17 +170,18 @@ function ExtensionsContent() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-12 text-center"
+                    className="retro-box p-12 text-center"
                   >
-                    <motion.div 
+                    <motion.div
                       className="text-6xl mb-4"
                       animate={{ rotate: [0, 10, -10, 0] }}
                       transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
                     >
                       🔧
                     </motion.div>
-                    <p className="text-xl text-gray-400 mb-4">No extensions available yet</p>
-                    <p className="text-gray-500">Check back later for {selectedCategory === 'prolix' ? 'new' : 'recommended'} extensions</p>
+                    <p className="text-xl text-gray-300 mb-4">No extensions available yet</p>
+                    <p className="text-gray-400">Check back later for {selectedCategory === 'prolix' ? 'new' : 'recommended'} extensions</p>
+                    <div className="retro-badge mt-4">✨ Coming soon!</div>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -184,11 +198,11 @@ function ExtensionsContent() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: index * 0.1 }}
-                        className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden hover:border-orange-600 hover:shadow-2xl hover:shadow-orange-500/20 transition-all group"
-                        whileHover={{ scale: 1.03, y: -5 }}
+                        className="retro-card group hover:scale-105 transition-transform duration-200"
+                        whileHover={{ y: -5 }}
                       >
                         {/* Thumbnail */}
-                        <div className="h-48 bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center overflow-hidden relative">
+                        <div className="h-48 bg-gradient-to-br from-[var(--deep-purple)]/30 to-[var(--neon-green)]/30 flex items-center justify-center overflow-hidden relative rounded-t-lg">
                           <motion.div
                             className="w-full h-full relative"
                             whileHover={{ scale: 1.05 }}
@@ -206,14 +220,17 @@ function ExtensionsContent() {
 
                         {/* Content */}
                         <div className="p-6">
-                          <h3 className="text-xl font-bold text-white mb-2">{extension.name}</h3>
-                          <p className="text-gray-400 mb-4 line-clamp-3">{extension.description}</p>
-                          
+                          <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--neon-green)' }}>
+                            <span className="text-2xl mr-2">🔌</span>
+                            {extension.name}
+                          </h3>
+                          <p className="text-gray-300 mb-4 line-clamp-3">{extension.description}</p>
+
                           <motion.a
                             href={extension.repoUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white px-6 py-2 rounded-lg transition-colors shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50"
+                            className="inline-flex items-center bg-gradient-to-r from-[var(--deep-purple)] to-[var(--rgb-magenta)] text-white px-6 py-2 rounded-lg font-semibold border-2 border-[var(--neon-pink)] shadow-lg transition-all hover:shadow-xl"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                           >
