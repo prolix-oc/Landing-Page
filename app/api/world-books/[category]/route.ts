@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents } from '@/lib/github';
+import { getAllFilesRecursively } from '@/lib/github';
 
 export async function GET(
   request: Request,
@@ -8,14 +8,15 @@ export async function GET(
   try {
     const { category } = await params;
     const decodedCategory = decodeURIComponent(category);
-    const path = `World Books/${decodedCategory}`;
-    
-    const files = await getDirectoryContents(path);
-    
+    const path = `BunnMo Packs/${decodedCategory}`;
+
+    // Recursively fetch ALL files from this category, including nested subdirectories
+    const files = await getAllFilesRecursively(path);
+
     return NextResponse.json(
       {
         success: true,
-        files: files.filter(f => f.type === 'file').map(file => ({
+        files: files.map(file => ({
           name: file.name,
           path: file.path,
           downloadUrl: file.download_url,

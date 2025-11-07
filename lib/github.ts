@@ -208,6 +208,27 @@ export async function getDirectoryContents(dirPath: string): Promise<GitHubFile[
   return Array.isArray(contents) ? contents : [];
 }
 
+/**
+ * Recursively fetches all files from a directory and its subdirectories
+ */
+export async function getAllFilesRecursively(dirPath: string): Promise<GitHubFile[]> {
+  const contents = await getDirectoryContents(dirPath);
+  const allFiles: GitHubFile[] = [];
+
+  for (const item of contents) {
+    if (item.type === 'file') {
+      // Add files directly
+      allFiles.push(item);
+    } else if (item.type === 'dir') {
+      // Recursively fetch files from subdirectories
+      const nestedFiles = await getAllFilesRecursively(item.path);
+      allFiles.push(...nestedFiles);
+    }
+  }
+
+  return allFiles;
+}
+
 export async function getFileVersions(dirPath: string): Promise<Array<{ file: GitHubFile; commit: GitHubCommit | null }>> {
   const files = await getDirectoryContents(dirPath);
   

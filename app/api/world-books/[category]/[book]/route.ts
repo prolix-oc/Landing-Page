@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents } from '@/lib/github';
+import { getAllFilesRecursively } from '@/lib/github';
 
 interface WorldBookEntry {
   uid: number;
@@ -74,13 +74,13 @@ export async function GET(
     const { category, book } = await params;
     const decodedCategory = decodeURIComponent(category);
     const decodedBook = decodeURIComponent(book);
-    
-    // Get all files in the category directory
-    const path = `World Books/${decodedCategory}`;
-    const files = await getDirectoryContents(path);
-    
-    // Find the specific file
-    const file = files.find(f => f.name === decodedBook && f.type === 'file');
+
+    // Get all files recursively from the category directory (including nested folders)
+    const path = `BunnMo Packs/${decodedCategory}`;
+    const files = await getAllFilesRecursively(path);
+
+    // Find the specific file by name (it could be in any nested subdirectory)
+    const file = files.find(f => f.name === decodedBook);
     
     if (!file) {
       return NextResponse.json(
