@@ -3,7 +3,7 @@ import { getDirectoryContents } from '@/lib/github';
 
 export async function GET() {
   try {
-    const contents = await getDirectoryContents('World Books');
+    const contents = await getDirectoryContents('BunnMo Packs');
     
     // Filter out directories only, these are the categories
     const categories = contents.filter(item => item.type === 'dir');
@@ -11,12 +11,20 @@ export async function GET() {
     return NextResponse.json(
       {
         success: true,
-        categories: categories.map(cat => ({
-          name: cat.name,
-          path: cat.path,
-          // Map specific names to friendly names
-          displayName: cat.name === 'Lumia' ? 'Original Content' : cat.name
-        }))
+        categories: categories.map(cat => {
+          // Clean up display names - remove extra details in parentheses for cleaner display
+          let displayName = cat.name;
+          // Extract the main name before any parentheses
+          const match = cat.name.match(/^(.+?)\s*\(/);
+          if (match) {
+            displayName = match[1].trim();
+          }
+          return {
+            name: cat.name,
+            path: cat.path,
+            displayName
+          };
+        })
       },
       {
         headers: {
