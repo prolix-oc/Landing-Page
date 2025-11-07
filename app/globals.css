@@ -357,3 +357,285 @@ a:active {
 .bunny-glow {
   animation: bunny-glow 2s ease-in-out infinite;
 }
+
+/* ===== RETRO PASTEL Y2K STYLES ===== */
+
+/* Y2K Pastel Color Palette */
+:root {
+  --y2k-pink: #FFB3D9;
+  --y2k-purple: #D4ADFC;
+  --y2k-blue: #A8D8FF;
+  --y2k-mint: #B8F4D3;
+  --y2k-peach: #FFD4B8;
+  --y2k-lavender: #E8D4FF;
+  --y2k-yellow: #FFF5A8;
+}
+
+/* Retro Custom Cursor */
+* {
+  cursor: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z' fill='%23FFB3D9' stroke='%23D4ADFC' stroke-width='2'/%3E%3C/svg%3E"), auto;
+}
+
+a, button, input, select, textarea {
+  cursor: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 2L8 10L12 10L12 2L8 2Z' fill='%23A8D8FF'/%3E%3Cpath d='M2 8L10 8L10 12L2 12L2 8Z' fill='%23A8D8FF'/%3E%3C/svg%3E"), pointer;
+}
+
+/* Retro Y2K Window/Box Style */
+.retro-box {
+  background: rgba(10, 10, 10, 0.85);
+  border: 3px solid var(--y2k-pink);
+  box-shadow:
+    0 0 0 1px var(--y2k-purple),
+    0 0 0 3px var(--y2k-blue),
+    0 0 20px rgba(255, 179, 217, 0.3),
+    inset 0 2px 8px rgba(255, 179, 217, 0.1);
+  border-radius: 12px;
+  position: relative;
+}
+
+.retro-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(90deg, var(--y2k-pink), var(--y2k-purple), var(--y2k-blue));
+  border-radius: 9px 9px 0 0;
+  opacity: 0.2;
+}
+
+/* Retro Window Controls */
+.retro-window-controls {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.retro-window-controls::before,
+.retro-window-controls::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--y2k-pink);
+  box-shadow: 0 0 8px rgba(255, 179, 217, 0.6);
+}
+
+.retro-window-controls::after {
+  background: var(--y2k-purple);
+  box-shadow: 0 0 8px rgba(212, 173, 252, 0.6);
+}
+
+/* Retro Button Styles */
+.retro-button {
+  background: linear-gradient(180deg, var(--y2k-pink), var(--y2k-purple));
+  border: 2px solid var(--y2k-blue);
+  border-radius: 8px;
+  padding: 8px 20px;
+  color: #0a0a0a;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 0 0 1px rgba(168, 216, 255, 0.5),
+    0 4px 12px rgba(255, 179, 217, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.retro-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(168, 216, 255, 0.8),
+    0 6px 16px rgba(212, 173, 252, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.retro-button:active {
+  transform: translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(168, 216, 255, 0.5),
+    0 2px 8px rgba(255, 179, 217, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Retro Input Fields */
+.retro-input {
+  background: rgba(10, 10, 10, 0.6);
+  border: 2px solid var(--y2k-purple);
+  border-radius: 6px;
+  padding: 10px 16px;
+  color: var(--foreground);
+  box-shadow:
+    0 0 0 1px var(--y2k-blue),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 12px rgba(212, 173, 252, 0.2);
+  transition: all 0.2s ease;
+}
+
+.retro-input:focus {
+  outline: none;
+  border-color: var(--y2k-pink);
+  box-shadow:
+    0 0 0 2px var(--y2k-blue),
+    0 0 20px rgba(255, 179, 217, 0.4),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Retro Card with Pastel Glow */
+.retro-card {
+  background: rgba(15, 15, 15, 0.9);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.retro-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--y2k-pink), var(--y2k-purple), var(--y2k-blue), var(--y2k-mint));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+}
+
+.retro-card:hover::before {
+  opacity: 1;
+}
+
+/* Scanline Effect (subtle overlay) */
+.retro-scanlines {
+  position: relative;
+}
+
+.retro-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Retro Badge/Tag */
+.retro-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(90deg, var(--y2k-pink), var(--y2k-lavender));
+  border: 2px solid var(--y2k-purple);
+  border-radius: 16px;
+  color: #0a0a0a;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 12px rgba(232, 212, 255, 0.4);
+}
+
+/* Retro Divider */
+.retro-divider {
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--y2k-pink) 20%,
+    var(--y2k-purple) 40%,
+    var(--y2k-blue) 60%,
+    var(--y2k-mint) 80%,
+    transparent
+  );
+  margin: 24px 0;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(212, 173, 252, 0.3);
+}
+
+/* Animated Rainbow Border */
+@keyframes rainbow-border {
+  0% { border-color: var(--y2k-pink); }
+  20% { border-color: var(--y2k-purple); }
+  40% { border-color: var(--y2k-blue); }
+  60% { border-color: var(--y2k-mint); }
+  80% { border-color: var(--y2k-lavender); }
+  100% { border-color: var(--y2k-pink); }
+}
+
+.retro-rainbow-border {
+  animation: rainbow-border 3s linear infinite;
+}
+
+/* Pixel Border Effect */
+.retro-pixel-border {
+  border: 3px solid;
+  border-image: linear-gradient(45deg, var(--y2k-pink), var(--y2k-blue)) 1;
+  image-rendering: pixelated;
+}
+
+/* Retro Glow Text */
+.retro-glow-text {
+  color: var(--y2k-pink);
+  text-shadow:
+    0 0 10px rgba(255, 179, 217, 0.8),
+    0 0 20px rgba(212, 173, 252, 0.6),
+    0 0 30px rgba(168, 216, 255, 0.4);
+}
+
+/* Retro Select/Dropdown */
+.retro-select {
+  background: rgba(10, 10, 10, 0.7);
+  border: 2px solid var(--y2k-purple);
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: var(--foreground);
+  box-shadow:
+    0 0 0 1px var(--y2k-blue),
+    0 0 12px rgba(212, 173, 252, 0.2);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23FFB3D9' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+}
+
+/* Retro Checkbox */
+.retro-checkbox {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--y2k-purple);
+  border-radius: 4px;
+  background: rgba(10, 10, 10, 0.6);
+  box-shadow: 0 0 8px rgba(212, 173, 252, 0.2);
+  position: relative;
+  cursor: pointer;
+}
+
+.retro-checkbox:checked {
+  background: linear-gradient(135deg, var(--y2k-pink), var(--y2k-purple));
+  border-color: var(--y2k-blue);
+  box-shadow: 0 0 12px rgba(255, 179, 217, 0.5);
+}
+
+.retro-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #0a0a0a;
+  font-weight: bold;
+  font-size: 14px;
+}
