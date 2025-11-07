@@ -1,7 +1,10 @@
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PersistentBackground from "./components/PersistentBackground";
+import { NavigationProvider } from "./contexts/NavigationContext";
+import PageTransition from "./components/PageTransition";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,10 +41,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased page-transition`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PersistentBackground />
-        {children}
+        <NavigationProvider>
+          <PersistentBackground />
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </NavigationProvider>
       </body>
     </html>
   );

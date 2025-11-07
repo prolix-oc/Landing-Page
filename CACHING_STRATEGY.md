@@ -6,23 +6,30 @@ This application implements a sophisticated server-side caching strategy for Git
 
 ## Key Features
 
-### 1. **Stale-While-Revalidate Pattern**
+### 1. **Cache Warm-up on First Request**
+- On application startup, the first API request triggers an automatic cache warm-up job
+- All required GitHub content is pre-fetched and cached immediately
+- Ensures users always have fresh, not stale content from the start
+- Warm-up runs asynchronously without blocking API responses
+- Only runs once per application lifecycle
+
+### 2. **Stale-While-Revalidate Pattern**
 - Users always receive cached data immediately (no loading spinners for cached content)
 - Background revalidation happens silently when cache becomes stale
 - Fresh data is ready for the next request
 
-### 2. **Server-Side Only Caching**
+### 3. **Server-Side Only Caching**
 - All caching happens on the server in memory
 - No localStorage or client-side caching
 - Consistent data across all users
 - No browser storage limitations
 
-### 3. **Short Cache Duration**
+### 4. **Short Cache Duration**
 - **Cache Duration**: 30 seconds (reduced from 5 minutes)
 - **Rationale**: With GitHub token authentication, we can afford more frequent updates
 - Users see fresher data without performance impact
 
-### 4. **Multi-Layer Caching**
+### 5. **Multi-Layer Caching**
 
 #### Application Cache (`lib/github.ts`)
 - In-memory Map-based cache

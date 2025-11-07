@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents } from '@/lib/github';
+import { getDirectoryContents, ensureWarmup } from '@/lib/github';
 
 export async function GET() {
+  // Ensure cache warmup is triggered
+  ensureWarmup();
+  
   try {
     const contents = await getDirectoryContents('World Books');
     

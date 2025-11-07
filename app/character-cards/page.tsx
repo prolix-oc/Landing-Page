@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
+import { slugify } from '@/lib/slugify';
 import LazyImage from '@/app/components/LazyImage';
 import SmartPagination from '@/app/components/SmartPagination';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import CardSkeleton from '@/app/components/CardSkeleton';
 import SortDropdown, { SortOption } from '@/app/components/SortDropdown';
+import AnimatedLink from '@/app/components/AnimatedLink';
 
 interface Category {
   name: string;
@@ -27,6 +29,7 @@ interface CharacterCard {
   size: number;
   lastModified: string | null;
   alternateCount?: number;
+  slug: string;
 }
 
 function CharacterCardsContent() {
@@ -173,12 +176,12 @@ function CharacterCardsContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link href="/" className="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center mb-4">
+          <AnimatedLink href="/" className="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center mb-4" isBackLink={true}>
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
-          </Link>
+          </AnimatedLink>
           <h1 className="text-5xl font-bold text-white mb-4">Character Cards</h1>
           <p className="text-xl text-gray-300">Browse and download character cards organized by category</p>
         </motion.div>
@@ -283,7 +286,7 @@ function CharacterCardsContent() {
                           {/* Thumbnail */}
                           {card.thumbnailUrl && (
                             <Link 
-                              href={`/character-cards/${encodeURIComponent(card.category)}/${encodeURIComponent(card.name)}`}
+                              href={`/character-cards/${encodeURIComponent(card.category)}/${card.slug}`}
                               className="block relative aspect-square bg-gray-900/50 overflow-hidden cursor-pointer"
                             >
                               <motion.div

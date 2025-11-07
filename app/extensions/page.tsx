@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
+import AnimatedLink from '@/app/components/AnimatedLink';
 
 interface Extension {
   id: string;
@@ -82,12 +83,12 @@ function ExtensionsContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Link href="/" className="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center mb-4">
+          <AnimatedLink href="/" className="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center mb-4" isBackLink={true}>
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
-          </Link>
+          </AnimatedLink>
           <h1 className="text-5xl font-bold text-white mb-4">Extensions</h1>
           <p className="text-xl text-gray-300">Extend functionality with custom extensions</p>
         </motion.div>

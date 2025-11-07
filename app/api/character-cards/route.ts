@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents, getLatestCommit, getCharacterThumbnail } from '@/lib/github';
+import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getCachedSlug, ensureWarmup } from '@/lib/github';
 
 interface CharacterCard {
   name: string;
@@ -11,9 +11,13 @@ interface CharacterCard {
   size: number;
   lastModified: string | null;
   alternateCount?: number;
+  slug: string;
 }
 
 export async function GET(request: Request) {
+  // Ensure cache warmup is triggered
+  ensureWarmup();
+  
   try {
     const { searchParams } = new URL(request.url);
     const includeAll = searchParams.get('all') === 'true';
@@ -87,7 +91,8 @@ export async function GET(request: Request) {
                   jsonUrl: jsonFile?.download_url || null,
                   size: (pngFile?.size || 0) + (jsonFile?.size || 0),
                   lastModified: commit?.commit.author.date || null,
-                  alternateCount
+                  alternateCount,
+                  slug: getCachedSlug(baseName, primaryDir.path)
                 };
               } catch (error) {
                 console.error(`Error processing character card ${baseName}:`, error);
@@ -100,7 +105,8 @@ export async function GET(request: Request) {
                   jsonUrl: null,
                   size: 0,
                   lastModified: null,
-                  alternateCount: dirs.length > 1 ? dirs.length - 1 : 0
+                  alternateCount: dirs.length > 1 ? dirs.length - 1 : 0,
+                  slug: getCachedSlug(baseName, primaryDir.path)
                 };
               }
             })

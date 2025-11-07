@@ -8,6 +8,7 @@ export interface GitHubFile {
   git_url: string;
   download_url: string;
   type: string;
+  slug?: string;
 }
 
 export interface GitHubCommit {
@@ -55,17 +56,26 @@ export interface CharacterCardCache {
 const GITHUB_API_BASE = 'https://api.github.com';
 const REPO_OWNER = 'prolix-oc';
 const REPO_NAME = 'ST-Presets';
+const USER_AGENT = 'Landing-Page-App/1.0';
 const CACHE_DURATION = 30 * 1000; // 30 seconds in milliseconds
 const THUMBNAIL_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for thumbnails
 const CHARACTER_CARD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for character card JSON
+
+// Import slugify function
+import { slugify } from './slugify';
 
 // In-memory cache
 const cache = new Map<string, CachedData>();
 const thumbnailCache = new Map<string, ThumbnailCache>();
 const characterCardCache = new Map<string, CharacterCardCache>();
+const slugCache = new Map<string, string>();
 
 // Track ongoing background refreshes to prevent duplicate requests
 const refreshingKeys = new Set<string>();
+
+// Track if warm-up has been completed
+let warmupCompleted = false;
+let warmupInProgress = false;
 
 /**
  * Fetches data from GitHub with background revalidation strategy.
@@ -101,6 +111,7 @@ async function fetchAndCache(path: string, cacheKey: string): Promise<any> {
   const response = await fetch(url, {
     headers: {
       'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': USER_AGENT,
       ...(process.env.GITHUB_TOKEN && {
         'Authorization': `token ${process.env.GITHUB_TOKEN}`
       })
@@ -167,6 +178,7 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string): Promise<
   const response = await fetch(url, {
     headers: {
       'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': USER_AGENT,
       ...(process.env.GITHUB_TOKEN && {
         'Authorization': `token ${process.env.GITHUB_TOKEN}`
       })
@@ -205,7 +217,8 @@ function refreshCommitInBackground(filePath: string, cacheKey: string): void {
 
 export async function getDirectoryContents(dirPath: string): Promise<GitHubFile[]> {
   const contents = await fetchFromGitHub(dirPath);
-  return Array.isArray(contents) ? contents : [];
+  const files = Array.isArray(contents) ? contents : [];
+  return processDirectoryContentsWithSlugs(files);
 }
 
 export async function getFileVersions(dirPath: string): Promise<Array<{ file: GitHubFile; commit: GitHubCommit | null }>> {
@@ -232,6 +245,38 @@ export function clearCache(): void {
   cache.clear();
   thumbnailCache.clear();
   characterCardCache.clear();
+  slugCache.clear();
+}
+
+/**
+ * Generates and caches a slug for a given name
+ */
+function generateAndCacheSlug(name: string, path: string): string {
+  const baseName = name.replace(/\s+V\d+$/i, '');
+  const slug = slugify(baseName);
+  slugCache.set(path, slug);
+  return slug;
+}
+
+/**
+ * Gets cached slug for a path, or generates one if not cached
+ */
+export function getCachedSlug(name: string, path: string): string {
+  const cachedSlug = slugCache.get(path);
+  if (cachedSlug) {
+    return cachedSlug;
+  }
+  return generateAndCacheSlug(name, path);
+}
+
+/**
+ * Processes directory contents to add slugs to each item
+ */
+function processDirectoryContentsWithSlugs(contents: GitHubFile[]): GitHubFile[] {
+  return contents.map(item => ({
+    ...item,
+    slug: getCachedSlug(item.name, item.path)
+  }));
 }
 
 export function getThumbnailFromCache(path: string, sha: string): string | null {
@@ -290,6 +335,9 @@ export async function getCharacterCardData(
   // Fetch fresh data
   try {
     const response = await fetch(jsonFile.download_url, {
+      headers: {
+        'User-Agent': USER_AGENT
+      },
       cache: 'no-store'
     });
     
@@ -326,4 +374,192 @@ export function getCharacterCardFromCache(path: string, sha: string): CharacterC
   }
   
   return null;
+}
+
+/**
+ * Warm-up cache by pre-fetching all required GitHub content
+ * This ensures fresh data is always available and prevents stale cache issues
+ */
+export async function warmupCache(): Promise<void> {
+  if (warmupInProgress || warmupCompleted) {
+    return;
+  }
+
+  warmupInProgress = true;
+  console.log('[Cache Warmup] Starting cache warm-up...');
+  const startTime = Date.now();
+
+  try {
+    // Define all paths to warm up
+    const primaryPaths = [
+      'Character Cards',
+      'World Books',
+      'Chat Completion'
+    ];
+
+    // Fetch all primary directories
+    await Promise.all(
+      primaryPaths.map(async (path) => {
+        try {
+          await fetchAndCache(path, `github:${path}`);
+          console.log(`[Cache Warmup] Cached: ${path}`);
+        } catch (error) {
+          console.error(`[Cache Warmup] Failed to cache ${path}:`, error);
+        }
+      })
+    );
+
+    // Fetch Character Cards categories and their contents
+    try {
+      const characterCardsContents = cache.get('github:Character Cards');
+      if (characterCardsContents?.data && Array.isArray(characterCardsContents.data)) {
+        const categories = characterCardsContents.data.filter((item: any) => item.type === 'dir');
+        
+        await Promise.all(
+          categories.map(async (category: any) => {
+            try {
+              const categoryPath = category.path;
+              await fetchAndCache(categoryPath, `github:${categoryPath}`);
+              console.log(`[Cache Warmup] Cached: ${categoryPath}`);
+              
+              // Fetch character directories within each category
+              const categoryContents = cache.get(`github:${categoryPath}`);
+              if (categoryContents?.data && Array.isArray(categoryContents.data)) {
+                const charDirs = categoryContents.data.filter((item: any) => item.type === 'dir');
+                
+                await Promise.all(
+                  charDirs.map(async (charDir: any) => {
+                    try {
+                      const charPath = charDir.path;
+                      await fetchAndCache(charPath, `github:${charPath}`);
+                      
+                      // Also fetch commits for the character directory
+                      await fetchAndCacheCommit(charPath, `commit:${charPath}`);
+                      
+                      // Pre-fetch character card JSON data
+                      const charContents = cache.get(`github:${charPath}`);
+                      if (charContents?.data && Array.isArray(charContents.data)) {
+                        const jsonFiles = charContents.data.filter((file: any) => 
+                          file.type === 'file' && file.name.toLowerCase().endsWith('.json')
+                        );
+                        
+                        // Fetch all JSON files for this character
+                        await Promise.all(
+                          jsonFiles.map(async (jsonFile: any) => {
+                            try {
+                              await getCharacterCardData(jsonFile);
+                            } catch (error) {
+                              console.error(`[Cache Warmup] Failed to cache JSON: ${jsonFile.path}`, error);
+                            }
+                          })
+                        );
+                      }
+                    } catch (error) {
+                      console.error(`[Cache Warmup] Failed to cache character: ${charDir.path}`, error);
+                    }
+                  })
+                );
+              }
+            } catch (error) {
+              console.error(`[Cache Warmup] Failed to cache category: ${category.path}`, error);
+            }
+          })
+        );
+      }
+    } catch (error) {
+      console.error('[Cache Warmup] Failed to warm up Character Cards:', error);
+    }
+
+    // Fetch World Books categories and their contents
+    try {
+      const worldBooksContents = cache.get('github:World Books');
+      if (worldBooksContents?.data && Array.isArray(worldBooksContents.data)) {
+        const categories = worldBooksContents.data.filter((item: any) => item.type === 'dir');
+        
+        await Promise.all(
+          categories.map(async (category: any) => {
+            try {
+              const categoryPath = category.path;
+              await fetchAndCache(categoryPath, `github:${categoryPath}`);
+              console.log(`[Cache Warmup] Cached: ${categoryPath}`);
+              
+              // Fetch book directories within each category
+              const categoryContents = cache.get(`github:${categoryPath}`);
+              if (categoryContents?.data && Array.isArray(categoryContents.data)) {
+                const bookDirs = categoryContents.data.filter((item: any) => item.type === 'dir');
+                
+                await Promise.all(
+                  bookDirs.map(async (bookDir: any) => {
+                    try {
+                      const bookPath = bookDir.path;
+                      await fetchAndCache(bookPath, `github:${bookPath}`);
+                      
+                      // Also fetch commits for the book directory
+                      await fetchAndCacheCommit(bookPath, `commit:${bookPath}`);
+                      
+                      // Pre-fetch world book JSON data
+                      const bookContents = cache.get(`github:${bookPath}`);
+                      if (bookContents?.data && Array.isArray(bookContents.data)) {
+                        const jsonFiles = bookContents.data.filter((file: any) => 
+                          file.type === 'file' && file.name.toLowerCase().endsWith('.json')
+                        );
+                        
+                        // Fetch all JSON files for this world book
+                        await Promise.all(
+                          jsonFiles.map(async (jsonFile: any) => {
+                            try {
+                              await getCharacterCardData(jsonFile);
+                            } catch (error) {
+                              console.error(`[Cache Warmup] Failed to cache world book JSON: ${jsonFile.path}`, error);
+                            }
+                          })
+                        );
+                      }
+                    } catch (error) {
+                      console.error(`[Cache Warmup] Failed to cache book: ${bookDir.path}`, error);
+                    }
+                  })
+                );
+              }
+            } catch (error) {
+              console.error(`[Cache Warmup] Failed to cache category: ${category.path}`, error);
+            }
+          })
+        );
+      }
+    } catch (error) {
+      console.error('[Cache Warmup] Failed to warm up World Books:', error);
+    }
+
+    warmupCompleted = true;
+    const duration = Date.now() - startTime;
+    console.log(`[Cache Warmup] Completed in ${duration}ms`);
+  } catch (error) {
+    console.error('[Cache Warmup] Error during cache warm-up:', error);
+  } finally {
+    warmupInProgress = false;
+  }
+}
+
+/**
+ * Ensures warm-up has been triggered
+ * Can be called from API routes to ensure cache is warmed up
+ */
+export function ensureWarmup(): void {
+  if (!warmupCompleted && !warmupInProgress) {
+    // Run warmup asynchronously without blocking
+    warmupCache().catch(error => {
+      console.error('[Cache Warmup] Async warmup failed:', error);
+    });
+  }
+}
+
+/**
+ * Gets warmup status
+ */
+export function getWarmupStatus(): { completed: boolean; inProgress: boolean } {
+  return {
+    completed: warmupCompleted,
+    inProgress: warmupInProgress
+  };
 }

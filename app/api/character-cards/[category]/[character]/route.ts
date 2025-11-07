@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getCharacterCardData } from '@/lib/github';
+import { slugify } from '@/lib/slugify';
 
 interface AlternateScenario {
   id: string;
@@ -19,43 +20,62 @@ export async function GET(
   try {
     const { category, character } = await params;
     const decodedCategory = decodeURIComponent(category);
-    const decodedCharacter = decodeURIComponent(character);
+    const targetSlug = decodeURIComponent(character);
     
     // Get all directories in the category to find alternates
     const categoryPath = `Character Cards/${decodedCategory}`;
     const categoryContents = await getDirectoryContents(categoryPath);
     const characterDirs = categoryContents.filter(item => item.type === 'dir');
     
-    // Find all directories that match this character (including V2, V3, etc.)
-    const baseName = decodedCharacter;
-    const matchingDirs = characterDirs.filter(dir => 
-      dir.name === baseName || dir.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+V\\d+$`, 'i'))
-    );
+    console.log('=== DEBUG INFO ===');
+    console.log('Target slug:', targetSlug);
+    console.log('Available directories:', characterDirs.map(d => d.name));
     
-    // Sort directories: base name first, then V2, V3, etc.
-    matchingDirs.sort((a, b) => {
-      if (a.name === baseName) return -1;
-      if (b.name === baseName) return 1;
-      const aMatch = a.name.match(/V(\d+)$/i);
-      const bMatch = b.name.match(/V(\d+)$/i);
-      if (aMatch && bMatch) {
-        return parseInt(aMatch[1]) - parseInt(bMatch[1]);
-      }
-      return 0;
+    // Map directories with their cached slugs and base names
+    const dirsWithSlugs = characterDirs.map(dir => {
+      const baseName = dir.name.replace(/\s+V\d+$/i, '');
+      return {
+        dir,
+        slug: dir.slug || slugify(baseName), // Use cached slug from getDirectoryContents
+        baseName: baseName
+      };
     });
     
+    console.log('Directories with slugs:', dirsWithSlugs.map(d => ({ name: d.dir.name, slug: d.slug })));
+    
+    // Find directories that match the target slug
+    const matchingDirs = dirsWithSlugs.filter(item => item.slug === targetSlug);
+    
     if (matchingDirs.length === 0) {
+      console.log('❌ No matching slugs found');
+      console.log('Target slug:', targetSlug);
+      console.log('Available slugs:', dirsWithSlugs.map(d => d.slug));
       return NextResponse.json(
         { success: false, error: 'Character not found' },
         { status: 404 }
       );
     }
     
+    console.log('✅ Found matching directories:', matchingDirs.map(d => d.dir.name));
+    
+    // Sort directories: base name first, then V2, V3, etc.
+    const baseCharacterName = matchingDirs[0].baseName;
+    const sortedDirs = [...matchingDirs].sort((a, b) => {
+      if (a.dir.name === baseCharacterName) return -1;
+      if (b.dir.name === baseCharacterName) return 1;
+      const aMatch = a.dir.name.match(/V(\d+)$/i);
+      const bMatch = b.dir.name.match(/V(\d+)$/i);
+      if (aMatch && bMatch) {
+        return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+      }
+      return 0;
+    });
+    
     // Process all matching directories to find alternates
     const alternates: AlternateScenario[] = [];
     
-    for (const dir of matchingDirs) {
-      const path = dir.path;
+    for (const item of sortedDirs) {
+      const path = item.dir.path;
     
       // Get contents of the character directory
       const dirContents = await getDirectoryContents(path);
@@ -88,7 +108,7 @@ export async function GET(
           const scenarioName = cardData.data?.name || jsonBaseName;
           
           alternates.push({
-            id: `${dir.name}-${jsonFile.name}`,
+            id: `${item.dir.name}-${jsonFile.name}`,
             name: scenarioName,
             path: path,
             thumbnailUrl,
@@ -110,11 +130,11 @@ export async function GET(
         const commit = await getLatestCommit(path);
         
         // Use directory name suffix or card name
-        const versionMatch = dir.name.match(/V(\d+)$/i);
+        const versionMatch = item.dir.name.match(/V(\d+)$/i);
         const scenarioName = cardData.data?.name || (versionMatch ? `Version ${versionMatch[1]}` : 'Original');
         
         alternates.push({
-          id: dir.name,
+          id: item.dir.name,
           name: scenarioName,
           path: path,
           thumbnailUrl,
@@ -140,7 +160,7 @@ export async function GET(
       {
         success: true,
         character: {
-          name: decodedCharacter,
+          name: baseCharacterName,
           category: decodedCategory,
           path: primary.path,
           thumbnailUrl: primary.thumbnailUrl,
@@ -148,7 +168,8 @@ export async function GET(
           jsonUrl: primary.jsonUrl,
           cardData: primary.cardData,
           lastModified: primary.lastModified,
-          alternates: alternates.length > 1 ? alternates : undefined
+          alternates: alternates.length > 1 ? alternates : undefined,
+          slug: targetSlug
         }
       },
       {
