@@ -96,7 +96,7 @@ let warmupInProgress = false;
 // Track periodic refresh
 let periodicRefreshInterval: NodeJS.Timeout | null = null;
 let lastPeriodicRefresh: number = 0;
-const BASE_PERIODIC_REFRESH_INTERVAL = 45 * 1000; // 45 seconds base interval
+const BASE_PERIODIC_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes base interval (webhook-friendly)
 let currentPeriodicRefreshInterval = BASE_PERIODIC_REFRESH_INTERVAL;
 
 // Rate limit tracking
@@ -412,6 +412,80 @@ export function clearCache(): void {
   thumbnailCache.clear();
   characterCardCache.clear();
   slugCache.clear();
+}
+
+/**
+ * Invalidates cache for a specific path
+ * Used by webhooks to selectively update cache when content changes
+ * @param path - The path to invalidate (e.g., 'Character Cards/Fantasy/Gandalf')
+ * @param cacheType - Optional cache type ('github' or 'commit'), defaults to 'github'
+ * @returns true if cache was invalidated, false if no cache existed
+ */
+export function invalidateCachePath(path: string, cacheType: 'github' | 'commit' = 'github'): boolean {
+  const cacheKey = `${cacheType}:${path}`;
+  const existed = cache.has(cacheKey);
+  
+  if (existed) {
+    cache.delete(cacheKey);
+    console.log(`[Cache Invalidation] Invalidated ${cacheType} cache for: ${path}`);
+  }
+  
+  return existed;
+}
+
+/**
+ * Invalidates all cache entries matching a pattern
+ * Used by webhooks to batch-invalidate related cache entries
+ * @param pattern - Regex pattern to match cache keys
+ * @returns Number of cache entries invalidated
+ */
+export function invalidateCacheByPattern(pattern: RegExp): number {
+  let count = 0;
+  
+  for (const key of cache.keys()) {
+    if (pattern.test(key)) {
+      cache.delete(key);
+      count++;
+    }
+  }
+  
+  if (count > 0) {
+    console.log(`[Cache Invalidation] Invalidated ${count} cache entries matching pattern: ${pattern}`);
+  }
+  
+  return count;
+}
+
+/**
+ * Invalidates thumbnail cache for a specific path
+ * @param path - The file path to invalidate thumbnail for
+ * @returns true if cache was invalidated, false if no cache existed
+ */
+export function invalidateThumbnailCache(path: string): boolean {
+  const existed = thumbnailCache.has(path);
+  
+  if (existed) {
+    thumbnailCache.delete(path);
+    console.log(`[Cache Invalidation] Invalidated thumbnail cache for: ${path}`);
+  }
+  
+  return existed;
+}
+
+/**
+ * Invalidates character card cache for a specific path
+ * @param path - The file path to invalidate character card data for
+ * @returns true if cache was invalidated, false if no cache existed
+ */
+export function invalidateCharacterCardCache(path: string): boolean {
+  const existed = characterCardCache.has(path);
+  
+  if (existed) {
+    characterCardCache.delete(path);
+    console.log(`[Cache Invalidation] Invalidated character card cache for: ${path}`);
+  }
+  
+  return existed;
 }
 
 /**
@@ -816,7 +890,7 @@ export function startPeriodicRefresh(): void {
     return;
   }
   
-  console.log('[Periodic Refresh] Starting periodic refresh with 45s interval...');
+  console.log(`[Periodic Refresh] Starting periodic refresh with ${Math.floor(BASE_PERIODIC_REFRESH_INTERVAL / 60000)}min interval...`);
   
   // Start the interval
   periodicRefreshInterval = setInterval(() => {
