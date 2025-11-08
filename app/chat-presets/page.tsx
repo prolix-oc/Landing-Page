@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
+import PresetDownloadModal from '@/app/components/PresetDownloadModal';
 
 interface Preset {
   name: string;
@@ -42,6 +43,8 @@ function ChatPresetsContent() {
   const [loading, setLoading] = useState(true);
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalPreset, setModalPreset] = useState<{ url: string; name: string } | null>(null);
 
   // Check URL parameters on mount and set default to "Lucid Loom"
   useEffect(() => {
@@ -163,6 +166,16 @@ function ChatPresetsContent() {
 
   // Combine all presets for rendering
   const allPresets = [...presetCategories.standard, ...presetCategories.prolix];
+
+  const handleDownloadClick = (url: string, name: string) => {
+    setModalPreset({ url, name });
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setModalPreset(null);
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -338,7 +351,7 @@ function ChatPresetsContent() {
                               </div>
                               <div className="flex gap-2 w-full sm:w-auto">
                                 <motion.button
-                                  onClick={() => downloadFile(version.downloadUrl, version.name)}
+                                  onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
                                   className="bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors whitespace-nowrap shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-center gap-2 flex-1 sm:flex-initial"
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
@@ -433,7 +446,7 @@ function ChatPresetsContent() {
                               </div>
                               <div className="flex gap-2 w-full sm:w-auto">
                                 <motion.button
-                                  onClick={() => downloadFile(version.downloadUrl, version.name)}
+                                  onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
                                   className="bg-linear-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors whitespace-nowrap shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-center gap-2 flex-1 sm:flex-initial"
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
@@ -648,6 +661,14 @@ function ChatPresetsContent() {
           </div>
         )}
       </div>
+
+      {/* Download Modal */}
+      <PresetDownloadModal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        presetUrl={modalPreset?.url || ''}
+        presetName={modalPreset?.name || ''}
+      />
     </div>
   );
 }

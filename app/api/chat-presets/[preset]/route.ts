@@ -12,11 +12,27 @@ export async function GET(
     
     const versions = await getFileVersions(path);
     
+    // Filter to only include files that match the preset name (ignore files like README, tested_samplers.json, etc.)
+    const filteredVersions = versions.filter(({ file }) => {
+      // Remove file extension for comparison
+      const fileNameWithoutExt = file.name.replace(/\.(json|md|txt)$/i, '');
+      // Remove version numbers and descriptors like "v2.8", "Hotfix", "Prolix Preferred", etc.
+      const normalizedFileName = fileNameWithoutExt
+        .replace(/\s*v\d+\.\d+.*$/i, '')  // Remove version info
+        .replace(/\s*Prolix.*$/i, '')      // Remove Prolix suffixes
+        .trim()
+        .toLowerCase();
+      const normalizedPreset = decodedPreset.trim().toLowerCase();
+      
+      // File name should match the preset name
+      return normalizedFileName === normalizedPreset;
+    });
+    
     // Separate standard and Prolix files but maintain isLatest per category
     const standardVersions: any[] = [];
     const prolixVersions: any[] = [];
     
-    versions.forEach(({ file, commit }) => {
+    filteredVersions.forEach(({ file, commit }) => {
       const versionData = {
         name: file.name,
         path: file.path,
