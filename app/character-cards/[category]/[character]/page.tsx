@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getCharacterCardData } from "@/lib/github";
+import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getJsonData } from "@/lib/github";
 import { slugify } from "@/lib/slugify";
 import CharacterDetailsClient from "./CharacterDetailsClient";
 
@@ -90,7 +90,7 @@ async function getCharacterData(category: string, character: string): Promise<Ch
       if (jsonFiles.length > 1) {
         // Multiple scenarios in the same directory
         for (const jsonFile of jsonFiles) {
-          const cardData = await getCharacterCardData(jsonFile);
+          const cardData = await getJsonData(jsonFile);
           if (!cardData) continue;
           
           // Find matching PNG file based on JSON filename
@@ -121,7 +121,7 @@ async function getCharacterData(category: string, character: string): Promise<Ch
         const jsonFile = jsonFiles[0];
         const pngFile = pngFiles[0];
         
-        const cardData = await getCharacterCardData(jsonFile);
+        const cardData = await getJsonData(jsonFile);
         if (!cardData) continue;
         
         const thumbnailUrl = pngFile ? await getCharacterThumbnail(path, pngFile) : null;

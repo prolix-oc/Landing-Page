@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 // Import cache invalidation functions
-import { invalidateCachePath, invalidateCacheByPattern } from '@/lib/github';
+import { 
+  invalidateCachePath, 
+  invalidateCacheByPattern,
+  invalidateJsonDataCache 
+} from '@/lib/github';
 
 interface GitHubPushPayload {
   ref: string;
@@ -51,100 +55,100 @@ function verifyGitHubSignature(
 }
 
 /**
- * Extracts all unique directory paths from a list of file paths
+ * Extracts immediate parent directory from a file path
  */
-function extractDirectoryPaths(filePaths: string[]): Set<string> {
-  const directories = new Set<string>();
-  
-  filePaths.forEach(filePath => {
-    const parts = filePath.split('/');
-    
-    // Add all parent directories
-    for (let i = 1; i < parts.length; i++) {
-      const dirPath = parts.slice(0, i).join('/');
-      if (dirPath) {
-        directories.add(dirPath);
-      }
-    }
-  });
-  
-  return directories;
+function getParentDirectory(filePath: string): string | null {
+  const parts = filePath.split('/');
+  if (parts.length <= 1) {
+    return null;
+  }
+  // Return only the immediate parent directory
+  return parts.slice(0, -1).join('/');
 }
 
 /**
  * Processes the push payload and invalidates affected cache entries
+ * Only invalidates the immediate parent directory and file-specific caches
  */
 function processPushPayload(payload: GitHubPushPayload): {
   invalidated: number;
   paths: string[];
+  filesAdded: number;
+  filesModified: number;
+  filesRemoved: number;
 } {
-  const affectedFiles = new Set<string>();
+  const addedFiles = new Set<string>();
+  const modifiedFiles = new Set<string>();
+  const removedFiles = new Set<string>();
   
   // Collect all affected files from all commits
   payload.commits.forEach(commit => {
-    commit.added.forEach(file => affectedFiles.add(file));
-    commit.modified.forEach(file => affectedFiles.add(file));
-    commit.removed.forEach(file => affectedFiles.add(file));
+    commit.added.forEach(file => addedFiles.add(file));
+    commit.modified.forEach(file => modifiedFiles.add(file));
+    commit.removed.forEach(file => removedFiles.add(file));
   });
   
-  // Extract unique directory paths that need invalidation
-  const affectedDirectories = extractDirectoryPaths(Array.from(affectedFiles));
-  
-  // Also invalidate cache for individual files (commits)
-  const allAffectedPaths = new Set([
-    ...affectedDirectories,
-    ...affectedFiles
+  const allAffectedFiles = new Set([
+    ...addedFiles,
+    ...modifiedFiles,
+    ...removedFiles
   ]);
   
   let invalidatedCount = 0;
   const invalidatedPaths: string[] = [];
+  const parentDirectories = new Set<string>();
   
-  // Invalidate cache for each affected path
-  allAffectedPaths.forEach(path => {
-    // Invalidate directory contents cache
-    const dirInvalidated = invalidateCachePath(path);
-    
-    // Invalidate commit cache for the path
-    const commitInvalidated = invalidateCachePath(path, 'commit');
-    
-    if (dirInvalidated || commitInvalidated) {
+  // For each affected file, invalidate its specific caches
+  allAffectedFiles.forEach(filePath => {
+    // 1. Invalidate the file's commit cache
+    if (invalidateCachePath(filePath, 'commit')) {
       invalidatedCount++;
-      invalidatedPaths.push(path);
+      invalidatedPaths.push(`commit:${filePath}`);
+    }
+    
+    // 2. Invalidate JSON data cache if it's a JSON file
+    if (filePath.toLowerCase().endsWith('.json')) {
+      if (invalidateJsonDataCache(filePath)) {
+        invalidatedCount++;
+        invalidatedPaths.push(`jsonData:${filePath}`);
+      }
+    }
+    
+    // 3. Track the immediate parent directory
+    const parentDir = getParentDirectory(filePath);
+    if (parentDir) {
+      parentDirectories.add(parentDir);
     }
   });
   
-  // Special handling for top-level directories
-  // If files in Character Cards/Category/Character changed, also invalidate the category
-  affectedFiles.forEach(filePath => {
-    if (filePath.startsWith('Character Cards/')) {
-      const parts = filePath.split('/');
-      if (parts.length >= 2) {
-        const categoryPath = `Character Cards/${parts[1]}`;
-        if (invalidateCachePath(categoryPath)) {
-          invalidatedCount++;
-          invalidatedPaths.push(categoryPath);
-        }
-      }
-    } else if (filePath.startsWith('World Books/')) {
-      const parts = filePath.split('/');
-      if (parts.length >= 2) {
-        const categoryPath = `World Books/${parts[1]}`;
-        if (invalidateCachePath(categoryPath)) {
-          invalidatedCount++;
-          invalidatedPaths.push(categoryPath);
-        }
-      }
-    } else if (filePath.startsWith('Chat Completion/')) {
-      if (invalidateCachePath('Chat Completion')) {
+  // Only invalidate parent directories if files were added or removed
+  // (Modified files don't change directory contents, just file SHAs)
+  const shouldInvalidateDirectories = addedFiles.size > 0 || removedFiles.size > 0;
+  
+  if (shouldInvalidateDirectories) {
+    parentDirectories.forEach(dirPath => {
+      if (invalidateCachePath(dirPath)) {
         invalidatedCount++;
-        invalidatedPaths.push('Chat Completion');
+        invalidatedPaths.push(`github:${dirPath}`);
       }
-    }
-  });
+    });
+  } else {
+    // For modified files only, we still need to invalidate parent directories
+    // because the directory listing contains file SHAs that have changed
+    parentDirectories.forEach(dirPath => {
+      if (invalidateCachePath(dirPath)) {
+        invalidatedCount++;
+        invalidatedPaths.push(`github:${dirPath}`);
+      }
+    });
+  }
   
   return {
     invalidated: invalidatedCount,
-    paths: invalidatedPaths
+    paths: invalidatedPaths,
+    filesAdded: addedFiles.size,
+    filesModified: modifiedFiles.size,
+    filesRemoved: removedFiles.size
   };
 }
 
@@ -207,8 +211,11 @@ export async function POST(request: NextRequest) {
     const result = processPushPayload(payload);
     
     console.log(
-      `[Webhook] Invalidated ${result.invalidated} cache entries for ${result.paths.length} paths:`,
-      result.paths.slice(0, 10) // Log first 10 paths
+      `[Webhook] Processed push: +${result.filesAdded} -${result.filesRemoved} ~${result.filesModified} files`
+    );
+    console.log(
+      `[Webhook] Invalidated ${result.invalidated} cache entries:`,
+      result.paths.slice(0, 15) // Log first 15 paths
     );
     
     return NextResponse.json({
@@ -216,6 +223,9 @@ export async function POST(request: NextRequest) {
       processed: true,
       invalidated: result.invalidated,
       paths: result.paths,
+      filesAdded: result.filesAdded,
+      filesModified: result.filesModified,
+      filesRemoved: result.filesRemoved,
       commits: payload.commits.length,
       ref: payload.ref
     });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents } from '@/lib/github';
+import { getDirectoryContents, getJsonData } from '@/lib/github';
 
 interface WorldBookEntry {
   uid: number;
@@ -89,13 +89,17 @@ export async function GET(
       );
     }
     
-    // Download and parse the JSON content
-    const contentResponse = await fetch(file.download_url);
-    if (!contentResponse.ok) {
-      throw new Error(`Failed to download file: ${contentResponse.status}`);
+    // Use cached JSON data fetching
+    const jsonData = await getJsonData(file);
+    if (!jsonData) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to load world book data' },
+        { status: 500 }
+      );
     }
     
-    const bookData = await contentResponse.json() as WorldBookData;
+    // Cast to WorldBookData (the getJsonData returns JsonData, but world books have a specific structure)
+    const bookData = jsonData as unknown as WorldBookData;
     
     const worldBook: WorldBook = {
       name: decodedBook.replace('.json', ''),

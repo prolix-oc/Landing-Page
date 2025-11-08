@@ -33,7 +33,7 @@ export interface ThumbnailCache {
   timestamp: number;
 }
 
-export interface CharacterCardData {
+export interface JsonData {
   spec: string;
   spec_version: string;
   data: {
@@ -47,8 +47,8 @@ export interface CharacterCardData {
   };
 }
 
-export interface CharacterCardCache {
-  data: CharacterCardData;
+export interface JsonDataCache {
+  data: JsonData;
   sha: string;
   timestamp: number;
 }
@@ -68,7 +68,7 @@ const REPO_NAME = 'ST-Presets';
 const USER_AGENT = 'Landing-Page-App/1.0';
 const CACHE_DURATION = 30 * 1000; // 30 seconds in milliseconds
 const THUMBNAIL_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for thumbnails
-const CHARACTER_CARD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for character card JSON
+const JSON_DATA_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for JSON data (character cards, world books, chat presets)
 
 // Import slugify function
 import { slugify } from './slugify';
@@ -83,7 +83,7 @@ import {
 // In-memory cache
 const cache = new Map<string, CachedData>();
 const thumbnailCache = new Map<string, ThumbnailCache>();
-const characterCardCache = new Map<string, CharacterCardCache>();
+const jsonDataCache = new Map<string, JsonDataCache>();
 const slugCache = new Map<string, string>();
 
 // Track ongoing background refreshes to prevent duplicate requests
@@ -410,7 +410,7 @@ export async function getFileVersions(dirPath: string): Promise<Array<{ file: Gi
 export function clearCache(): void {
   cache.clear();
   thumbnailCache.clear();
-  characterCardCache.clear();
+  jsonDataCache.clear();
   slugCache.clear();
 }
 
@@ -473,16 +473,16 @@ export function invalidateThumbnailCache(path: string): boolean {
 }
 
 /**
- * Invalidates character card cache for a specific path
- * @param path - The file path to invalidate character card data for
+ * Invalidates JSON data cache for a specific path
+ * @param path - The file path to invalidate JSON data for
  * @returns true if cache was invalidated, false if no cache existed
  */
-export function invalidateCharacterCardCache(path: string): boolean {
-  const existed = characterCardCache.has(path);
+export function invalidateJsonDataCache(path: string): boolean {
+  const existed = jsonDataCache.has(path);
   
   if (existed) {
-    characterCardCache.delete(path);
-    console.log(`[Cache Invalidation] Invalidated character card cache for: ${path}`);
+    jsonDataCache.delete(path);
+    console.log(`[Cache Invalidation] Invalidated JSON data cache for: ${path}`);
   }
   
   return existed;
@@ -557,18 +557,18 @@ export async function getCharacterThumbnail(
 }
 
 /**
- * Fetches and caches character card JSON data
+ * Fetches and caches JSON data (character cards, world books, chat presets)
  */
-export async function getCharacterCardData(
+export async function getJsonData(
   jsonFile: GitHubFile
-): Promise<CharacterCardData | null> {
+): Promise<JsonData | null> {
   if (!jsonFile) return null;
   
-  const cached = characterCardCache.get(jsonFile.path);
+  const cached = jsonDataCache.get(jsonFile.path);
   const now = Date.now();
   
   // If cached, SHA matches, and not expired, return cached data
-  if (cached && cached.sha === jsonFile.sha && now - cached.timestamp < CHARACTER_CARD_CACHE_DURATION) {
+  if (cached && cached.sha === jsonFile.sha && now - cached.timestamp < JSON_DATA_CACHE_DURATION) {
     return cached.data;
   }
   
@@ -582,14 +582,14 @@ export async function getCharacterCardData(
     });
     
     if (!response.ok) {
-      console.error(`Failed to fetch character card JSON: ${response.status}`);
+      console.error(`Failed to fetch JSON data: ${response.status}`);
       return null;
     }
     
-    const data: CharacterCardData = await response.json();
+    const data: JsonData = await response.json();
     
     // Cache the data
-    characterCardCache.set(jsonFile.path, {
+    jsonDataCache.set(jsonFile.path, {
       data,
       sha: jsonFile.sha,
       timestamp: now
@@ -597,19 +597,19 @@ export async function getCharacterCardData(
     
     return data;
   } catch (error) {
-    console.error('Error fetching character card data:', error);
+    console.error('Error fetching JSON data:', error);
     return null;
   }
 }
 
 /**
- * Gets character card data from cache only (for checking if refresh needed)
+ * Gets JSON data from cache only (for checking if refresh needed)
  */
-export function getCharacterCardFromCache(path: string, sha: string): CharacterCardData | null {
-  const cached = characterCardCache.get(path);
+export function getJsonDataFromCache(path: string, sha: string): JsonData | null {
+  const cached = jsonDataCache.get(path);
   
   // If cached and SHA matches and not expired, return cached data
-  if (cached && cached.sha === sha && Date.now() - cached.timestamp < CHARACTER_CARD_CACHE_DURATION) {
+  if (cached && cached.sha === sha && Date.now() - cached.timestamp < JSON_DATA_CACHE_DURATION) {
     return cached.data;
   }
   
@@ -687,7 +687,7 @@ export async function warmupCache(): Promise<void> {
                       // Also fetch commits for the character directory
                       await fetchAndCacheCommit(charPath, `commit:${charPath}`);
                       
-                      // Pre-fetch character card JSON data
+                      // Pre-fetch JSON data
                       const charContents = cache.get(`github:${charPath}`);
                       if (charContents?.data && Array.isArray(charContents.data)) {
                         const jsonFiles = charContents.data.filter((file: any) => 
@@ -698,7 +698,7 @@ export async function warmupCache(): Promise<void> {
                         await Promise.all(
                           jsonFiles.map(async (jsonFile: any) => {
                             try {
-                              await getCharacterCardData(jsonFile);
+                              await getJsonData(jsonFile);
                             } catch (error) {
                               console.error(`[Cache Warmup] Failed to cache JSON: ${jsonFile.path}`, error);
                             }
@@ -759,7 +759,7 @@ export async function warmupCache(): Promise<void> {
                         await Promise.all(
                           jsonFiles.map(async (jsonFile: any) => {
                             try {
-                              await getCharacterCardData(jsonFile);
+                              await getJsonData(jsonFile);
                             } catch (error) {
                               console.error(`[Cache Warmup] Failed to cache world book JSON: ${jsonFile.path}`, error);
                             }

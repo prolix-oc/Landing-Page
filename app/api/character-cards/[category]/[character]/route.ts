@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getCharacterCardData } from '@/lib/github';
+import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getJsonData } from '@/lib/github';
 import { slugify } from '@/lib/slugify';
 
 interface AlternateScenario {
@@ -92,7 +92,7 @@ export async function GET(
       if (jsonFiles.length > 1) {
         // Multiple scenarios in the same directory
         for (const jsonFile of jsonFiles) {
-          const cardData = await getCharacterCardData(jsonFile);
+          const cardData = await getJsonData(jsonFile);
           if (!cardData) continue;
           
           // Find matching PNG file based on JSON filename
@@ -123,7 +123,7 @@ export async function GET(
         const jsonFile = jsonFiles[0];
         const pngFile = pngFiles[0];
         
-        const cardData = await getCharacterCardData(jsonFile);
+        const cardData = await getJsonData(jsonFile);
         if (!cardData) continue;
         
         const thumbnailUrl = pngFile ? await getCharacterThumbnail(path, pngFile) : null;
