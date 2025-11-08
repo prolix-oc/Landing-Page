@@ -53,6 +53,15 @@ export interface CharacterCardCache {
   timestamp: number;
 }
 
+export interface RateLimitInfo {
+  limit: number;
+  remaining: number;
+  reset: number;
+  resource: string;
+  used: number;
+  timestamp: number;
+}
+
 const GITHUB_API_BASE = 'https://api.github.com';
 const REPO_OWNER = 'prolix-oc';
 const REPO_NAME = 'ST-Presets';
@@ -63,6 +72,13 @@ const CHARACTER_CARD_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for character ca
 
 // Import slugify function
 import { slugify } from './slugify';
+import { 
+  USE_LOCAL_CACHE, 
+  isLocalCacheAvailable, 
+  getLocalDirectoryContents,
+  getLocalFileCommit,
+  logLocalCacheStatus 
+} from './local-cache';
 
 // In-memory cache
 const cache = new Map<string, CachedData>();
@@ -77,11 +93,54 @@ const refreshingKeys = new Set<string>();
 let warmupCompleted = false;
 let warmupInProgress = false;
 
+// Track periodic refresh
+let periodicRefreshInterval: NodeJS.Timeout | null = null;
+let lastPeriodicRefresh: number = 0;
+const BASE_PERIODIC_REFRESH_INTERVAL = 45 * 1000; // 45 seconds base interval
+let currentPeriodicRefreshInterval = BASE_PERIODIC_REFRESH_INTERVAL;
+
+// Rate limit tracking
+let rateLimitInfo: RateLimitInfo | null = null;
+
+// Adaptive caching thresholds
+const RATE_LIMIT_THRESHOLDS = {
+  CRITICAL: 0.1,  // 10% remaining - slow down significantly
+  LOW: 0.25,      // 25% remaining - slow down moderately
+  MEDIUM: 0.5,    // 50% remaining - slight slowdown
+  HEALTHY: 1.0    // Above 50% - normal operation
+};
+
+const INTERVAL_MULTIPLIERS = {
+  CRITICAL: 4.0,  // 180 seconds (3 minutes)
+  LOW: 2.5,       // 112.5 seconds (~2 minutes)
+  MEDIUM: 1.5,    // 67.5 seconds (~1 minute)
+  HEALTHY: 1.0    // 45 seconds (base)
+};
+
 /**
  * Fetches data from GitHub with background revalidation strategy.
  * Returns cached data immediately if available, and silently updates in background.
+ * If local cache is enabled, it will be used as the data source instead of GitHub API.
  */
 export async function fetchFromGitHub(path: string): Promise<any> {
+  // Check if local cache should be used
+  if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+    try {
+      const localData = await getLocalDirectoryContents(path);
+      if (localData && localData.length > 0) {
+        // Cache the local data in memory for consistency with the rest of the system
+        const cacheKey = `github:${path}`;
+        cache.set(cacheKey, {
+          data: localData,
+          timestamp: Date.now()
+        });
+        return localData;
+      }
+    } catch (error) {
+      console.warn(`[Local Cache] Failed to read from local cache for ${path}, falling back to GitHub API:`, error);
+    }
+  }
+
   const cacheKey = `github:${path}`;
   const cached = cache.get(cacheKey);
   const now = Date.now();
@@ -104,6 +163,81 @@ export async function fetchFromGitHub(path: string): Promise<any> {
 }
 
 /**
+ * Extracts rate limit information from GitHub API response headers
+ */
+function extractRateLimitInfo(headers: Headers): RateLimitInfo | null {
+  const limit = headers.get('x-ratelimit-limit');
+  const remaining = headers.get('x-ratelimit-remaining');
+  const reset = headers.get('x-ratelimit-reset');
+  const resource = headers.get('x-ratelimit-resource');
+  const used = headers.get('x-ratelimit-used');
+
+  if (!limit || !remaining || !reset) {
+    return null;
+  }
+
+  return {
+    limit: parseInt(limit, 10),
+    remaining: parseInt(remaining, 10),
+    reset: parseInt(reset, 10),
+    resource: resource || 'core',
+    used: used ? parseInt(used, 10) : 0,
+    timestamp: Date.now()
+  };
+}
+
+/**
+ * Calculates adaptive refresh interval based on current rate limit status
+ */
+function calculateAdaptiveInterval(): number {
+  if (!rateLimitInfo) {
+    return BASE_PERIODIC_REFRESH_INTERVAL;
+  }
+
+  const remainingPercentage = rateLimitInfo.remaining / rateLimitInfo.limit;
+  
+  let multiplier = INTERVAL_MULTIPLIERS.HEALTHY;
+  let status = 'HEALTHY';
+
+  if (remainingPercentage <= RATE_LIMIT_THRESHOLDS.CRITICAL) {
+    multiplier = INTERVAL_MULTIPLIERS.CRITICAL;
+    status = 'CRITICAL';
+  } else if (remainingPercentage <= RATE_LIMIT_THRESHOLDS.LOW) {
+    multiplier = INTERVAL_MULTIPLIERS.LOW;
+    status = 'LOW';
+  } else if (remainingPercentage <= RATE_LIMIT_THRESHOLDS.MEDIUM) {
+    multiplier = INTERVAL_MULTIPLIERS.MEDIUM;
+    status = 'MEDIUM';
+  }
+
+  const newInterval = Math.floor(BASE_PERIODIC_REFRESH_INTERVAL * multiplier);
+  
+  // Log if interval changed significantly
+  if (Math.abs(newInterval - currentPeriodicRefreshInterval) > 5000) {
+    console.log(`[Rate Limit] Adjusting refresh interval: ${currentPeriodicRefreshInterval}ms → ${newInterval}ms (${status}: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining, ${Math.floor(remainingPercentage * 100)}%)`);
+  }
+
+  return newInterval;
+}
+
+/**
+ * Updates the periodic refresh interval if rate limits require adjustment
+ */
+function updatePeriodicRefreshInterval(): void {
+  const newInterval = calculateAdaptiveInterval();
+  
+  if (newInterval !== currentPeriodicRefreshInterval) {
+    currentPeriodicRefreshInterval = newInterval;
+    
+    // Restart the interval with the new timing
+    if (periodicRefreshInterval) {
+      stopPeriodicRefresh();
+      startPeriodicRefresh();
+    }
+  }
+}
+
+/**
  * Fetches fresh data and updates cache
  */
 async function fetchAndCache(path: string, cacheKey: string): Promise<any> {
@@ -118,6 +252,13 @@ async function fetchAndCache(path: string, cacheKey: string): Promise<any> {
     },
     cache: 'no-store' // Disable Next.js caching, we handle it ourselves
   });
+
+  // Extract and store rate limit info
+  const newRateLimitInfo = extractRateLimitInfo(response.headers);
+  if (newRateLimitInfo) {
+    rateLimitInfo = newRateLimitInfo;
+    updatePeriodicRefreshInterval();
+  }
 
   if (!response.ok) {
     throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
@@ -152,6 +293,24 @@ function refreshInBackground(path: string, cacheKey: string): void {
 
 export async function getLatestCommit(filePath: string): Promise<GitHubCommit | null> {
   try {
+    // Check if local cache should be used
+    if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+      try {
+        const localCommit = await getLocalFileCommit(filePath);
+        if (localCommit) {
+          // Cache the local commit data in memory
+          const cacheKey = `commit:${filePath}`;
+          cache.set(cacheKey, {
+            data: localCommit,
+            timestamp: Date.now()
+          });
+          return localCommit;
+        }
+      } catch (error) {
+        console.warn(`[Local Cache] Failed to get commit info from local cache for ${filePath}, falling back to GitHub API:`, error);
+      }
+    }
+
     const cacheKey = `commit:${filePath}`;
     const cached = cache.get(cacheKey);
     const now = Date.now();
@@ -185,6 +344,13 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string): Promise<
     },
     cache: 'no-store'
   });
+
+  // Extract and store rate limit info
+  const newRateLimitInfo = extractRateLimitInfo(response.headers);
+  if (newRateLimitInfo) {
+    rateLimitInfo = newRateLimitInfo;
+    updatePeriodicRefreshInterval();
+  }
 
   if (!response.ok) {
     return null;
@@ -379,9 +545,20 @@ export function getCharacterCardFromCache(path: string, sha: string): CharacterC
 /**
  * Warm-up cache by pre-fetching all required GitHub content
  * This ensures fresh data is always available and prevents stale cache issues
+ * If local cache is enabled, warmup is skipped as data is loaded from disk on demand
  */
 export async function warmupCache(): Promise<void> {
   if (warmupInProgress || warmupCompleted) {
+    return;
+  }
+
+  // Log local cache status
+  logLocalCacheStatus();
+
+  // If local cache is enabled and available, skip GitHub warmup
+  if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+    console.log('[Cache Warmup] Skipping GitHub warmup - using local cache');
+    warmupCompleted = true;
     return;
   }
 
@@ -534,6 +711,9 @@ export async function warmupCache(): Promise<void> {
     warmupCompleted = true;
     const duration = Date.now() - startTime;
     console.log(`[Cache Warmup] Completed in ${duration}ms`);
+    
+    // Start periodic refresh after warmup completes
+    startPeriodicRefresh();
   } catch (error) {
     console.error('[Cache Warmup] Error during cache warm-up:', error);
   } finally {
@@ -562,4 +742,121 @@ export function getWarmupStatus(): { completed: boolean; inProgress: boolean } {
     completed: warmupCompleted,
     inProgress: warmupInProgress
   };
+}
+
+/**
+ * Refreshes all cached entries in the background
+ * This ensures fresh data is always available
+ */
+async function refreshAllCachedEntries(): Promise<void> {
+  // Log rate limit status
+  if (rateLimitInfo) {
+    const remainingPercentage = Math.floor((rateLimitInfo.remaining / rateLimitInfo.limit) * 100);
+    const resetDate = new Date(rateLimitInfo.reset * 1000);
+    console.log(`[Periodic Refresh] Rate Limit Status: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining (${remainingPercentage}%), resets at ${resetDate.toLocaleTimeString()}`);
+  }
+  
+  console.log(`[Periodic Refresh] Starting periodic cache refresh (interval: ${currentPeriodicRefreshInterval}ms)...`);
+  const startTime = Date.now();
+  
+  try {
+    const cacheKeys = Array.from(cache.keys());
+    const githubKeys = cacheKeys.filter(key => key.startsWith('github:'));
+    const commitKeys = cacheKeys.filter(key => key.startsWith('commit:'));
+    
+    // Refresh GitHub content cache entries
+    const githubRefreshes = githubKeys.map(async (cacheKey) => {
+      const path = cacheKey.replace('github:', '');
+      if (!refreshingKeys.has(cacheKey)) {
+        try {
+          await fetchAndCache(path, cacheKey);
+        } catch (error) {
+          console.error(`[Periodic Refresh] Failed to refresh ${path}:`, error);
+        }
+      }
+    });
+    
+    // Refresh commit cache entries
+    const commitRefreshes = commitKeys.map(async (cacheKey) => {
+      const filePath = cacheKey.replace('commit:', '');
+      if (!refreshingKeys.has(cacheKey)) {
+        try {
+          await fetchAndCacheCommit(filePath, cacheKey);
+        } catch (error) {
+          console.error(`[Periodic Refresh] Failed to refresh commit ${filePath}:`, error);
+        }
+      }
+    });
+    
+    // Execute all refreshes in parallel
+    await Promise.all([...githubRefreshes, ...commitRefreshes]);
+    
+    lastPeriodicRefresh = Date.now();
+    const duration = Date.now() - startTime;
+    console.log(`[Periodic Refresh] Completed in ${duration}ms. Refreshed ${githubKeys.length} content entries and ${commitKeys.length} commit entries.`);
+  } catch (error) {
+    console.error('[Periodic Refresh] Error during periodic refresh:', error);
+  }
+}
+
+/**
+ * Starts the periodic cache refresh mechanism
+ * Ensures cache is refreshed every 45 seconds to keep data fresh
+ */
+export function startPeriodicRefresh(): void {
+  // Don't start if already running
+  if (periodicRefreshInterval) {
+    return;
+  }
+  
+  console.log('[Periodic Refresh] Starting periodic refresh with 45s interval...');
+  
+  // Start the interval
+  periodicRefreshInterval = setInterval(() => {
+    // Only refresh if warmup is complete and we have cached entries
+    if (warmupCompleted && cache.size > 0) {
+      refreshAllCachedEntries().catch(error => {
+        console.error('[Periodic Refresh] Async refresh failed:', error);
+      });
+    }
+  }, currentPeriodicRefreshInterval);
+  
+  // Prevent the interval from keeping the process alive in serverless environments
+  if (periodicRefreshInterval.unref) {
+    periodicRefreshInterval.unref();
+  }
+}
+
+/**
+ * Stops the periodic cache refresh
+ */
+export function stopPeriodicRefresh(): void {
+  if (periodicRefreshInterval) {
+    clearInterval(periodicRefreshInterval);
+    periodicRefreshInterval = null;
+    console.log('[Periodic Refresh] Stopped periodic refresh');
+  }
+}
+
+/**
+ * Gets the status of periodic refresh
+ */
+export function getPeriodicRefreshStatus(): {
+  isActive: boolean;
+  lastRefresh: number;
+  nextRefresh: number;
+} {
+  return {
+    isActive: periodicRefreshInterval !== null,
+    lastRefresh: lastPeriodicRefresh,
+    nextRefresh: lastPeriodicRefresh + currentPeriodicRefreshInterval
+  };
+}
+
+/**
+ * Gets the current rate limit status
+ * Returns null if no rate limit information has been received yet
+ */
+export function getRateLimitStatus(): RateLimitInfo | null {
+  return rateLimitInfo;
 }

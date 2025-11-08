@@ -39,6 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local cache directory
+data/
 package-lock.json
 example-stuff/lorebook_content.json
 ANIMATION_FIXES.md

@@ -42,7 +42,7 @@ export default function PresetDownloadModal({
   presetUrl,
   presetName,
 }: PresetDownloadModalProps) {
-  const [step, setStep] = useState<'initial' | 'customize'>('initial');
+  const [step, setStep] = useState<'initial' | 'customize' | 'update-choice'>('initial');
   const [testedSamplers, setTestedSamplers] = useState<TestedSamplers>({});
   const [loading, setLoading] = useState(false);
   const [loadingSamplers, setLoadingSamplers] = useState(false);
@@ -198,8 +198,11 @@ export default function PresetDownloadModal({
             };
           }
           
-          // New prompt that didn't exist in user's version
-          return latestPrompt;
+          // New prompt that didn't exist in user's version - disable by default
+          return {
+            ...latestPrompt,
+            enabled: false,
+          };
         });
       }
 
@@ -208,13 +211,18 @@ export default function PresetDownloadModal({
         mergedPreset.prompt_order = mergedPreset.prompt_order.map((orderItem: any) => {
           if (orderItem.order && Array.isArray(orderItem.order)) {
             orderItem.order = orderItem.order.map((toggle: any) => {
+              // Only enable if it was enabled in user's version
               if (toggle.identifier && userEnabledIds.has(toggle.identifier)) {
                 return {
                   ...toggle,
                   enabled: true,
                 };
               }
-              return toggle;
+              // Otherwise disable (for new or updated prompts)
+              return {
+                ...toggle,
+                enabled: false,
+              };
             });
           }
           return orderItem;
@@ -267,9 +275,9 @@ export default function PresetDownloadModal({
         // Merge the presets
         const merged = mergePrompts(userPreset, latestPreset);
         
-        // Store the merged preset and navigate to customize step
+        // Store the merged preset and navigate to update-choice step
         setUpdatedPreset(merged);
-        setStep('customize');
+        setStep('update-choice');
       } catch (error) {
         console.error('Error processing update:', error);
         alert(error instanceof Error ? error.message : 'Failed to process your preset. Please try again.');
@@ -510,6 +518,104 @@ export default function PresetDownloadModal({
                 </motion.div>
               )}
 
+              {step === 'update-choice' && (
+                <motion.div
+                  key="update-choice"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <button
+                      onClick={() => setStep('initial')}
+                      className="text-purple-400 hover:text-purple-300 transition-colors"
+                      disabled={loading}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <h3 className="text-lg font-semibold text-white">Updated Preset Ready</h3>
+                  </div>
+
+                  <p className="text-gray-300 mb-6">
+                    Your preset has been updated with the latest changes. Would you like to optimize it for a specific model?
+                  </p>
+
+                  <motion.button
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        if (!updatedPreset) {
+                          throw new Error('No updated preset available');
+                        }
+
+                        // Create blob and download
+                        const blob = new Blob([JSON.stringify(updatedPreset, null, 2)], {
+                          type: 'application/json',
+                        });
+                        const blobUrl = URL.createObjectURL(blob);
+
+                        const a = document.createElement('a');
+                        a.href = blobUrl;
+                        a.download = presetName;
+                        document.body.appendChild(a);
+                        a.click();
+
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(blobUrl);
+                        
+                        onClose();
+                      } catch (error) {
+                        console.error('Error downloading preset:', error);
+                        alert('Failed to download preset. Please try again.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-6 py-4 rounded-xl transition-all shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <div className="text-left">
+                        <div className="font-semibold">Download Updated Preset</div>
+                        <div className="text-sm text-purple-200">Skip optimization and download now</div>
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+
+                  <motion.button
+                    onClick={() => setStep('customize')}
+                    disabled={loading}
+                    className="w-full bg-gray-700 hover:bg-gray-600 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                      </svg>
+                      <div className="text-left">
+                        <div className="font-semibold">Optimize for Model</div>
+                        <div className="text-sm text-gray-300">Choose a model to optimize settings</div>
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+                </motion.div>
+              )}
+
               {step === 'customize' && (
                 <motion.div
                   key="customize"
@@ -520,7 +626,7 @@ export default function PresetDownloadModal({
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <button
-                      onClick={() => setStep('initial')}
+                      onClick={() => updatedPreset ? setStep('update-choice') : setStep('initial')}
                       className="text-purple-400 hover:text-purple-300 transition-colors"
                       disabled={loading}
                     >
