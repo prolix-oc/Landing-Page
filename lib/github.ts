@@ -802,10 +802,17 @@ async function refreshAllCachedEntries(): Promise<void> {
 /**
  * Starts the periodic cache refresh mechanism
  * Ensures cache is refreshed every 45 seconds to keep data fresh
+ * Does not start if local cache is enabled (data is always fresh from disk)
  */
 export function startPeriodicRefresh(): void {
   // Don't start if already running
   if (periodicRefreshInterval) {
+    return;
+  }
+  
+  // Don't start periodic refresh if using local cache
+  if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+    console.log('[Periodic Refresh] Disabled - using local cache (data is always fresh from disk)');
     return;
   }
   
