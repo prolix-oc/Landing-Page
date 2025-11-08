@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "World Books - Prolix ST Presets",
+  title: "World Books - Lucid.cards",
   description: "Download world books for SillyTavern to enhance your roleplay experiences with detailed world information and lore.",
   openGraph: {
-    title: "World Books - Prolix ST Presets",
+    title: "World Books - Lucid.cards",
     description: "Download world books for SillyTavern to enhance your roleplay experiences",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "World Books - Prolix ST Presets",
+    title: "World Books - Lucid.cards",
     description: "Download world books for SillyTavern to enhance your roleplay experiences",
   },
 };

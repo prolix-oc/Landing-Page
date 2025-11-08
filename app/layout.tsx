@@ -15,18 +15,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prolix ST Presets - Character Cards, Chat Presets & Extensions",
-  description: "A curated collection of character cards, chat completion presets, world books, and extensions for SillyTavern by Prolix",
+  title: "Lucid.cards - Character Cards, Chat Presets & Extensions",
+  description: "A curated collection of character cards, chat completion presets, world books, and extensions for SillyTavern",
   openGraph: {
-    title: "Prolix ST Presets",
+    title: "Lucid.cards",
     description: "A curated collection of character cards, chat completion presets, world books, and extensions for SillyTavern",
     type: "website",
     locale: "en_US",
-    siteName: "Prolix ST Presets",
+    siteName: "Lucid.cards",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Prolix ST Presets",
+    title: "Lucid.cards",
     description: "A curated collection of character cards, chat completion presets, world books, and extensions for SillyTavern",
   },
 };

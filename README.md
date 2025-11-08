@@ -1,4 +1,4 @@
-# ST Presets Landing Page
+# Lucid.cards - Landing Page
 
 A Next.js landing page for browsing and downloading SillyTavern presets from the [prolix-oc/ST-Presets](https://github.com/prolix-oc/ST-Presets) GitHub repository.
 

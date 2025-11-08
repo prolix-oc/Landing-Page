@@ -17,7 +17,7 @@ interface Extension {
 }
 
 const CATEGORIES = [
-  { id: 'prolix', name: "Prolix's Extensions" },
+  { id: 'prolix', name: "My Extensions" },
   { id: 'recommended', name: 'Recommended Extensions' }
 ];
 

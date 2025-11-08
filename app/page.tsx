@@ -72,7 +72,7 @@ export default function Home() {
           <div className="inline-block mb-6">
             <div className="relative">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">
-                Prolix's Preset Stash
+                Lucid.cards
               </h1>
               <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 opacity-20 blur-lg"></div>
             </div>

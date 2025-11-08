@@ -176,7 +176,7 @@ export async function generateMetadata(
   
   if (!characterData) {
     return {
-      title: "Character Not Found - Prolix ST Presets",
+      title: "Character Not Found - Lucid.cards",
       description: "The requested character card could not be found.",
     };
   }
@@ -185,20 +185,20 @@ export async function generateMetadata(
   const thumbnailUrl = characterData.thumbnailUrl;
   
   return {
-    title: `${characterName} - Prolix ST Presets`,
-    description: `Grab ${characterName} and other cards from Prolix's ST Presets!`,
+    title: `${characterName} - Lucid.cards`,
+    description: `Grab ${characterName} and other cards from Lucid.cards!`,
     openGraph: {
       title: characterName,
-      description: `Grab ${characterName} and other cards from Prolix's ST Presets!`,
+      description: `Grab ${characterName} and other cards from Lucid.cards!`,
       type: "website",
       locale: "en_US",
-      siteName: "Prolix ST Presets",
+      siteName: "Lucid.cards",
       images: thumbnailUrl ? [thumbnailUrl] : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: characterName,
-      description: `Grab ${characterName} and other cards from Prolix's ST Presets!`,
+      description: `Grab ${characterName} and other cards from Lucid.cards!`,
       images: thumbnailUrl ? [thumbnailUrl] : undefined,
     },
   };
