@@ -181,8 +181,51 @@ export default function PresetDownloadModal({
     }
   };
 
+  // Helper function to extract setvar variables from prompt content
+  const extractSetvarVariables = (content: string): Set<string> => {
+    const setvarRegex = /\{\{setvar\s*::\s*([^}]+)\}\}/g;
+    const variables = new Set<string>();
+    let match;
+    
+    while ((match = setvarRegex.exec(content)) !== null) {
+      variables.add(match[1].trim());
+    }
+    
+    return variables;
+  };
+
+  // Helper function to merge setvar variables from latest into user's content
+  const mergeSetvarVariables = (userContent: string, latestContent: string): string => {
+    const userVars = extractSetvarVariables(userContent);
+    const latestVars = extractSetvarVariables(latestContent);
+    
+    // Find new variables in latest that aren't in user's version
+    const newVars = Array.from(latestVars).filter(v => !userVars.has(v));
+    
+    if (newVars.length === 0) {
+      return userContent; // No new variables to add
+    }
+    
+    // Add new setvar variables to user's content
+    let mergedContent = userContent;
+    newVars.forEach(varName => {
+      // Find the full setvar declaration in latest content
+      const setvarRegex = new RegExp(`\\{\\{setvar\\s*::\\s*${varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*::[^}]*\\}\\}`, 'g');
+      const match = setvarRegex.exec(latestContent);
+      
+      if (match) {
+        // Add the new setvar at the beginning of the content (or another logical place)
+        mergedContent = match[0] + '\n' + mergedContent;
+      }
+    });
+    
+    return mergedContent;
+  };
+
   const mergePrompts = (userPreset: any, latestPreset: any) => {
     try {
+      const SPECIAL_IDENTIFIER = '10983c96-7e4f-441a-a1e9-11b205562a74';
+      
       // Step 1: Build maps of user's toggle states and prompts
       const userPromptsMap = new Map();
       const userPromptNames = new Map();
@@ -246,14 +289,41 @@ export default function PresetDownloadModal({
         });
       }
       
-      // Step 4: Now restore user's enabled states while keeping updated content
+      // Step 4: Build a set of identifiers that exist in latest preset
+      const latestPromptIds = new Set<string>();
+      if (mergedPreset.prompts && Array.isArray(mergedPreset.prompts)) {
+        mergedPreset.prompts.forEach((prompt: any) => {
+          if (prompt.identifier) {
+            latestPromptIds.add(prompt.identifier);
+          }
+        });
+      }
+      
+      // Step 5: Now restore user's enabled states while keeping updated content
       if (mergedPreset.prompts && Array.isArray(mergedPreset.prompts)) {
         mergedPreset.prompts = mergedPreset.prompts.map((latestPrompt: any) => {
           const userPrompt = userPromptsMap.get(latestPrompt.identifier);
           
-          // If this is a custom prompt, preserve it completely from user's version
-          if (customPrompts.has(latestPrompt.identifier)) {
-            return customPrompts.get(latestPrompt.identifier);
+          // SPECIAL CASE: Handle the special identifier - never replace, only diff setvar variables
+          if (latestPrompt.identifier === SPECIAL_IDENTIFIER && userPrompt) {
+            const mergedContent = userPrompt.content && latestPrompt.content
+              ? mergeSetvarVariables(userPrompt.content, latestPrompt.content)
+              : userPrompt.content;
+            
+            return {
+              ...userPrompt,
+              content: mergedContent,
+              enabled: userEnabledStates.get(latestPrompt.identifier) || false,
+            };
+          }
+          
+          // Check if this is a custom prompt by checking if user's version has % in name
+          if (userPrompt && userPrompt.name && typeof userPrompt.name === 'string' && userPrompt.name.startsWith('%')) {
+            // This is a custom prompt - preserve it completely from user's version
+            return {
+              ...userPrompt,
+              enabled: userEnabledStates.get(latestPrompt.identifier) || false,
+            };
           }
           
           if (userPrompt) {
@@ -268,7 +338,10 @@ export default function PresetDownloadModal({
             } else {
               // Names don't match - keep user's version unchanged (safety)
               console.log(`Skipping update for identifier ${latestPrompt.identifier}: name mismatch ('${userPromptName}' vs '${latestPrompt.name}')`);
-              return userPrompt;
+              return {
+                ...userPrompt,
+                enabled: userEnabledStates.get(latestPrompt.identifier) || false,
+              };
             }
           }
           
@@ -279,43 +352,50 @@ export default function PresetDownloadModal({
           };
         });
         
-        // Add custom prompts that don't exist in latest version
+        // Add ONLY custom prompts that don't exist in latest version
+        // Non-custom prompts that were removed from server should stay removed
         customPrompts.forEach((customPrompt, identifier) => {
           const existsInLatest = mergedPreset.prompts.some(
             (p: any) => p.identifier === identifier
           );
           if (!existsInLatest) {
-            mergedPreset.prompts.push(customPrompt);
+            mergedPreset.prompts.push({
+              ...customPrompt,
+              enabled: userEnabledStates.get(identifier) || false,
+            });
           }
         });
         
-        // Add user prompts that aren't in the latest
-        userPromptsMap.forEach((userPrompt, identifier) => {
-          const existsInLatest = mergedPreset.prompts.some(
-            (p: any) => p.identifier === identifier
-          );
-          if (!existsInLatest && !customPrompts.has(identifier)) {
-            const nameExistsInLatest = mergedPreset.prompts.some(
-              (p: any) => p.name === userPrompt.name
-            );
-            if (!nameExistsInLatest) {
-              mergedPreset.prompts.push(userPrompt);
-            }
-          }
-        });
+        // DO NOT add user prompts that aren't in the latest unless they're custom
+        // This ensures prompts removed from server are also removed from user's preset
       }
 
-      // Step 5: Restore enabled states in prompt_order
+      // Step 6: Restore enabled states in prompt_order and remove deprecated prompts
       if (mergedPreset.prompt_order && Array.isArray(mergedPreset.prompt_order)) {
         mergedPreset.prompt_order = mergedPreset.prompt_order.map((orderItem: any) => {
           if (orderItem.order && Array.isArray(orderItem.order)) {
-            orderItem.order = orderItem.order.map((toggle: any) => {
-              // Restore user's enabled state, keeping updated content
-              return {
-                ...toggle,
-                enabled: userEnabledStates.get(toggle.identifier) || false,
-              };
-            });
+            // Filter out prompts that don't exist in latest AND aren't custom prompts
+            orderItem.order = orderItem.order
+              .filter((toggle: any) => {
+                // Keep if it exists in latest preset
+                if (latestPromptIds.has(toggle.identifier)) {
+                  return true;
+                }
+                // Keep if it's a custom prompt
+                if (customPrompts.has(toggle.identifier)) {
+                  return true;
+                }
+                // Remove deprecated prompts
+                console.log(`Removing deprecated prompt from prompt_order: ${toggle.identifier}`);
+                return false;
+              })
+              .map((toggle: any) => {
+                // Restore user's enabled state, keeping updated content
+                return {
+                  ...toggle,
+                  enabled: userEnabledStates.get(toggle.identifier) || false,
+                };
+              });
             
             // Add custom prompt toggles that might not exist in latest
             customPrompts.forEach((customPrompt, identifier) => {
