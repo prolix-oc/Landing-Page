@@ -183,10 +183,10 @@ export default function PresetDownloadModal({
 
   const mergePrompts = (userPreset: any, latestPreset: any) => {
     try {
-      // Create maps of user prompts by identifier and name for safety checking
+      // Step 1: Build maps of user's toggle states and prompts
       const userPromptsMap = new Map();
-      const userPromptNames = new Map(); // Map identifier to name for safety
-      const userEnabledIds = new Set();
+      const userPromptNames = new Map();
+      const userEnabledStates = new Map(); // Track enabled state per identifier
       const customPrompts = new Map(); // Track custom prompts (those starting with %)
       
       if (userPreset.prompts && Array.isArray(userPreset.prompts)) {
@@ -194,9 +194,8 @@ export default function PresetDownloadModal({
           if (prompt.identifier) {
             userPromptsMap.set(prompt.identifier, prompt);
             userPromptNames.set(prompt.identifier, prompt.name);
-            if (prompt.enabled) {
-              userEnabledIds.add(prompt.identifier);
-            }
+            // Store the enabled state from prompts array (though prompt_order is the real source)
+            userEnabledStates.set(prompt.identifier, prompt.enabled || false);
             
             // Check if this is a custom prompt (name starts with %)
             if (prompt.name && typeof prompt.name === 'string' && prompt.name.startsWith('%')) {
@@ -208,29 +207,51 @@ export default function PresetDownloadModal({
         });
       }
 
-      // Also track enabled identifiers in prompt_order
+      // Collect enabled states from prompt_order (this is the authoritative source)
       if (userPreset.prompt_order && Array.isArray(userPreset.prompt_order)) {
         userPreset.prompt_order.forEach((orderItem: any) => {
           if (orderItem.order && Array.isArray(orderItem.order)) {
             orderItem.order.forEach((toggle: any) => {
-              if (toggle.identifier && toggle.enabled) {
-                userEnabledIds.add(toggle.identifier);
+              if (toggle.identifier) {
+                userEnabledStates.set(toggle.identifier, toggle.enabled || false);
               }
             });
           }
         });
       }
 
-      // Create the merged preset starting with latest
+      // Step 2: Start with latest preset structure
       const mergedPreset = { ...latestPreset };
       
-      // Update prompt contents - ALWAYS set enabled to false in prompts array
-      // The true enabled state comes from prompt_order, not from prompts
+      // Step 3: Set ALL enabled states to false in latest preset (preset B) first
+      if (mergedPreset.prompts && Array.isArray(mergedPreset.prompts)) {
+        mergedPreset.prompts = mergedPreset.prompts.map((prompt: any) => ({
+          ...prompt,
+          enabled: false
+        }));
+      }
+      
+      if (mergedPreset.prompt_order && Array.isArray(mergedPreset.prompt_order)) {
+        mergedPreset.prompt_order = mergedPreset.prompt_order.map((orderItem: any) => {
+          if (orderItem.order && Array.isArray(orderItem.order)) {
+            return {
+              ...orderItem,
+              order: orderItem.order.map((toggle: any) => ({
+                ...toggle,
+                enabled: false
+              }))
+            };
+          }
+          return orderItem;
+        });
+      }
+      
+      // Step 4: Now restore user's enabled states while keeping updated content
       if (mergedPreset.prompts && Array.isArray(mergedPreset.prompts)) {
         mergedPreset.prompts = mergedPreset.prompts.map((latestPrompt: any) => {
           const userPrompt = userPromptsMap.get(latestPrompt.identifier);
           
-          // If this is a custom prompt (starts with %), preserve it completely
+          // If this is a custom prompt, preserve it completely from user's version
           if (customPrompts.has(latestPrompt.identifier)) {
             return customPrompts.get(latestPrompt.identifier);
           }
@@ -239,27 +260,26 @@ export default function PresetDownloadModal({
             // SAFETY CHECK: Only merge if both identifier AND name match
             const userPromptName = userPromptNames.get(latestPrompt.identifier);
             if (userPromptName === latestPrompt.name) {
-              // Names match - safe to update content
-              // IMPORTANT: Always set enabled to false - prompt_order controls the actual state
+              // Names match - use latest content but preserve user's enabled state
               return {
                 ...latestPrompt,
-                enabled: false,
+                enabled: userEnabledStates.get(latestPrompt.identifier) || false,
               };
             } else {
-              // Names don't match - keep user's version unchanged
+              // Names don't match - keep user's version unchanged (safety)
               console.log(`Skipping update for identifier ${latestPrompt.identifier}: name mismatch ('${userPromptName}' vs '${latestPrompt.name}')`);
               return userPrompt;
             }
           }
           
-          // New prompt that didn't exist in user's version - disable by default
+          // New prompt that didn't exist in user's version - keep disabled
           return {
             ...latestPrompt,
             enabled: false,
           };
         });
         
-        // Add any custom prompts that don't exist in latest version
+        // Add custom prompts that don't exist in latest version
         customPrompts.forEach((customPrompt, identifier) => {
           const existsInLatest = mergedPreset.prompts.some(
             (p: any) => p.identifier === identifier
@@ -269,41 +289,31 @@ export default function PresetDownloadModal({
           }
         });
         
-        // Add any user prompts that aren't in the latest (missing identifiers)
+        // Add user prompts that aren't in the latest
         userPromptsMap.forEach((userPrompt, identifier) => {
           const existsInLatest = mergedPreset.prompts.some(
             (p: any) => p.identifier === identifier
           );
-          // Don't re-add if we already handled it as custom prompt
           if (!existsInLatest && !customPrompts.has(identifier)) {
-            // Check if name exists in latest
             const nameExistsInLatest = mergedPreset.prompts.some(
               (p: any) => p.name === userPrompt.name
             );
             if (!nameExistsInLatest) {
-              // Safe to add - neither identifier nor name exists
               mergedPreset.prompts.push(userPrompt);
             }
           }
         });
       }
 
-      // Update prompt_order while preserving user's enabled toggles
+      // Step 5: Restore enabled states in prompt_order
       if (mergedPreset.prompt_order && Array.isArray(mergedPreset.prompt_order)) {
         mergedPreset.prompt_order = mergedPreset.prompt_order.map((orderItem: any) => {
           if (orderItem.order && Array.isArray(orderItem.order)) {
             orderItem.order = orderItem.order.map((toggle: any) => {
-              // Only enable if it was enabled in user's version
-              if (toggle.identifier && userEnabledIds.has(toggle.identifier)) {
-                return {
-                  ...toggle,
-                  enabled: true,
-                };
-              }
-              // Otherwise disable (for new or updated prompts)
+              // Restore user's enabled state, keeping updated content
               return {
                 ...toggle,
-                enabled: false,
+                enabled: userEnabledStates.get(toggle.identifier) || false,
               };
             });
             
@@ -312,16 +322,29 @@ export default function PresetDownloadModal({
               const existsInOrder = orderItem.order.some(
                 (t: any) => t.identifier === identifier
               );
-              if (!existsInOrder && userEnabledIds.has(identifier)) {
+              if (!existsInOrder) {
                 orderItem.order.push({
                   identifier,
-                  enabled: true
+                  enabled: userEnabledStates.get(identifier) || false
                 });
               }
             });
           }
           return orderItem;
         });
+      }
+
+      // Step 6: Increment version number
+      if (mergedPreset.spec_version) {
+        const currentVersion = mergedPreset.spec_version;
+        // Parse version string (e.g., "2.8" -> 2.8)
+        const versionMatch = currentVersion.match(/(\d+)\.(\d+)/);
+        if (versionMatch) {
+          const major = parseInt(versionMatch[1]);
+          const minor = parseInt(versionMatch[2]);
+          // Increment minor version
+          mergedPreset.spec_version = `${major}.${minor + 1}`;
+        }
       }
 
       return mergedPreset;
