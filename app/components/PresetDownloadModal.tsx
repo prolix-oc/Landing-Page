@@ -361,43 +361,11 @@ export default function PresetDownloadModal({
         }
 
         // Fetch the latest version
-        // DEBUG: Log the URL being fetched for merging
-        console.log('🔍 Fetching preset for merge:', {
-          presetUrl,
-          presetName,
-          isProlix: presetName.toLowerCase().includes('prolix'),
-          urlContainsProlix: presetUrl.toLowerCase().includes('prolix')
-        });
-        
         const latestResponse = await fetch(presetUrl);
         if (!latestResponse.ok) {
           throw new Error(`Failed to fetch latest preset: ${latestResponse.statusText}`);
         }
         const latestPreset = await latestResponse.json();
-        
-        // DEBUG: Log what was actually fetched - check for Prolix-specific identifiers in the data
-        const prolixToggles = latestPreset.prompt_order?.[0]?.order?.filter((t: any) => 
-          t.identifier && ['%prolix-thinking-marker%', '%prolix-narrative-style%'].includes(t.identifier)
-        ) || [];
-        
-        console.log('🔍 Fetched preset data:', {
-          promptsCount: latestPreset.prompts?.length || 0,
-          firstPromptName: latestPreset.prompts?.[0]?.name || 'N/A',
-          hasProlixToggles: prolixToggles.length > 0,
-          prolixTogglesCount: prolixToggles.length,
-          prolixTogglesList: prolixToggles.map((t: any) => t.identifier)
-        });
-        
-        // ALERT: Show warning if Prolix toggles detected in what should be standard preset
-        if (prolixToggles.length > 0 && !presetName.toLowerCase().includes('prolix')) {
-          const togglesList = prolixToggles.map((t: any) => t.identifier);
-          console.error('⚠️ WARNING: Prolix toggles detected in STANDARD preset!', {
-            url: presetUrl,
-            name: presetName,
-            toggles: togglesList
-          });
-          alert(`⚠️ DEBUG WARNING:\n\nProlix-specific toggles detected in what should be a STANDARD preset!\n\nURL: ${presetUrl}\nName: ${presetName}\nToggles found: ${togglesList.join(', ')}\n\nThis confirms there's a data mismatch. Check browser console for details.`);
-        }
 
         // Merge the presets
         const merged = mergePrompts(userPreset, latestPreset);
@@ -570,21 +538,6 @@ export default function PresetDownloadModal({
                   <p className="text-gray-300 mb-6">
                     Choose how you'd like to download <span className="font-semibold text-white">{displayName}</span>
                   </p>
-
-                  {/* DEBUG: Show URL information */}
-                  <div className="bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-3 mb-4 text-xs">
-                    <div className="text-yellow-300 font-semibold mb-1">🔍 DEBUG INFO:</div>
-                    <div className="text-yellow-100 space-y-1">
-                      <div><strong>Preset Name:</strong> {presetName}</div>
-                      <div><strong>Is Prolix Name:</strong> {presetName.toLowerCase().includes('prolix') ? 'YES' : 'NO'}</div>
-                      <div className="break-all"><strong>URL:</strong> {presetUrl}</div>
-                      <div><strong>Filename Contains Prolix:</strong> {(() => {
-                        // Extract filename from URL (after last /)
-                        const filename = presetUrl.split('/').pop() || '';
-                        return filename.toLowerCase().includes('prolix') ? 'YES' : 'NO';
-                      })()}</div>
-                    </div>
-                  </div>
 
                   <motion.button
                     onClick={handleDownloadNow}

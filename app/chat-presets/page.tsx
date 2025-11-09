@@ -170,13 +170,6 @@ function ChatPresetsContent() {
   const allPresets = [...presetCategories.standard, ...presetCategories.prolix];
 
   const handleDownloadClick = (url: string, name: string) => {
-    // DEBUG: Log the URL being passed to the modal
-    console.log('🔍 Download button clicked:', {
-      name,
-      url,
-      isProlix: name.toLowerCase().includes('prolix'),
-      urlContainsProlix: url.toLowerCase().includes('prolix')
-    });
     setModalPreset({ url, name });
     setModalOpen(true);
   };
