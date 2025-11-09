@@ -183,8 +183,9 @@ export default function PresetDownloadModal({
 
   const mergePrompts = (userPreset: any, latestPreset: any) => {
     try {
-      // Create a map of user prompts by identifier
+      // Create maps of user prompts by identifier and name for safety checking
       const userPromptsMap = new Map();
+      const userPromptNames = new Map(); // Map identifier to name for safety
       const userEnabledIds = new Set();
       const customPrompts = new Map(); // Track custom prompts (those starting with %)
       
@@ -192,6 +193,7 @@ export default function PresetDownloadModal({
         userPreset.prompts.forEach((prompt: any) => {
           if (prompt.identifier) {
             userPromptsMap.set(prompt.identifier, prompt);
+            userPromptNames.set(prompt.identifier, prompt.name);
             if (prompt.enabled) {
               userEnabledIds.add(prompt.identifier);
             }
@@ -233,11 +235,19 @@ export default function PresetDownloadModal({
           }
           
           if (userPrompt) {
-            // Use latest content but preserve user's enabled state
-            return {
-              ...latestPrompt,
-              enabled: userPrompt.enabled,
-            };
+            // SAFETY CHECK: Only merge if both identifier AND name match
+            const userPromptName = userPromptNames.get(latestPrompt.identifier);
+            if (userPromptName === latestPrompt.name) {
+              // Names match - safe to update content while preserving enabled state
+              return {
+                ...latestPrompt,
+                enabled: userPrompt.enabled,
+              };
+            } else {
+              // Names don't match - keep user's version unchanged
+              console.log(`Skipping update for identifier ${latestPrompt.identifier}: name mismatch ('${userPromptName}' vs '${latestPrompt.name}')`);
+              return userPrompt;
+            }
           }
           
           // New prompt that didn't exist in user's version - disable by default
@@ -254,6 +264,24 @@ export default function PresetDownloadModal({
           );
           if (!existsInLatest) {
             mergedPreset.prompts.push(customPrompt);
+          }
+        });
+        
+        // Add any user prompts that aren't in the latest (missing identifiers)
+        userPromptsMap.forEach((userPrompt, identifier) => {
+          const existsInLatest = mergedPreset.prompts.some(
+            (p: any) => p.identifier === identifier
+          );
+          // Don't re-add if we already handled it as custom prompt
+          if (!existsInLatest && !customPrompts.has(identifier)) {
+            // Check if name exists in latest
+            const nameExistsInLatest = mergedPreset.prompts.some(
+              (p: any) => p.name === userPrompt.name
+            );
+            if (!nameExistsInLatest) {
+              // Safe to add - neither identifier nor name exists
+              mergedPreset.prompts.push(userPrompt);
+            }
           }
         });
       }
@@ -362,6 +390,8 @@ export default function PresetDownloadModal({
     try {
       // Use the updated preset if available, otherwise fetch the latest
       let presetData;
+      const isUpdatingUserPreset = !!updatedPreset;
+      
       if (updatedPreset) {
         presetData = updatedPreset;
       } else {
@@ -385,7 +415,9 @@ export default function PresetDownloadModal({
       });
 
       // Handle prompt toggle modifications if togglePre is provided
-      if (samplerConfig.togglePre && customizedPreset.prompt_order) {
+      // IMPORTANT: Only apply toggle overrides when NOT updating user's preset
+      // When updating, we must preserve the user's preferred enabled/disabled states
+      if (samplerConfig.togglePre && customizedPreset.prompt_order && !isUpdatingUserPreset) {
         const promptOrder = customizedPreset.prompt_order;
         
         // Find the prompt order object with character_id === 100001
