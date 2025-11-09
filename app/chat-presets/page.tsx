@@ -135,12 +135,13 @@ function ChatPresetsContent() {
     return formatted;
   };
 
-  // Helper function to extract version number and descriptors (e.g., v1.0, v1.0 Hotfix)
+  // Helper function to extract version number and descriptors (e.g., v1.0, v1.0 Hotfix, v2.9.2)
   const extractVersion = (name: string) => {
     // Match version pattern with optional descriptors (but not "Prolix Preferred" or "Prolix Edition")
-    // Matches: v2.8, v2.8 Hotfix, v2.8 Quick Fix, v2.8 Repatch
+    // Matches: v2.8, v2.8.1, v2.9.2, v2.8 Hotfix, v2.8.1 Quick Fix, etc.
     // Does NOT match Prolix as a descriptor: v2.8 Prolix Preferred should extract as just "v2.8"
-    const versionMatch = name.match(/v\d+\.\d+(?:\s+(?:(?!Prolix)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?))?/);
+    // Captures from 'v' character through all numeric segments (e.g., v2.9.2)
+    const versionMatch = name.match(/v\d+(?:\.\d+)*(?:\s+(?:(?!Prolix)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?))?/);
     return versionMatch ? versionMatch[0] : null;
   };
 
@@ -151,7 +152,8 @@ function ChatPresetsContent() {
     // Then remove everything from "Prolix" onwards (Prolix Preferred, Prolix Edition, etc.)
     formatted = formatted.replace(/\s*Prolix.*$/i, '').trim();
     // Finally, remove the version number and any descriptors (Hotfix, Quick Fix, etc.)
-    formatted = formatted.replace(/\s*v\d+\.\d+(?:\s+(?:Hotfix|Quick\s+Fix|Repatch|[A-Z][a-z]+))?\s*/g, '').trim();
+    // Updated regex to handle semantic versioning like v2.9.2
+    formatted = formatted.replace(/\s*v\d+(?:\.\d+)*(?:\s+(?:Hotfix|Quick\s+Fix|Repatch|[A-Z][a-z]+))?\s*/g, '').trim();
     return formatted;
   };
 

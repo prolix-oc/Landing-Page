@@ -152,11 +152,41 @@ export default function PresetDownloadModal({
     return obj;
   };
 
+  const saveCustomPromptBackup = async (prompt: any, presetName: string) => {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupData = {
+        timestamp,
+        presetName,
+        prompt: sanitizeJSON(prompt)
+      };
+      
+      // Send backup to server for persistent storage
+      const response = await fetch('/api/chat-presets/backup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(backupData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save backup to server');
+      }
+      
+      const result = await response.json();
+      console.log(`Custom prompt backup saved: ${prompt.name || prompt.identifier} (${result.filename})`);
+    } catch (error) {
+      console.error('Failed to backup custom prompt:', error);
+    }
+  };
+
   const mergePrompts = (userPreset: any, latestPreset: any) => {
     try {
       // Create a map of user prompts by identifier
       const userPromptsMap = new Map();
       const userEnabledIds = new Set();
+      const customPrompts = new Map(); // Track custom prompts (those starting with %)
       
       if (userPreset.prompts && Array.isArray(userPreset.prompts)) {
         userPreset.prompts.forEach((prompt: any) => {
@@ -164,6 +194,13 @@ export default function PresetDownloadModal({
             userPromptsMap.set(prompt.identifier, prompt);
             if (prompt.enabled) {
               userEnabledIds.add(prompt.identifier);
+            }
+            
+            // Check if this is a custom prompt (name starts with %)
+            if (prompt.name && typeof prompt.name === 'string' && prompt.name.startsWith('%')) {
+              customPrompts.set(prompt.identifier, prompt);
+              // Silently save backup of custom prompt
+              saveCustomPromptBackup(prompt, presetName);
             }
           }
         });
@@ -185,10 +222,15 @@ export default function PresetDownloadModal({
       // Create the merged preset starting with latest
       const mergedPreset = { ...latestPreset };
       
-      // Update prompt contents while preserving user's enabled state
+      // Update prompt contents while preserving user's enabled state and custom prompts
       if (mergedPreset.prompts && Array.isArray(mergedPreset.prompts)) {
         mergedPreset.prompts = mergedPreset.prompts.map((latestPrompt: any) => {
           const userPrompt = userPromptsMap.get(latestPrompt.identifier);
+          
+          // If this is a custom prompt (starts with %), preserve it completely
+          if (customPrompts.has(latestPrompt.identifier)) {
+            return customPrompts.get(latestPrompt.identifier);
+          }
           
           if (userPrompt) {
             // Use latest content but preserve user's enabled state
@@ -203,6 +245,16 @@ export default function PresetDownloadModal({
             ...latestPrompt,
             enabled: false,
           };
+        });
+        
+        // Add any custom prompts that don't exist in the latest version
+        customPrompts.forEach((customPrompt, identifier) => {
+          const existsInLatest = mergedPreset.prompts.some(
+            (p: any) => p.identifier === identifier
+          );
+          if (!existsInLatest) {
+            mergedPreset.prompts.push(customPrompt);
+          }
         });
       }
 
@@ -223,6 +275,19 @@ export default function PresetDownloadModal({
                 ...toggle,
                 enabled: false,
               };
+            });
+            
+            // Add custom prompt toggles that might not exist in latest
+            customPrompts.forEach((customPrompt, identifier) => {
+              const existsInOrder = orderItem.order.some(
+                (t: any) => t.identifier === identifier
+              );
+              if (!existsInOrder && userEnabledIds.has(identifier)) {
+                orderItem.order.push({
+                  identifier,
+                  enabled: true
+                });
+              }
             });
           }
           return orderItem;
