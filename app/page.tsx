@@ -97,99 +97,13 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Featured Card - Full Width */}
-        {categories.filter(cat => cat.featured).map((category, index) => (
-          <Link
-            key={category.href}
-            href={category.href}
-            className="stagger-item group relative max-w-5xl mx-auto mb-8"
-            style={{ 
-              animationDelay: `${index * 0.1}s`,
-              willChange: 'transform'
-            }}
-          >
-            {/* Glow effect on hover */}
-            <div 
-              className={`absolute -inset-0.5 bg-gradient-to-r ${category.gradient} rounded-2xl opacity-0 group-hover:opacity-75 blur transition-opacity duration-500`}
-              style={{
-                willChange: 'opacity',
-                backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)'
-              }}
-            ></div>
-            
-            {/* Card */}
-            <div 
-              className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 group-hover:bg-gray-900/90 backdrop-blur-xl border border-gray-800 transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl"
-              style={{
-                willChange: 'transform, background-color, border-color',
-                backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)'
-              }}
-            >
-              {/* Breathing gradient overlay */}
-              <div 
-                data-breathing-gradient="true"
-                className={`absolute inset-0 bg-gradient-to-br ${category.gradient} breathing-gradient-hover`}
-                style={{
-                  willChange: 'opacity',
-                  backfaceVisibility: 'hidden',
-                  backgroundSize: '200% 200%',
-                  opacity: 0
-                }}
-              ></div>
-              
-              {/* Accent bar */}
-              <div 
-                className={`absolute top-0 left-0 right-0 h-1 ${category.accentColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}
-                style={{
-                  willChange: 'transform',
-                  backfaceVisibility: 'hidden'
-                }}
-              ></div>
-              
-              <div className="relative p-8 lg:p-12 text-center">
-                {/* Icon */}
-                <div className="mb-6 flex justify-center">
-                  <div className={`inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ${category.iconBg} ${category.iconColor} group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                    {category.icon}
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 transition-all duration-300">
-                  {category.title}
-                </h2>
-
-                {/* Description */}
-                <p className="text-gray-400 text-lg sm:text-xl leading-relaxed group-hover:text-gray-300 transition-colors duration-300 max-w-2xl mx-auto">
-                  {category.description}
-                </p>
-
-                {/* CTA Badge */}
-                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 text-sm font-medium">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                  Learn More
-                </div>
-              </div>
-
-              {/* Shimmer effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-              </div>
-            </div>
-          </Link>
-        ))}
-
         {/* Category Grid with enhanced cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto mb-12 sm:mb-16">
-          {categories.filter(cat => !cat.featured).map((category, index) => (
+          {categories.map((category, index) => (
             <Link
               key={category.href}
               href={category.href}
-              className="stagger-item group relative"
+              className={`stagger-item group relative ${category.featured ? 'lg:col-span-2' : ''}`}
               style={{ 
                 animationDelay: `${index * 0.1}s`,
                 willChange: 'transform'
