@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { motion, Variants } from 'framer-motion';
+import AnimatedLink from '@/app/components/AnimatedLink';
 
 export default function Home() {
   const categories = [
@@ -78,12 +79,48 @@ export default function Home() {
     }
   ];
 
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 50,
+        damping: 15
+      }
+    }
+  };
+
+  const cardVariants: Variants = {
+    hover: { 
+      y: -8,
+      transition: { duration: 0.3, ease: "easeOut" }
+    }
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Main content container - centered for desktop/tablet */}
-      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 max-w-7xl">
-        {/* Header with enhanced animation */}
-        <div className="text-center mb-12 sm:mb-16 lg:mb-20 stagger-item">
+      {/* Main content container */}
+      <motion.div 
+        className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 max-w-7xl"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div className="text-center mb-12 sm:mb-16 lg:mb-20" variants={itemVariants}>
           <div className="inline-block mb-6">
             <div className="relative">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">
@@ -95,90 +132,73 @@ export default function Home() {
           <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             A collection of character cards, chat presets, world books, and extensions for <span className="text-cyan-400 font-semibold">SillyTavern</span>—made by yours truly.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Category Grid with enhanced cards */}
+        {/* Category Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto mb-12 sm:mb-16">
-          {categories.map((category, index) => (
-            <Link
+          {categories.map((category) => (
+            <motion.div
               key={category.href}
-              href={category.href}
-              className={`stagger-item group relative ${category.featured ? 'lg:col-span-2' : ''}`}
-              style={{ 
-                animationDelay: `${index * 0.1}s`,
-                willChange: 'transform'
-              }}
+              variants={itemVariants}
+              className={`${category.featured ? 'lg:col-span-2' : ''}`}
             >
-              {/* Glow effect on hover */}
-              <div 
-                className={`absolute -inset-0.5 bg-gradient-to-r ${category.gradient} rounded-2xl opacity-0 group-hover:opacity-75 blur transition-opacity duration-500`}
-                style={{
-                  willChange: 'opacity',
-                  backfaceVisibility: 'hidden',
-                  transform: 'translateZ(0)'
-                }}
-              ></div>
-              
-              {/* Card */}
-              <div 
-                className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 group-hover:bg-gray-900/90 backdrop-blur-xl border border-gray-800 transition-all duration-300 ease-out group-hover:scale-[1.02] group-hover:shadow-2xl"
-                style={{
-                  willChange: 'transform, background-color, border-color',
-                  backfaceVisibility: 'hidden',
-                  transform: 'translateZ(0)'
-                }}
+              <AnimatedLink
+                href={category.href}
+                className="block h-full group relative"
               >
-                {/* Breathing gradient overlay - only animates on hover */}
-                <div 
-                  data-breathing-gradient="true"
-                  className={`absolute inset-0 bg-gradient-to-br ${category.gradient} breathing-gradient-hover`}
-                  style={{
-                    willChange: 'opacity',
-                    backfaceVisibility: 'hidden',
-                    backgroundSize: '200% 200%',
-                    opacity: 0
-                  }}
-                ></div>
-                
-                {/* Accent bar */}
-                <div 
-                  className={`absolute top-0 left-0 right-0 h-1 ${category.accentColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}
-                  style={{
-                    willChange: 'transform',
-                    backfaceVisibility: 'hidden'
-                  }}
-                ></div>
-                
-                <div className="relative p-6 sm:p-8 lg:p-10">
-                  {/* Icon with enhanced styling */}
-                  <div className="mb-4 sm:mb-6">
-                    <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${category.iconBg} ${category.iconColor} group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                      {category.icon}
+                <motion.div 
+                  className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 transition-colors duration-300 group-hover:bg-gray-900/90 group-hover:shadow-2xl group-hover:border-gray-700"
+                  whileHover="hover"
+                  variants={cardVariants}
+                >
+                  {/* Glow effect on hover */}
+                  <div 
+                    className={`absolute -inset-0.5 bg-gradient-to-r ${category.gradient} opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500`}
+                  />
+                  
+                  {/* Breathing gradient overlay */}
+                  <div 
+                    data-breathing-gradient="true"
+                    className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 transition-opacity duration-500`}
+                    style={{ backgroundSize: '200% 200%' }}
+                  ></div>
+                  
+                  {/* Accent bar */}
+                  <div 
+                    className={`absolute top-0 left-0 right-0 h-1 ${category.accentColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}
+                  ></div>
+                  
+                  <div className="relative p-6 sm:p-8 lg:p-10">
+                    {/* Icon */}
+                    <div className="mb-4 sm:mb-6">
+                      <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${category.iconBg} ${category.iconColor} group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                        {category.icon}
+                      </div>
                     </div>
+
+                    {/* Title */}
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 transition-colors duration-300 group-hover:text-gray-100">
+                      {category.title}
+                    </h2>
+
+                    {/* Description */}
+                    <p className="text-gray-400 text-base sm:text-lg leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
+                      {category.description}
+                    </p>
                   </div>
 
-                  {/* Title */}
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 transition-all duration-300">
-                    {category.title}
-                  </h2>
-
-                  {/* Description */}
-                  <p className="text-gray-400 text-base sm:text-lg leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                    {category.description}
-                  </p>
-                </div>
-
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-                </div>
-              </div>
-            </Link>
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+                  </div>
+                </motion.div>
+              </AnimatedLink>
+            </motion.div>
           ))}
         </div>
 
-        {/* Footer with enhanced styling */}
-        <div className="text-center stagger-item" style={{ animationDelay: '0.4s' }}>
+        {/* Footer */}
+        <motion.div variants={itemVariants} className="text-center">
           <div className="inline-block px-6 py-3 rounded-full bg-gray-900/50 backdrop-blur-sm border border-gray-800">
             <p className="text-gray-400 text-sm sm:text-base">
               Data sourced from{' '}
@@ -196,8 +216,8 @@ export default function Home() {
               </a>
             </p>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

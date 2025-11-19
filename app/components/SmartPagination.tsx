@@ -1,455 +1,234 @@
 'use client';
 
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 
 interface SmartPaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
+  siblingCount?: number; // Number of pages to show around current page
 }
 
 export default function SmartPagination({
   currentPage,
   totalPages,
   onPageChange,
-  className = ''
+  className = '',
+  siblingCount = 1
 }: SmartPaginationProps) {
-  
-  const goToNextPage = () => {
-    if (currentPage < totalPages - 1) {
-      onPageChange(currentPage + 1);
-    }
-  };
+  const [isInputVisible, setIsInputVisible] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const goToPrevPage = () => {
-    if (currentPage > 0) {
-      onPageChange(currentPage - 1);
-    }
-  };
-
-  // Prevent animations when we're already at the target page
-  const handlePageChange = (page: number) => {
-    if (page !== currentPage) {
-      onPageChange(page);
-    }
-  };
-
-  // Generate smart pagination array with ellipsis that shifts based on current page
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 9; // Maximum number of page buttons to show on desktop
-    
-    if (totalPages <= maxVisible) {
-      // Show all pages if total is less than max
-      for (let i = 0; i < totalPages; i++) {
-        pages.push(i);
+  // Close input on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setIsInputVisible(false);
       }
-    } else {
-      // Smart pagination: "1 2 ... middle numbers ... 41 42" format
-      const startRange = 5; // Pages 0-4 are the "beginning range"
-      const endRangeStart = totalPages - 6; // Last 6 pages are "end range"
-      
-      // Determine which range we're in
-      if (currentPage < startRange) {
-        // Beginning range: show 1 2 3 4 5 6 ... 41 42
-        for (let i = 0; i < 6; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis-end');
-        // Last 2 pages
-        for (let i = totalPages - 2; i < totalPages; i++) {
-          pages.push(i);
-        }
-      } else if (currentPage >= endRangeStart) {
-        // End range: show 1 2 ... 36 37 38 39 40 41 42
-        // First 2 pages
-        for (let i = 0; i < 2; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis-start');
-        // Last 6 pages
-        for (let i = totalPages - 6; i < totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        // Middle range: show 1 2 ... middle 4 pages ... 42
-        // First 2 pages
-        for (let i = 0; i < 2; i++) {
-          pages.push(i);
-        }
-        pages.push('ellipsis-start');
-        
-        // Middle 4 pages with current page at position 2 (third spot)
-        const middleStart = currentPage - 1;
-        const middleEnd = currentPage + 2;
-        for (let i = middleStart; i <= middleEnd; i++) {
-          pages.push(i);
-        }
-        
-        pages.push('ellipsis-end');
-        // Last page only
-        pages.push(totalPages - 1);
-      }
+    };
+
+    if (isInputVisible) {
+      document.addEventListener('mousedown', handleClickOutside);
+      inputRef.current?.focus();
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isInputVisible]);
+
+  const handleInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const page = parseInt(inputValue);
+    if (!isNaN(page) && page >= 1 && page <= totalPages) {
+      onPageChange(page - 1);
+      setIsInputVisible(false);
+      setInputValue('');
+    }
+  };
+
+  // Use a simplified pagination range generator
+  const generatePagination = () => {
+    // Total numbers: first + last + current + 2*siblings + 2*dots
+    const totalNumbers = siblingCount * 2 + 5;
+
+    // Case 1: Total pages is less than what we want to show
+    if (totalPages <= totalNumbers) {
+      return Array.from({ length: totalPages }, (_, i) => i);
+    }
+
+    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages - 2);
+
+    const shouldShowLeftDots = leftSiblingIndex > 2;
+    const shouldShowRightDots = rightSiblingIndex < totalPages - 3;
+
+    const firstPage = 0;
+    const lastPage = totalPages - 1;
+
+    // Case 2: No left dots, show right dots
+    if (!shouldShowLeftDots && shouldShowRightDots) {
+      const leftItemCount = 3 + 2 * siblingCount;
+      const leftRange = Array.from({ length: leftItemCount }, (_, i) => i);
+      return [...leftRange, 'dots-right', lastPage];
+    }
+
+    // Case 3: No right dots, show left dots
+    if (shouldShowLeftDots && !shouldShowRightDots) {
+      const rightItemCount = 3 + 2 * siblingCount;
+      const rightRange = Array.from({ length: rightItemCount }, (_, i) => totalPages - rightItemCount + i);
+      return [firstPage, 'dots-left', ...rightRange];
+    }
+
+    // Case 4: Show both dots
+    if (shouldShowLeftDots && shouldShowRightDots) {
+      const middleRange = Array.from({ length: rightSiblingIndex - leftSiblingIndex + 1 }, (_, i) => leftSiblingIndex + i);
+      return [firstPage, 'dots-left', ...middleRange, 'dots-right', lastPage];
     }
     
-    return pages;
+    return [];
   };
 
-  // Mobile-optimized version: show fewer pages
-  const getMobilePageNumbers = () => {
-    const pages: (number | string)[] = [];
-    
-    if (totalPages <= 5) {
-      // Show all pages if 5 or fewer
-      for (let i = 0; i < totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Show: 1 ... current-1 current current+1 ... last
-      pages.push(0); // First page
-      
-      if (currentPage > 2) {
-        pages.push('ellipsis-start');
-      }
-      
-      // Show current page and neighbors
-      for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages - 2, currentPage + 1); i++) {
-        if (!pages.includes(i)) {
-          pages.push(i);
-        }
-      }
-      
-      if (currentPage < totalPages - 3) {
-        pages.push('ellipsis-end');
-      }
-      
-      pages.push(totalPages - 1); // Last page
-    }
-    
-    return pages;
-  };
+  const pageNumbers = generatePagination();
 
-  const pageNumbers = getPageNumbers();
-  const mobilePageNumbers = getMobilePageNumbers();
-
-  // Calculate highlight position
+  // Calculate highlight position for desktop (different width than mobile)
   const getHighlightPosition = (pages: (number | string)[]) => {
     let visualPosition = 0;
     for (let i = 0; i < pages.length; i++) {
       if (pages[i] === currentPage) {
-        break;
+        return visualPosition;
       }
       visualPosition++;
     }
-    return visualPosition;
+    return 0;
   };
 
-  if (totalPages <= 1) {
-    return null;
-  }
+  if (totalPages <= 1) return null;
 
   return (
-    <div className={`flex items-center justify-center gap-2 sm:gap-4 ${className}`}>
-      {/* Previous Button */}
-      <motion.button
-        onClick={goToPrevPage}
-        disabled={currentPage === 0}
-        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all ${
-          currentPage === 0
-            ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-            : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
-        }`}
-        style={currentPage > 0 ? {
-          boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)',
-          willChange: 'transform',
-          transform: 'translate3d(0, 0, 0)'
-        } : {
-          transform: 'translate3d(0, 0, 0)'
-        }}
-        whileHover={currentPage > 0 ? { scale: 1.1 } : {}}
-        whileTap={currentPage > 0 ? { scale: 0.9 } : {}}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 25
-        }}
-        aria-label="Previous page"
-      >
-        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-      </motion.button>
+    <div className={`flex flex-col items-center gap-4 ${className}`}>
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Previous Button */}
+        <motion.button
+          onClick={() => currentPage > 0 && onPageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            currentPage === 0
+              ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
+              : 'bg-white/10 hover:bg-white/20 text-white shadow-lg hover:shadow-blue-500/20'
+          }`}
+          whileHover={currentPage > 0 ? { scale: 1.05 } : {}}
+          whileTap={currentPage > 0 ? { scale: 0.95 } : {}}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </motion.button>
 
-      {/* Desktop Pagination */}
-      <motion.div 
-        className="hidden md:flex relative border border-gray-700/20 rounded-full p-1 gap-1 frosted-glass-pagination"
-        style={{
-          willChange: 'width',
-          transform: 'translate3d(0, 0, 0)',
-          perspective: '1000px'
-        }}
-        animate={{
-          width: `${Math.min(pageNumbers.length * 52 + 8, 480)}px`
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 350,
-          damping: 32,
-          mass: 1
-        }}
-      >
+        {/* Page Carousel */}
+        <div className="relative bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-full p-1">
+          {/* Highlight Pill */}
+          <motion.div
+            className="absolute top-1 bottom-1 bg-blue-600 rounded-full z-10 shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+            style={{ width: '48px' }}
+            animate={{ 
+              left: `${getHighlightPosition(pageNumbers) * 48 + 4}px` // 4px padding + index * width (48px)
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          />
 
-        {/* Highlight Circle */}
-        <motion.div
-          className="absolute top-1 bottom-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full pointer-events-none z-10"
-          style={{ 
-            width: '48px',
-            boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)',
-            willChange: 'left, box-shadow',
-            transform: 'translate3d(0, 0, 0)',
-            backfaceVisibility: 'hidden'
-          }}
-          animate={{ 
-            left: `calc(${getHighlightPosition(pageNumbers) * 52}px + 0.25rem)`,
-            boxShadow: [
-              '0 0 20px rgba(59, 130, 246, 0.4)',
-              '0 0 25px rgba(59, 130, 246, 0.5)',
-              '0 0 20px rgba(59, 130, 246, 0.4)'
-            ]
-          }}
-          transition={{ 
-            left: {
-              type: "spring", 
-              stiffness: 400,
-              damping: 30,
-              mass: 1
-            },
-            boxShadow: {
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }
-          }}
-        />
-        
-        {/* Page Number Buttons */}
-        <MotionConfig transition={{ layout: { type: "spring", stiffness: 500, damping: 40 } }}>
-          <div className="relative flex gap-1">
-            <AnimatePresence mode="sync">
-              {pageNumbers.map((pageNum) => {
-                if (typeof pageNum === 'string' && pageNum.startsWith('ellipsis')) {
-                  return (
-                    <div
-                      key={pageNum}
-                      className="px-2 py-2 flex items-center justify-center flex-shrink-0 gap-0.5"
-                      style={{ width: '48px' }}
-                    >
-                      <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                      <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                      <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                    </div>
-                  );
-                }
-              
-                const page = pageNum as number;
-                const isActive = currentPage === page;
+          <div className="relative flex items-center">
+            <AnimatePresence mode="popLayout">
+              {pageNumbers.map((page, index) => {
+                const isDots = typeof page === 'string';
                 
                 return (
-                  <motion.button
-                    key={`page-${page}`}
-                    layoutId={`desktop-page-${page}`}
-                    layout="position"
-                    onClick={() => handlePageChange(page)}
-                    className="relative px-4 py-2 rounded-full font-medium flex items-center justify-center flex-shrink-0 text-white hover:bg-gray-700/30"
-                    style={{ 
-                      width: '48px',
-                      zIndex: 20,
-                      willChange: isActive ? 'auto' : 'transform',
-                      transform: 'translate3d(0, 0, 0)',
-                      backfaceVisibility: 'hidden'
-                    }}
-                    initial={false}
-                    whileHover={{ scale: isActive ? 1 : 1.08 }}
-                    whileTap={{ scale: 0.92 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 25
-                    }}
-                    aria-label={`Go to page ${page + 1}`}
-                    aria-current={isActive ? 'page' : undefined}
+                  <motion.div
+                    key={isDots ? page : `page-${page}`}
+                    layout
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <span 
-                      className="relative text-sm font-semibold select-none" 
-                      style={{ 
-                        opacity: 1,
-                        pointerEvents: 'none',
-                        transform: 'translate3d(0, 0, 0)',
-                        backfaceVisibility: 'hidden',
-                        WebkitFontSmoothing: 'subpixel-antialiased',
-                        MozOsxFontSmoothing: 'grayscale'
-                      }}
-                    >
-                      {page + 1}
-                    </span>
-                  </motion.button>
+                    {isDots ? (
+                      <button
+                        onClick={() => setIsInputVisible(!isInputVisible)}
+                        className="w-[48px] h-[40px] flex items-center justify-center text-gray-400 hover:text-blue-400 transition-colors relative z-20"
+                      >
+                        <span className="text-lg leading-none mb-2">...</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onPageChange(page as number)}
+                        className={`w-[48px] h-[40px] flex items-center justify-center text-sm font-medium rounded-full relative z-20 transition-colors ${
+                          currentPage === page ? 'text-white' : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {(page as number) + 1}
+                      </button>
+                    )}
+                  </motion.div>
                 );
               })}
             </AnimatePresence>
           </div>
-        </MotionConfig>
-      </motion.div>
+        </div>
 
-      {/* Mobile Pagination */}
-      <motion.div 
-        className="flex md:hidden relative border border-gray-700/20 rounded-full p-1 gap-1 frosted-glass-pagination"
-        style={{
-          willChange: 'width',
-          transform: 'translate3d(0, 0, 0)',
-          perspective: '1000px'
-        }}
-        animate={{
-          width: `${Math.min(mobilePageNumbers.length * 44 + 8, 280)}px`
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 350,
-          damping: 32,
-          mass: 1
-        }}
-      >
+        {/* Next Button */}
+        <motion.button
+          onClick={() => currentPage < totalPages - 1 && onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+            currentPage === totalPages - 1
+              ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
+              : 'bg-white/10 hover:bg-white/20 text-white shadow-lg hover:shadow-blue-500/20'
+          }`}
+          whileHover={currentPage < totalPages - 1 ? { scale: 1.05 } : {}}
+          whileTap={currentPage < totalPages - 1 ? { scale: 0.95 } : {}}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </motion.button>
+      </div>
 
-        {/* Highlight Circle - Mobile */}
-        <motion.div
-          className="absolute top-1 bottom-1 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full pointer-events-none z-10"
-          style={{ 
-            width: '40px',
-            boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)',
-            willChange: 'left, box-shadow',
-            transform: 'translate3d(0, 0, 0)',
-            backfaceVisibility: 'hidden'
-          }}
-          animate={{ 
-            left: `calc(${getHighlightPosition(mobilePageNumbers) * 44}px + 0.25rem)`,
-            boxShadow: [
-              '0 0 15px rgba(59, 130, 246, 0.4)',
-              '0 0 20px rgba(59, 130, 246, 0.5)',
-              '0 0 15px rgba(59, 130, 246, 0.4)'
-            ]
-          }}
-          transition={{ 
-            left: {
-              type: "spring", 
-              stiffness: 400,
-              damping: 30,
-              mass: 1
-            },
-            boxShadow: {
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }
-          }}
-        />
-        
-        {/* Page Number Buttons - Mobile */}
-        <MotionConfig transition={{ layout: { type: "spring", stiffness: 500, damping: 40 } }}>
-          <div className="relative flex gap-1">
-            <AnimatePresence mode="sync">
-              {mobilePageNumbers.map((pageNum) => {
-                if (typeof pageNum === 'string' && pageNum.startsWith('ellipsis')) {
-                  return (
-                    <div
-                      key={pageNum}
-                      className="px-1 py-2 flex items-center justify-center flex-shrink-0 gap-0.5"
-                      style={{ width: '40px' }}
-                    >
-                      <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                      <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                      <span className="w-1 h-1 rounded-full bg-gray-500"></span>
-                    </div>
-                  );
-                }
-              
-                const page = pageNum as number;
-                const isActive = currentPage === page;
-                
-                return (
-                  <motion.button
-                    key={`mobile-page-${page}`}
-                    layoutId={`mobile-page-${page}`}
-                    layout="position"
-                    onClick={() => handlePageChange(page)}
-                    className="relative px-2 py-2 rounded-full font-medium flex items-center justify-center flex-shrink-0 text-white hover:bg-gray-700/30"
-                    style={{ 
-                      width: '40px',
-                      zIndex: 20,
-                      willChange: isActive ? 'auto' : 'transform',
-                      transform: 'translate3d(0, 0, 0)',
-                      backfaceVisibility: 'hidden'
-                    }}
-                    initial={false}
-                    whileHover={{ scale: isActive ? 1 : 1.08 }}
-                    whileTap={{ scale: 0.92 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 25
-                    }}
-                    aria-label={`Go to page ${page + 1}`}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <span 
-                      className="relative text-xs font-semibold select-none" 
-                      style={{ 
-                        opacity: 1,
-                        pointerEvents: 'none',
-                        transform: 'translate3d(0, 0, 0)',
-                        backfaceVisibility: 'hidden',
-                        WebkitFontSmoothing: 'subpixel-antialiased',
-                        MozOsxFontSmoothing: 'grayscale'
-                      }}
-                    >
-                      {page + 1}
-                    </span>
-                  </motion.button>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        </MotionConfig>
-      </motion.div>
-
-      {/* Next Button */}
-      <motion.button
-        onClick={goToNextPage}
-        disabled={currentPage === totalPages - 1}
-        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all ${
-          currentPage === totalPages - 1
-            ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-            : 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
-        }`}
-        style={currentPage < totalPages - 1 ? {
-          boxShadow: '0 0 20px rgba(59, 130, 246, 0.25)',
-          willChange: 'transform',
-          transform: 'translate3d(0, 0, 0)'
-        } : {
-          transform: 'translate3d(0, 0, 0)'
-        }}
-        whileHover={currentPage < totalPages - 1 ? { scale: 1.1 } : {}}
-        whileTap={currentPage < totalPages - 1 ? { scale: 0.9 } : {}}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 25
-        }}
-        aria-label="Next page"
-      >
-        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </motion.button>
+      {/* Quick Jump Input */}
+      <AnimatePresence>
+        {isInputVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute bottom-full mb-4 z-30"
+          >
+            <form onSubmit={handleInputSubmit} className="bg-gray-800 border border-gray-700 rounded-xl p-2 shadow-xl flex items-center gap-2">
+              <span className="text-xs text-gray-400 pl-2">Go to:</span>
+              <input
+                ref={inputRef}
+                type="number"
+                min={1}
+                max={totalPages}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                className="w-16 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500 text-white"
+                placeholder="#"
+              />
+              <button
+                type="submit"
+                className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

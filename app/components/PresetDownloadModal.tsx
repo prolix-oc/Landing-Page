@@ -610,25 +610,27 @@ export default function PresetDownloadModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', duration: 0.5 }}
-            className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            className="bg-gray-900/95 border border-gray-700/50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden backdrop-blur-xl"
             onClick={(e) => e.stopPropagation()}
           >
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-purple-500 px-6 py-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Download Preset</h2>
+          <div className="border-b border-gray-700/50 px-6 py-5 flex items-center justify-between bg-gray-900/50">
+            <div>
+              <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-600">Download Preset</h2>
+            </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors"
+              className="bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 p-2 rounded-full transition-all"
               disabled={loading}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
+          <div className="p-8 overflow-y-auto max-h-[calc(80vh-80px)] custom-scrollbar">
             <AnimatePresence mode="wait">
               {step === 'initial' && (
                 <motion.div
@@ -666,30 +668,32 @@ export default function PresetDownloadModal({
                   <motion.button
                     onClick={handleCustomize}
                     disabled={loading || loadingSamplers}
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-purple-500/50 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center gap-3">
-                      {loadingSamplers ? (
-                        <svg className="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                      )}
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
+                        {loadingSamplers ? (
+                          <svg className="animate-spin h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                          </svg>
+                        )}
+                      </div>
                       <div className="text-left">
-                        <div className="font-semibold">Customize</div>
-                        <div className="text-sm text-gray-300">
-                          {loadingSamplers ? 'Loading model options...' : 'Optimize for your model'}
+                        <div className="font-semibold text-lg group-hover:text-purple-300 transition-colors">Customize</div>
+                        <div className="text-sm text-gray-400 group-hover:text-gray-300">
+                          {loadingSamplers ? 'Loading model options...' : 'Select a model to optimize for'}
                         </div>
                       </div>
                     </div>
                     {!loadingSamplers && (
-                      <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-gray-500 transform group-hover:translate-x-1 group-hover:text-purple-400 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     )}
@@ -698,22 +702,24 @@ export default function PresetDownloadModal({
                   <motion.button
                     onClick={handleUpdateMine}
                     disabled={loading || loadingSamplers}
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-purple-500/50 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                        <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
                       <div className="text-left">
-                        <div className="font-semibold">Update mine</div>
-                        <div className="text-sm text-gray-300">
-                          Merge your customized preset with latest updates
+                        <div className="font-semibold text-lg group-hover:text-purple-300 transition-colors">Update Mine</div>
+                        <div className="text-sm text-gray-400 group-hover:text-gray-300">
+                          Merge your existing preset with latest changes
                         </div>
                       </div>
                     </div>
-                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-500 transform group-hover:translate-x-1 group-hover:text-purple-400 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </motion.button>
@@ -798,20 +804,22 @@ export default function PresetDownloadModal({
                   <motion.button
                     onClick={() => setStep('customize')}
                     disabled={loading}
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-purple-500/50 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                      </svg>
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
+                        <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                      </div>
                       <div className="text-left">
-                        <div className="font-semibold">Optimize for Model</div>
-                        <div className="text-sm text-gray-300">Choose a model to optimize settings</div>
+                        <div className="font-semibold text-lg group-hover:text-purple-300 transition-colors">Optimize for Model</div>
+                        <div className="text-sm text-gray-400 group-hover:text-gray-300">Choose a model to optimize settings</div>
                       </div>
                     </div>
-                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-gray-500 transform group-hover:translate-x-1 group-hover:text-purple-400 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </motion.button>

@@ -1,8 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { useNavigation } from '@/app/contexts/NavigationContext';
 import { ReactNode } from 'react';
 
@@ -11,26 +9,17 @@ interface AnimatedLinkProps {
   children: ReactNode;
   className?: string;
   isBackLink?: boolean;
+  style?: React.CSSProperties;
 }
 
-export default function AnimatedLink({ href, children, className = '', isBackLink = false }: AnimatedLinkProps) {
-  const router = useRouter();
-  const { setIsNavigating, setNavigationDirection } = useNavigation();
+export default function AnimatedLink({ href, children, className = '', isBackLink = false, style }: AnimatedLinkProps) {
+  const { setNavigationDirection, setIsNavigating } = useNavigation();
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // Only handle internal navigation
-    if (href.startsWith('/') && !href.startsWith('//')) {
-      e.preventDefault();
-      
-      // Set navigation direction based on whether this is a back link
-      setNavigationDirection(isBackLink ? 'backward' : 'forward');
-      setIsNavigating(true);
-      
-      // Small delay to allow animation to start
-      setTimeout(() => {
-        router.push(href);
-      }, 100);
-    }
+  const handleClick = () => {
+    // Set navigation direction
+    setNavigationDirection(isBackLink ? 'backward' : 'forward');
+    // We don't need to block navigation or set isNavigating since we rely on Next.js native transitions
+    // and the global template.tsx animation.
   };
 
   return (
@@ -38,6 +27,8 @@ export default function AnimatedLink({ href, children, className = '', isBackLin
       href={href} 
       onClick={handleClick}
       className={className}
+      style={style}
+      prefetch={true} // Explicitly enable prefetching
     >
       {children}
     </Link>

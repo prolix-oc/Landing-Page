@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import { slugify } from '@/lib/slugify';
 import LazyImage from '@/app/components/LazyImage';
 import ShareButton from '@/app/components/ShareButton';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import rehypeRaw from 'rehype-raw';
+import { FastAverageColor } from 'fast-average-color';
 
 interface CharacterCardData {
   spec: string;
@@ -49,7 +54,21 @@ interface Character {
 export default function CharacterDetailsClient({ character }: { character: Character }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [selectedAlternate, setSelectedAlternate] = useState<number>(0);
+  
+  // Derive selected index directly from URL
+  const getScenarioIndex = () => {
+    const scenarioParam = searchParams.get('scenario');
+    if (scenarioParam && character.alternates) {
+      const scenarioIndex = parseInt(scenarioParam, 10);
+      if (!isNaN(scenarioIndex) && scenarioIndex >= 0 && scenarioIndex < character.alternates.length) {
+        return scenarioIndex;
+      }
+    }
+    return 0;
+  };
+
+  const selectedAlternate = getScenarioIndex();
+  const [accentColor, setAccentColor] = useState<string>('#60a5fa'); // Default generic blue
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     firstMessage: true,
     scenario: true,
@@ -66,16 +85,80 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     }));
   };
 
-  // Initialize selected scenario from URL parameter
+  // Extract average color from image
   useEffect(() => {
-    const scenarioParam = searchParams.get('scenario');
-    if (scenarioParam && character.alternates) {
-      const scenarioIndex = parseInt(scenarioParam, 10);
-      if (!isNaN(scenarioIndex) && scenarioIndex >= 0 && scenarioIndex < character.alternates.length) {
-        setSelectedAlternate(scenarioIndex);
-      }
+    const fac = new FastAverageColor();
+    const imageUrl = character.alternates?.[selectedAlternate]?.thumbnailUrl || 
+                    character.alternates?.[selectedAlternate]?.pngUrl || 
+                    character.thumbnailUrl || 
+                    character.pngUrl;
+
+    if (imageUrl) {
+      // Ignore pure black and white to find more interesting colors
+      fac.getColorAsync(imageUrl, { 
+        algorithm: 'dominant',
+        ignoredColor: [
+          [255, 255, 255, 255], // White
+          [0, 0, 0, 255]        // Black
+        ]
+      })
+        .then(color => {
+          const [r, g, b] = color.value;
+          
+          // Convert RGB to HSL to strictly control saturation and lightness
+          const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
+          const max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
+          let h = 0, s = 0, l = (max + min) / 2;
+
+          if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+              case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
+              case gNorm: h = (bNorm - rNorm) / d + 2; break;
+              case bNorm: h = (rNorm - gNorm) / d + 4; break;
+            }
+            h /= 6;
+          }
+
+          // Boost saturation to ensure "varied" look (avoid grays)
+          // We clamp it to a minimum of 40% to avoid muddy colors
+          s = Math.max(s, 0.4); // Min saturation 40%
+          s = Math.min(s * 1.3, 1.0); // 30% boost, max 100%
+
+          // Ensure lightness is high enough for dark mode contrast
+          // Target range: 60% - 85%
+          l = Math.max(l, 0.6); // Min lightness 60%
+          l = Math.min(l, 0.85); // Max lightness 85%
+
+          // Convert back to RGB
+          const hue2rgb = (p: number, q: number, t: number) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          };
+
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          
+          const finalR = Math.round(hue2rgb(p, q, h + 1/3) * 255);
+          const finalG = Math.round(hue2rgb(p, q, h) * 255);
+          const finalB = Math.round(hue2rgb(p, q, h - 1/3) * 255);
+          
+          const toHex = (c: number) => c.toString(16).padStart(2, '0');
+          const finalHex = `#${toHex(finalR)}${toHex(finalG)}${toHex(finalB)}`;
+          
+          setAccentColor(finalHex);
+        })
+        .catch(() => {
+          setAccentColor('#60a5fa');
+        });
     }
-  }, [searchParams, character.alternates]);
+  }, [selectedAlternate, character]);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -89,8 +172,6 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
   // Update URL when scenario changes
   const handleScenarioChange = (index: number) => {
-    setSelectedAlternate(index);
-    
     // Update URL with scenario parameter
     const url = new URL(window.location.href);
     if (index > 0) {
@@ -123,6 +204,43 @@ export default function CharacterDetailsClient({ character }: { character: Chara
   const { cardData } = currentScenario;
   const charData = cardData.data;
 
+  // Formatting helper function for character text
+  const formatCharacterText = (text: string | undefined) => {
+    if (!text) return '';
+    
+    // If the text already contains HTML tags for styling (like <font> or <span>), 
+    // assume it's pre-formatted and return as is to avoid breaking it.
+    if (/<(font|span)\s+[^>]*>/.test(text)) return text;
+    
+    // Wrap quoted dialogue in a colored span
+    // Matches text between straight quotes "..."
+    return text.replace(/"([^"]+)"/g, `<span style="color: ${accentColor}; opacity: 0.9; transition: color 0.5s ease;">"$1"</span>`);
+  };
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.03,
+        delayChildren: 0
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 10, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 20
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen relative">
       {/* Scroll to Top Button */}
@@ -145,34 +263,34 @@ export default function CharacterDetailsClient({ character }: { character: Chara
         )}
       </AnimatePresence>
 
-      <div className="relative container mx-auto px-4 py-16">
+      <motion.div 
+        className="relative container mx-auto px-4 py-16"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Header with Back Button */}
-        <motion.div 
-          className="mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Link 
+        <motion.div className="mb-8" variants={itemVariants}>
+          <AnimatedLink 
             href={`/character-cards?category=${encodeURIComponent(character.category)}`} 
-            className="text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center mb-4"
+            className="group transition-colors duration-500 inline-flex items-center mb-4"
+            style={{ color: accentColor }}
+            isBackLink
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to {character.category}
-          </Link>
+          </AnimatedLink>
         </motion.div>
 
         {/* Alternate Scenarios Tabs */}
         {character.alternates && character.alternates.length > 1 && (
           <motion.div
             className="mb-8 flex justify-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            variants={itemVariants}
           >
-            <div className="inline-flex bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-full p-1 gap-1">
+            <div className="inline-flex bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-full p-1 gap-1">
               {character.alternates.map((alt, index) => (
                 <motion.button
                   key={alt.id}
@@ -187,7 +305,12 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                   {selectedAlternate === index && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 rounded-full shadow-lg shadow-blue-500/50"
+                      className="absolute inset-0 rounded-full shadow-lg"
+                      initial={false}
+                      animate={{ 
+                        backgroundColor: accentColor,
+                        boxShadow: `0 10px 15px -3px ${accentColor}40`
+                      }}
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
@@ -205,11 +328,9 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           {/* Character Image and Download */}
           <motion.div
             className="lg:col-span-1"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            variants={itemVariants}
           >
-            <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden sticky top-4">
+            <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden sticky top-4">
               <motion.button
                 onClick={() => setShowFullScreenImage(true)}
                 className="relative aspect-square bg-gray-900/50 overflow-hidden w-full cursor-pointer"
@@ -274,14 +395,26 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                 </motion.div>
               </motion.button>
               
-                <div className="p-6 space-y-3">
-                <h1 className="text-3xl font-bold text-white">{charData.name}</h1>
-                
-                {currentScenario.lastModified && (
-                  <p className="text-sm text-gray-400">
-                    Updated: {new Date(currentScenario.lastModified).toLocaleDateString()}
-                  </p>
-                )}
+              <div className="p-6 space-y-4">
+                <div>
+                  <motion.h1 
+                    className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text mb-2 pb-1"
+                    initial={false}
+                    animate={{ 
+                      backgroundImage: `linear-gradient(to right, ${accentColor}, #fff, ${accentColor})`,
+                      backgroundSize: '200% auto',
+                    }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {charData.name}
+                  </motion.h1>
+                  
+                  {currentScenario.lastModified && (
+                    <p className="text-sm text-gray-400">
+                      Updated: {new Date(currentScenario.lastModified).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
 
                 {/* Download and Share Buttons */}
                 <div className="space-y-2 pt-4">
@@ -321,12 +454,15 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           </motion.div>
 
           {/* Character Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <motion.div 
+            className="lg:col-span-2 space-y-6"
+            variants={itemVariants}
+          >
             {/* First Message */}
             {charData.first_mes && (
               <motion.div 
                 layout
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
                 transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
               >
                 <button
@@ -334,7 +470,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                     First Message
@@ -366,7 +502,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                     >
                       <motion.div layout className="px-6 pb-6 pt-2">
                         <AnimatePresence mode="wait">
-                          <motion.p
+                          <motion.div
                             key={currentScenario.id + '-firstmes'}
                             initial={{ opacity: 0, filter: "blur(4px)" }}
                             animate={{ 
@@ -385,10 +521,24 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                                 filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
                               }
                             }}
-                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                            className="text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_p]:my-2"
                           >
-                            {charData.first_mes}
-                          </motion.p>
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkGfm, remarkBreaks]} 
+                              rehypePlugins={[rehypeRaw]}
+                              components={{
+                                p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+                                em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
+                                code: ({node, inline, className, children, ...props}: any) => (
+                                  <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
+                                    {children}
+                                  </code>
+                                ),
+                              }}
+                            >
+                              {formatCharacterText(charData.first_mes)}
+                            </ReactMarkdown>
+                          </motion.div>
                         </AnimatePresence>
                       </motion.div>
                     </motion.div>
@@ -401,7 +551,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
             {charData.scenario && (
               <motion.div 
                 layout
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
                 transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
               >
                 <button
@@ -409,7 +559,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                     </svg>
                     Scenario
@@ -476,7 +626,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
             {charData.description && (
               <motion.div 
                 layout
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
                 transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
               >
                 <button
@@ -484,7 +634,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     Description
@@ -551,7 +701,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
             {charData.personality && (
               <motion.div 
                 layout
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden"
+                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
                 transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
               >
                 <button
@@ -559,7 +709,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                   className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
                 >
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Personality
@@ -621,9 +771,9 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                 </AnimatePresence>
               </motion.div>
             )}
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Full-Screen Image Modal */}
       <AnimatePresence>
