@@ -11,9 +11,25 @@ export async function GET(
     const decodedCategory = decodeURIComponent(category);
     const targetSlug = decodeURIComponent(character);
     
-    // Get all directories in the category to find the correct character directory
-    const categoryPath = `Character Cards/${decodedCategory}`;
-    const categoryContents = await getDirectoryContents(categoryPath);
+    // 1. Resolve the correct category path (handling case sensitivity)
+    const rootContents = await getDirectoryContents('Character Cards');
+    const categoryDirs = rootContents.filter(item => item.type === 'dir');
+
+    const matchedCategory = categoryDirs.find(dir => 
+      dir.name === decodedCategory || 
+      dir.name.toLowerCase() === decodedCategory.toLowerCase() ||
+      slugify(dir.name) === decodedCategory
+    );
+
+    if (!matchedCategory) {
+      return NextResponse.json(
+        { error: 'Category not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get all directories in the category using the correct path
+    const categoryContents = await getDirectoryContents(matchedCategory.path);
     const characterDirs = categoryContents.filter(item => item.type === 'dir');
     
     // Map directories with their cached slugs and base names
