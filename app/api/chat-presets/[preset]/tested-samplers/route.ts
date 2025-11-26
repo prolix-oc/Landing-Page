@@ -47,7 +47,10 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error('Error fetching tested samplers:', error);
+    // Only log error if it's not a 404 (which is expected for presets without tested_samplers.json)
+    if (error instanceof Error && !error.message.includes('404')) {
+      console.error('Error fetching tested samplers:', error);
+    }
     
     // Return empty object on error so the modal can still function
     return NextResponse.json({}, {

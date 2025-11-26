@@ -90,8 +90,11 @@ async function getCharacterData(category: string, character: string): Promise<Ch
       if (jsonFiles.length > 1) {
         // Multiple scenarios in the same directory
         for (const jsonFile of jsonFiles) {
+          // Skip known non-character files
+          if (jsonFile.name.toLowerCase() === 'tested_samplers.json') continue;
+
           const cardData = await getJsonData(jsonFile);
-          if (!cardData) continue;
+          if (!cardData || !cardData.data || !cardData.data.name) continue;
           
           // Find matching PNG file based on JSON filename
           const jsonBaseName = jsonFile.name.replace(/\.json$/i, '');
@@ -119,10 +122,14 @@ async function getCharacterData(category: string, character: string): Promise<Ch
       } else if (jsonFiles.length === 1) {
         // Single scenario in this directory
         const jsonFile = jsonFiles[0];
+        
+        // Skip known non-character files
+        if (jsonFile.name.toLowerCase() === 'tested_samplers.json') continue;
+
         const pngFile = pngFiles[0];
         
         const cardData = await getJsonData(jsonFile);
-        if (!cardData) continue;
+        if (!cardData || !cardData.data || !cardData.data.name) continue;
         
         const thumbnailUrl = pngFile ? await getCharacterThumbnail(path, pngFile) : null;
         const commit = await getLatestCommit(path);
