@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import { getDirectoryContents, getJsonData } from '@/lib/github';
 import { slugify } from '@/lib/slugify';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ preset: string }> }
@@ -23,7 +33,7 @@ export async function GET(
     if (!matchingDir) {
       return NextResponse.json(
         { error: 'Chat preset not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
     
@@ -38,7 +48,7 @@ export async function GET(
     if (!jsonFile) {
       return NextResponse.json(
         { error: 'No JSON data found for this preset' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
     
@@ -48,17 +58,17 @@ export async function GET(
     if (!presetData) {
       return NextResponse.json(
         { error: 'Failed to retrieve preset data' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
     
-    return NextResponse.json(presetData);
+    return NextResponse.json(presetData, { headers: corsHeaders });
     
   } catch (error) {
     console.error('Error fetching raw chat preset:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

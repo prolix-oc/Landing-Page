@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import { getDirectoryContents, getJsonData } from '@/lib/github';
 import { slugify } from '@/lib/slugify';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ category: string; character: string }> }
@@ -24,7 +34,7 @@ export async function GET(
     if (!matchedCategory) {
       return NextResponse.json(
         { error: 'Category not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -48,7 +58,7 @@ export async function GET(
     if (matchingDirs.length === 0) {
       return NextResponse.json(
         { error: 'Character not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
     
@@ -80,7 +90,7 @@ export async function GET(
     if (jsonFiles.length === 0) {
       return NextResponse.json(
         { error: 'No JSON data found for this character' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -93,18 +103,18 @@ export async function GET(
     if (!cardData) {
       return NextResponse.json(
         { error: 'Failed to retrieve card data' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
     // Return the raw JSON data
-    return NextResponse.json(cardData);
+    return NextResponse.json(cardData, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Error fetching raw character card:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

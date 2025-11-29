@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import { getDirectoryContents, getJsonData } from '@/lib/github';
 import { slugify } from '@/lib/slugify';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ category: string; book: string }> }
@@ -24,7 +34,7 @@ export async function GET(
     if (!matchedCategory) {
       return NextResponse.json(
         { error: 'Category not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -51,7 +61,7 @@ export async function GET(
     if (!matchingFile) {
       return NextResponse.json(
         { error: 'World book not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
     
@@ -61,17 +71,17 @@ export async function GET(
     if (!bookData) {
       return NextResponse.json(
         { error: 'Failed to retrieve world book data' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
     
-    return NextResponse.json(bookData);
+    return NextResponse.json(bookData, { headers: corsHeaders });
     
   } catch (error) {
     console.error('Error fetching raw world book:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
