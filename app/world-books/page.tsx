@@ -126,15 +126,8 @@ function WorldBooksContent() {
       return;
     }
 
-    // Check if this is a Lumiverse category that doesn't exist yet
+    // Check if this is a Lumiverse category
     const lumiverseCat = lumiverseCategories.find(cat => cat.name === selectedCategory);
-    if (lumiverseCat && !lumiverseCat.exists) {
-      setFiles({ standard: [], prolix: [] });
-      setSelectedCategoryExists(false);
-      return;
-    }
-
-    setSelectedCategoryExists(true);
 
     async function fetchFiles() {
       setIsTransitioning(true);
@@ -146,7 +139,7 @@ function WorldBooksContent() {
       try {
         const response = await fetch(`/api/world-books/${encodeURIComponent(selectedCategory as string)}`);
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.files && data.files.length > 0) {
           const standard: FileItem[] = [];
           const prolix: FileItem[] = [];
 
@@ -159,13 +152,19 @@ function WorldBooksContent() {
           });
 
           setFiles({ standard, prolix });
+          setSelectedCategoryExists(true);
         } else {
-          // Category might not exist in GitHub yet
+          // No files found - check if this is a Lumiverse category that doesn't exist
           setFiles({ standard: [], prolix: [] });
+          // Only mark as non-existent if it's a Lumiverse category with exists: false
+          // and the API didn't return any files
+          setSelectedCategoryExists(lumiverseCat ? lumiverseCat.exists : true);
         }
       } catch (error) {
         console.error('Error fetching files:', error);
         setFiles({ standard: [], prolix: [] });
+        // On error, assume category doesn't exist if it's a Lumiverse category marked as non-existent
+        setSelectedCategoryExists(lumiverseCat ? lumiverseCat.exists : true);
       } finally {
         setFilesLoading(false);
         setIsTransitioning(false);
