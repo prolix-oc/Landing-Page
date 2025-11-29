@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import SmartPagination from '@/app/components/SmartPagination';
 import SortDropdown, { SortOption } from '@/app/components/SortDropdown';
+import { isLumiverseDLC } from '@/lib/constants';
 
 interface WorldBookEntry {
   uid: number;
@@ -61,12 +62,46 @@ export default function WorldBookDetailsPage() {
   const [expandedEntries, setExpandedEntries] = useState<Record<number, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('a-z');
+  const [showCopied, setShowCopied] = useState(false);
 
   const toggleEntry = (uid: number) => {
     setExpandedEntries(prev => ({
       ...prev,
       [uid]: !prev[uid]
     }));
+  };
+
+  const copyImportLink = async () => {
+    if (!worldBook) return;
+
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const importUrl = `${baseUrl}/api/raw/world-books/${encodeURIComponent(worldBook.category)}/${encodeURIComponent(worldBook.name)}.json`;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(importUrl);
+        setShowCopied(true);
+        setTimeout(() => setShowCopied(false), 2000);
+      } else {
+        // Fallback for browsers that don't support clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = importUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setShowCopied(true);
+          setTimeout(() => setShowCopied(false), 2000);
+        } catch (err) {
+          console.error('Fallback: Failed to copy URL:', err);
+        }
+        document.body.removeChild(textArea);
+      }
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
   };
 
   useEffect(() => {
@@ -266,7 +301,7 @@ export default function WorldBookDetailsPage() {
                 </div>
 
                 {/* Download Button */}
-                <div className="pt-4">
+                <div className="pt-4 space-y-3">
                   <motion.button
                     onClick={() => downloadFile(worldBook.jsonUrl, `${worldBook.name}.json`)}
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 flex items-center justify-center gap-2 group"
@@ -278,6 +313,37 @@ export default function WorldBookDetailsPage() {
                     </svg>
                     Download JSON
                   </motion.button>
+
+                  {/* Copy Import Link - Only for Lumiverse DLCs */}
+                  {isLumiverseDLC(worldBook.category) && (
+                    <div className="relative">
+                      <motion.button
+                        onClick={copyImportLink}
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 flex items-center justify-center gap-2 group"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                        Copy Import Link
+                      </motion.button>
+
+                      <AnimatePresence>
+                        {showCopied && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg border border-gray-600"
+                          >
+                            Import link copied!
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

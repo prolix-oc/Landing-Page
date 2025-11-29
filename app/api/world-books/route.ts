@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDirectoryContents, ensureWarmup } from '@/lib/github';
-
-// Define Lumiverse DLC categories - these are specialized preset-based world books
-const LUMIVERSE_DLC_CATEGORIES = [
-  'Lumia DLCs',
-  'Loom Utilities',
-  'Loom Retrofits',
-  'Loom Narratives'
-];
+import { LUMIVERSE_DLC_CATEGORIES } from '@/lib/constants';
 
 // Display name mappings
 const DISPLAY_NAME_MAP: Record<string, string> = {
