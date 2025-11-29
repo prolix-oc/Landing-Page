@@ -17,6 +17,10 @@ interface Category {
   displayName: string;
 }
 
+interface LumiverseCategory extends Category {
+  exists: boolean;
+}
+
 interface FileItem {
   name: string;
   path: string;
@@ -35,7 +39,9 @@ function WorldBooksContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [lumiverseCategories, setLumiverseCategories] = useState<LumiverseCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategoryExists, setSelectedCategoryExists] = useState(true);
   const [files, setFiles] = useState<FileCategories>({ standard: [], prolix: [] });
   const [loading, setLoading] = useState(true);
   const [filesLoading, setFilesLoading] = useState(false);
@@ -101,6 +107,7 @@ function WorldBooksContent() {
         const data = await response.json();
         if (data.success) {
           setCategories(data.categories);
+          setLumiverseCategories(data.lumiverseCategories || []);
         }
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -115,23 +122,34 @@ function WorldBooksContent() {
   useEffect(() => {
     if (!selectedCategory) {
       setFiles({ standard: [], prolix: [] });
+      setSelectedCategoryExists(true);
       return;
     }
+
+    // Check if this is a Lumiverse category that doesn't exist yet
+    const lumiverseCat = lumiverseCategories.find(cat => cat.name === selectedCategory);
+    if (lumiverseCat && !lumiverseCat.exists) {
+      setFiles({ standard: [], prolix: [] });
+      setSelectedCategoryExists(false);
+      return;
+    }
+
+    setSelectedCategoryExists(true);
 
     async function fetchFiles() {
       setIsTransitioning(true);
       setFilesLoading(true);
-      
+
       // Small delay for smoother transitions
       await new Promise(resolve => setTimeout(resolve, 150));
-      
+
       try {
         const response = await fetch(`/api/world-books/${encodeURIComponent(selectedCategory as string)}`);
         const data = await response.json();
         if (data.success) {
           const standard: FileItem[] = [];
           const prolix: FileItem[] = [];
-          
+
           data.files.forEach((file: FileItem) => {
             if (file.name.match(/Prolix\s+(?:Preferred|Edition)/i)) {
               prolix.push(file);
@@ -139,11 +157,15 @@ function WorldBooksContent() {
               standard.push(file);
             }
           });
-          
+
           setFiles({ standard, prolix });
+        } else {
+          // Category might not exist in GitHub yet
+          setFiles({ standard: [], prolix: [] });
         }
       } catch (error) {
         console.error('Error fetching files:', error);
+        setFiles({ standard: [], prolix: [] });
       } finally {
         setFilesLoading(false);
         setIsTransitioning(false);
@@ -152,7 +174,7 @@ function WorldBooksContent() {
 
     fetchFiles();
     setCurrentPage(0); // Reset page on category change
-  }, [selectedCategory]);
+  }, [selectedCategory, lumiverseCategories]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -242,36 +264,86 @@ function WorldBooksContent() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Categories Sidebar */}
-            <motion.div 
+            <motion.div
               className="lg:col-span-1 h-fit"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 sticky top-24">
-                <h2 className="text-xl font-bold text-white mb-6">Categories</h2>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <button
-                      key={category.name}
-                      onClick={() => handleCategoryChange(category.name)}
-                      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
-                        selectedCategory === category.name
-                          ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.2)]'
-                          : 'bg-gray-800/30 text-gray-400 border border-transparent hover:bg-gray-800/60 hover:text-gray-200'
-                      }`}
-                    >
-                      {selectedCategory === category.name && (
-                        <div className="absolute inset-0 bg-blue-500/10 blur-lg" />
-                      )}
-                      <span className="relative z-10 font-medium flex items-center justify-between">
-                        {category.displayName}
+              <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 sticky top-24 space-y-6">
+                {/* Standard World Books */}
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    World Books
+                  </h2>
+                  <div className="space-y-2">
+                    {categories.map((category) => (
+                      <button
+                        key={category.name}
+                        onClick={() => handleCategoryChange(category.name)}
+                        className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
+                          selectedCategory === category.name
+                            ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.2)]'
+                            : 'bg-gray-800/30 text-gray-400 border border-transparent hover:bg-gray-800/60 hover:text-gray-200'
+                        }`}
+                      >
                         {selectedCategory === category.name && (
-                          <motion.div layoutId="activeCategory" className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                          <div className="absolute inset-0 bg-blue-500/10 blur-lg" />
                         )}
-                      </span>
-                    </button>
-                  ))}
+                        <span className="relative z-10 font-medium flex items-center justify-between">
+                          {category.displayName}
+                          {selectedCategory === category.name && (
+                            <motion.div layoutId="activeCategory" className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-700/50" />
+
+                {/* Lumiverse DLCs */}
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" />
+                    </svg>
+                    Lumiverse DLCs
+                  </h2>
+                  <p className="text-xs text-gray-500 mb-3">Specialized preset-based world books</p>
+                  <div className="space-y-2">
+                    {lumiverseCategories.map((category) => (
+                      <button
+                        key={category.name}
+                        onClick={() => handleCategoryChange(category.name)}
+                        className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
+                          selectedCategory === category.name
+                            ? 'bg-purple-600/20 text-white border border-purple-500/50 shadow-[0_0_15px_rgba(147,51,234,0.2)]'
+                            : 'bg-gray-800/30 text-gray-400 border border-transparent hover:bg-gray-800/60 hover:text-gray-200'
+                        } ${!category.exists ? 'opacity-60' : ''}`}
+                      >
+                        {selectedCategory === category.name && (
+                          <div className="absolute inset-0 bg-purple-500/10 blur-lg" />
+                        )}
+                        <span className="relative z-10 font-medium flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            {category.displayName}
+                            {!category.exists && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-500">Coming Soon</span>
+                            )}
+                          </span>
+                          {selectedCategory === category.name && (
+                            <motion.div layoutId="activeCategory" className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -337,7 +409,19 @@ function WorldBooksContent() {
                     transition={{ duration: 0.3 }}
                     className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-12 text-center"
                   >
-                    <p className="text-xl text-gray-400">No world books found in this category</p>
+                    {!selectedCategoryExists ? (
+                      <>
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-xl font-semibold text-white mb-2">Coming Soon</h3>
+                        <p className="text-gray-400">This Lumiverse DLC category is being prepared.<br />Check back later for new content!</p>
+                      </>
+                    ) : (
+                      <p className="text-xl text-gray-400">No world books found in this category</p>
+                    )}
                   </motion.div>
                 ) : (
                   <motion.div
