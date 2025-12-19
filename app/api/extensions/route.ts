@@ -12,6 +12,15 @@ const extensions = [
     thumbnail: "/simtracker.png",
     category: "prolix",
   },
+    {
+    id: "lumiversehelper",
+    name: "LumiverseHelper",
+    description:
+      "Unleash the full potential of Lucid Loom, get automated summaries, and customize your Lumia. All with Lucid.cards integration.",
+    repoUrl: "https://github.com/prolix-oc/SillyTavern-LumiverseHelper",
+    thumbnail: "/lumiverse.png",
+    category: "prolix",
+  },
   {
     id: "sillyrpc",
     name: "SillyRPC",
