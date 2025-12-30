@@ -582,7 +582,7 @@ export default function LucidLoomPage() {
       </section>
 
       {/* ===== NARRATIVE EXAMPLES ===== */}
-      <section className="relative py-32 px-4 overflow-hidden vt-exclude">
+      <section className="relative py-32 px-4 overflow-x-hidden vt-exclude">
         {/* Dramatic background */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/30 to-gray-950" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-600/15 rounded-full blur-[80px]" />
@@ -905,62 +905,99 @@ export default function LucidLoomPage() {
       </section>
 
       {/* ===== CTA SECTION ===== */}
-      <section className="relative py-32 px-4 vt-exclude">
-        <div className="max-w-4xl mx-auto">
+      <section className="relative min-h-screen flex items-center justify-center px-4 vt-exclude">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/20 to-gray-950" />
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-pink-600/15 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-600/10 rounded-full blur-[120px]" />
+
+        {/* Floating decorative cards - mirroring hero */}
+        <FloatingCard delay={0.2} className="absolute top-24 right-[12%] hidden lg:block" variant="swoopArc" />
+        <FloatingCard delay={0.4} className="absolute top-40 left-[8%] hidden lg:block" variant="spiralBounce" />
+        <FloatingCard delay={0.6} className="absolute bottom-28 right-[18%] hidden lg:block" variant="waveRise" />
+
+        {/* Content */}
+        <div className="relative z-10 text-center max-w-4xl mx-auto">
           <RevealSection>
-            <div className="relative p-12 sm:p-16 rounded-[2.5rem] overflow-hidden">
-              {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-pink-600/20 to-cyan-600/20" />
-              <div className="absolute inset-0 bg-gray-950/60" />
-              <div className="absolute inset-0 border border-white/10 rounded-[2.5rem]" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="mb-6"
+            >
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-white/10 text-sm text-gray-400">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                Ready to transform your roleplay?
+              </span>
+            </motion.div>
 
-              {/* Animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-cyan-500/10 animate-gradient bg-[length:200%_auto]" />
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.1 }}
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8"
+            >
+              <span className="block text-white/90">Begin Your</span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 animate-gradient bg-[length:200%_auto]">
+                Story
+              </span>
+            </motion.h2>
 
-              {/* Content */}
-              <div className="relative text-center">
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
-                  Begin Your Story
-                </h2>
-                <p className="text-xl text-gray-300 mb-10 max-w-xl mx-auto">
-                  Discover what happens when narrative craft meets creative exploration. Free, open-source, and ready for SillyTavern.
-                </p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-xl sm:text-2xl text-gray-400 font-light max-w-2xl mx-auto leading-relaxed mb-12"
+            >
+              Discover what happens when narrative craft meets creative exploration. Free, open-source, and ready for SillyTavern.
+            </motion.p>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
-                  <AnimatedLink
-                    href="/chat-presets"
-                    className="group inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold text-lg hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"
-                  >
-                    <Download className="w-5 h-5" />
-                    Get the Preset
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </AnimatedLink>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4"
+            >
+              <AnimatedLink
+                href="/chat-presets"
+                className="group inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-lg hover:shadow-[0_0_40px_rgba(168,85,247,0.4)] transition-all duration-500 hover:scale-105"
+              >
+                <Download className="w-5 h-5" />
+                Get the Preset
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </AnimatedLink>
 
-                  <AnimatedLink
-                    href="/"
-                    className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gray-900/80 border border-white/20 font-semibold text-lg hover:bg-gray-800/90 transition-all duration-300"
-                    isBackLink
-                  >
-                    <ArrowLeft className="w-5 h-5" />
-                    Back to Home
-                  </AnimatedLink>
-                </div>
+              <AnimatedLink
+                href="/"
+                className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gray-900/80 border border-white/20 font-semibold text-lg hover:bg-gray-800/90 transition-all duration-300"
+                isBackLink
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Back to Home
+              </AnimatedLink>
+            </motion.div>
 
-                <p className="mt-10 text-gray-500 text-sm">
-                  Part of the{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 font-semibold">
-                    Lucid.cards
-                  </span>{' '}
-                  collection
-                </p>
-              </div>
-            </div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="mt-12 text-gray-500 text-sm"
+            >
+              Part of the{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 font-semibold">
+                Lucid.cards
+              </span>{' '}
+              collection
+            </motion.p>
           </RevealSection>
         </div>
       </section>
-
-      {/* Footer spacer */}
-      <div className="h-20" />
     </div>
   );
 }
