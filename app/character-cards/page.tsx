@@ -213,7 +213,7 @@ function CharacterCardsContent() {
       >
         <AnimatedLink
           href="/"
-          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-white/10 hover:border-cyan-500/30 transition-all"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-gray-800/90 hover:border-cyan-500/30 transition-all"
           isBackLink
         >
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
@@ -291,8 +291,8 @@ function CharacterCardsContent() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
-            {/* Single backdrop-blur layer */}
-            <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
+            {/* Single backdrop-blur layer (md = 12px, optimized for Safari) */}
+            <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
             {/* Content grid inside */}
             <div className="relative p-4 sm:p-6">
@@ -437,7 +437,7 @@ function CharacterCardsContent() {
 
                                   {/* Category Badge */}
                                   <div className="absolute top-3 left-3 z-10">
-                                    <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 text-white text-xs font-medium px-2.5 py-1 rounded-full shadow-lg">
+                                    <div className="bg-gray-900/90 border border-gray-700/50 text-white text-xs font-medium px-2.5 py-1 rounded-full shadow-lg">
                                       {card.categoryDisplayName}
                                     </div>
                                   </div>
@@ -445,7 +445,7 @@ function CharacterCardsContent() {
                                   {/* Alt Scenarios Badge */}
                                   {(card.alternateCount ?? 0) > 0 && (
                                     <div className="absolute top-3 right-3 z-10">
-                                      <div className="flex items-center gap-1.5 bg-purple-600/90 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1 rounded-full shadow-lg border border-purple-500/50">
+                                      <div className="flex items-center gap-1.5 bg-purple-600 text-white text-xs font-medium px-2.5 py-1 rounded-full shadow-lg border border-purple-500/50">
                                         <Layers className="w-3 h-3" />
                                         +{card.alternateCount}
                                       </div>
@@ -500,7 +500,7 @@ function CharacterCardsContent() {
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute bottom-full mb-2 w-full bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden z-20 ring-1 ring-white/10"
+                                            className="absolute bottom-full mb-2 w-full bg-gray-900 border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden z-20 ring-1 ring-white/10"
                                             onMouseLeave={() => setOpenDropdown(null)}
                                           >
                                             {card.thumbnailUrl && (

@@ -247,7 +247,7 @@ function ChatPresetsContent() {
       >
         <AnimatedLink
           href="/"
-          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-white/10 hover:border-cyan-500/30 transition-all"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-gray-800/90 hover:border-cyan-500/30 transition-all"
           isBackLink
         >
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
@@ -347,7 +347,7 @@ function ChatPresetsContent() {
               <RevealSection className="lg:col-span-3">
                 <div className="lg:sticky lg:top-24">
                   <FloatingCard delay={0.2}>
-                    <div className="relative bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-3xl p-6 overflow-hidden">
+                    <div className="relative bg-gray-900/60 border border-white/[0.05] rounded-3xl p-6 overflow-hidden">
                       {/* Sidebar glow */}
                       <div className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
 
@@ -478,7 +478,7 @@ function ChatPresetsContent() {
                             return (
                               <motion.div
                                 key={version.path}
-                                className="group relative bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-purple-500/10 backdrop-blur-xl border-2 border-cyan-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
+                                className="group relative bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-purple-500/10 border-2 border-cyan-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
                                 whileHover={{ scale: 1.01, y: -4 }}
                                 transition={{ duration: 0.3 }}
                               >
@@ -577,7 +577,7 @@ function ChatPresetsContent() {
                             return (
                               <motion.div
                                 key={version.path}
-                                className="group relative bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-orange-500/10 backdrop-blur-xl border-2 border-amber-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
+                                className="group relative bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-orange-500/10 border-2 border-amber-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
                                 whileHover={{ scale: 1.01, y: -4 }}
                                 transition={{ duration: 0.3 }}
                               >
@@ -680,7 +680,7 @@ function ChatPresetsContent() {
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ duration: 0.3, delay: index * 0.03 }}
-                                  className="group relative bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-5 hover:bg-white/[0.04] hover:border-white/[0.08] transition-all duration-300"
+                                  className="group relative bg-white/[0.03] border border-white/[0.05] rounded-2xl p-5 hover:bg-white/[0.05] hover:border-white/[0.08] transition-all duration-300"
                                   whileHover={{ x: 4 }}
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -761,7 +761,7 @@ function ChatPresetsContent() {
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ duration: 0.3, delay: index * 0.03 }}
-                                  className="group relative bg-purple-500/[0.03] backdrop-blur-sm border border-purple-500/10 rounded-2xl p-5 hover:bg-purple-500/[0.06] hover:border-purple-500/20 transition-all duration-300"
+                                  className="group relative bg-purple-500/[0.05] border border-purple-500/10 rounded-2xl p-5 hover:bg-purple-500/[0.08] hover:border-purple-500/20 transition-all duration-300"
                                   whileHover={{ x: 4 }}
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

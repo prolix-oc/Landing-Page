@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export default function CardSkeleton() {
   return (
-    <div className="group bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden">
+    <div className="group bg-gray-900/70 border border-gray-800 rounded-2xl overflow-hidden">
       {/* Thumbnail Skeleton */}
       <div className="relative aspect-square bg-gray-900/50 overflow-hidden">
         <motion.div
@@ -19,8 +19,8 @@ export default function CardSkeleton() {
           }}
         />
         {/* Badge Skeletons */}
-        <div className="absolute top-3 left-3 w-16 h-6 bg-gray-800/50 rounded-full backdrop-blur-sm animate-pulse" />
-        <div className="absolute top-3 right-3 w-12 h-6 bg-gray-800/50 rounded-full backdrop-blur-sm animate-pulse" />
+        <div className="absolute top-3 left-3 w-16 h-6 bg-gray-800/70 rounded-full animate-pulse" />
+        <div className="absolute top-3 right-3 w-12 h-6 bg-gray-800/70 rounded-full animate-pulse" />
       </div>
       
       {/* Card Info Skeleton */}

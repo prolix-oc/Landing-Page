@@ -129,7 +129,7 @@ export default function SortDropdown({ value, onChange, className = '', options 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-xl border border-white/[0.1] rounded-xl shadow-2xl shadow-black/50 overflow-hidden z-50 ring-1 ring-white/5 min-w-[220px]"
+            className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-white/[0.1] rounded-xl shadow-2xl shadow-black/50 overflow-hidden z-50 ring-1 ring-white/5 min-w-[220px]"
           >
             <div className="p-1.5 space-y-0.5">
               {sortOptions.map((option) => {

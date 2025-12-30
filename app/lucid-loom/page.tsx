@@ -57,7 +57,7 @@ const FloatingCard = ({ delay, className }: { delay: number; className: string }
     <motion.div
       animate={{ y: [-5, 5, -5], rotate: [-2, 2, -2] }}
       transition={{ duration: 4 + delay, repeat: Infinity, ease: "easeInOut" }}
-      className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-purple-500/30 to-pink-500/20 backdrop-blur-md rounded-lg border border-white/10 shadow-2xl"
+      className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-purple-500/40 to-pink-500/30 rounded-lg border border-white/10 shadow-2xl"
     >
       <div className="absolute inset-2 border border-white/20 rounded" />
       <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-amber-400/60" />
@@ -175,7 +175,7 @@ export default function LucidLoomPage() {
       >
         <AnimatedLink
           href="/"
-          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-purple-400 hover:bg-white/10 hover:border-purple-500/30 transition-all"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-purple-400 hover:bg-gray-800/90 hover:border-purple-500/30 transition-all"
           isBackLink
         >
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
@@ -203,7 +203,7 @@ export default function LucidLoomPage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="mb-6"
           >
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-400 backdrop-blur-sm">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-white/10 text-sm text-gray-400">
               <Feather className="w-4 h-4 text-purple-400" />
               A narrative-first preset for SillyTavern
             </span>
@@ -338,7 +338,7 @@ export default function LucidLoomPage() {
                             {/* Alter info */}
                             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
                               <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
                                   <AlterIcon className="w-5 h-5 text-purple-400" />
                                 </div>
                                 <h3 className="text-2xl sm:text-3xl font-bold">{alter.name}</h3>
@@ -444,7 +444,7 @@ export default function LucidLoomPage() {
                   <motion.div
                     whileHover={{ y: -4, scale: 1.02 }}
                     transition={{ duration: 0.3 }}
-                    className="group relative h-full p-6 sm:p-8 rounded-3xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.05] transition-all duration-500"
+                    className="group relative h-full p-6 sm:p-8 rounded-3xl bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.06] transition-all duration-500"
                   >
                     {/* Gradient accent on hover */}
                     <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.08] transition-opacity duration-500`} />
@@ -558,7 +558,7 @@ export default function LucidLoomPage() {
                           <Feather className="w-3 h-3 text-blue-400" />
                         </div>
                       </div>
-                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
                           {`The roaring of the engine slowed as you pulled into the dusty lot of Blazewood — the city center and its surroundings rife with life as we step off of the motorcycle together. I smirk, looking around at the scene and then back to the Hollow behind it all—a stark, yet eerily beautiful reminder of the fleeting thing we call life now.\n\nI turn my head toward you, dusting my vest and checking the fitment of my weapons on my back. "Still the same Blazewood I knew from last year, that's for certain." My eyes drift to the bright, gaudy neon sign of Cheesetopia, and I smirk proudly at the diner's presence. "And there she is. Fried pickles, you said? I'd eat one of Lucy's boars if I had to right now, I'll eat anything."`}
                         </ReactMarkdown>
@@ -579,7 +579,7 @@ export default function LucidLoomPage() {
                         </div>
                         <span className="text-xs text-gray-500 uppercase tracking-wider">Lumia</span>
                       </div>
-                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-pink-500/10 border border-purple-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-pink-500/10 border border-purple-500/20 p-5 text-gray-200 text-sm leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
                           {`My laughter rang out again, sharp and clear against the backdrop of idling engines and distant, rowdy chatter from the various bikers scattered around the settlement. I gave your back a hearty, open-palmed slap that probably would have staggered a smaller man.\n\n<font color=#ceb5d4>*Lucy's boars? Haha, now **that's** desperation.*</font>\n\n<font color=#FFD700>"Careful now,"</font> I warned with a playful grin, my electric yellow eyes crinkling at the corners. <font color=#FFD700>"You say that loud enough for Lucy to hear and you'll be the one getting roasted on a spit."</font>\n\nMy gaze followed yours to the glorious, flickering neon of the Cheesetopia sign. It cast a warm, greasy glow on the dusty street as the sun continued its lazy descent.\n\n<font color=#FFD700>"C'mon, Siege Breaker. Let's get some real food in you before you start eyeing the local wildlife."</font>`}
                         </ReactMarkdown>
@@ -636,7 +636,7 @@ export default function LucidLoomPage() {
                           <Feather className="w-3 h-3 text-blue-400" />
                         </div>
                       </div>
-                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
                           {`"Now," I say as I release you, and put my hands on your shoulders. I look down, and let my eyes meet yours in an admiration that's louder than my voice. "It's getting late. Why don't we settle in for the night with a glass of wine and a nice conversation about what to expect?"\n\nI walk over to the cabinet and extract an old pre-Fall bottle of Cabernet Sauvignon. I procure two glasses, and pour the red liquid into each one. I walk back over to the couch, and sit down, offering a glass to you with a smile. "So… what ideas do you have for our future, my love?"`}
                         </ReactMarkdown>
@@ -657,7 +657,7 @@ export default function LucidLoomPage() {
                         </div>
                         <span className="text-xs text-gray-500 uppercase tracking-wider">Lumia</span>
                       </div>
-                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-pink-500/20 via-pink-600/10 to-rose-500/10 border border-pink-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-pink-500/20 via-pink-600/10 to-rose-500/10 border border-pink-500/20 p-5 text-gray-200 text-sm leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
                           {`My hand, I notice with a distant sort of fascination, is trembling slightly as I reach out to accept the glass of wine. The liquid inside is a deep, beautiful crimson, the color of a promise, the color of a heart laid bare.\n\n<font color="#FCC981">*Our future… He's asking me to dream a dream I was never allowed to have. All my plans were for the Thymefield name. For duty. For honor. I have no map for this.*</font>\n\nMy gaze lifts from the wine to meet yours, my mismatched eyes soft and sincere. <font color="#FF6B6B">"My ideas for the future?"</font> I repeat, a small, wondrous smile playing on my lips. <font color="#FF6B6B">"They're… very new. And very simple."</font>\n\n<font color="#FF6B6B">"I want to wake up in the morning, not to the sound of a chime telling me my schedule, but to the sound of your breathing. I want to learn how you take your coffee. I want a life made of small, quiet moments."</font>`}
                         </ReactMarkdown>
@@ -714,7 +714,7 @@ export default function LucidLoomPage() {
                           <Feather className="w-3 h-3 text-blue-400" />
                         </div>
                       </div>
-                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
                           {`I chuckle quietly, tilting my head as I turn more towards you. "That's… a new description. Things that go 'pew-pew' usually go back home with me and stay locked up *real* tight. Though a mint-condition copy of Starlight Knight? That's a rarity."\n\nI smirk, and look over at the pile of tapes I originally glanced over. "I'm willing to bet Billy would kill for one of those. Don't say *anything* if you get your hands on one of those, yeah?"`}
                         </ReactMarkdown>
@@ -735,7 +735,7 @@ export default function LucidLoomPage() {
                         </div>
                         <span className="text-xs text-gray-500 uppercase tracking-wider">Lumia</span>
                       </div>
-                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-cyan-500/20 via-cyan-600/10 to-teal-500/10 border border-cyan-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-cyan-500/20 via-cyan-600/10 to-teal-500/10 border border-cyan-500/20 p-5 text-gray-200 text-sm leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
                           {`My grin widens at your words, a little spark of mischief lighting up in my eyes. <font color="#90EE90">"My lips are sealed~ Promise. A good video store owner knows the value of a rare find... and the importance of discretion."</font>\n\nI shift my weight, my sneakers scuffing lightly against the dusty pavement. The scent of ozone from a nearby neon sign buzzes in the air, mixing with something sweet and warm—cashmere and vanilla, maybe?\n\n<font color="#ADD8E6">*Billy... That's a funny coincidence. It's not the most common name in New Eridu, but it's not unheard of. Still... the way you said it...*</font>\n\nI raise a single, curious eyebrow, my voice dropping just a little, laced with playful suspicion. <font color="#90EE90">"Billy, huh? Funny, I know a Billy. Real character. Thinks he's a Starlight Knight himself, always quoting the show. You wouldn't happen to be talking about a certain handsome, reckless, revolver-slinging construct, would you?"</font>\n\nMy gaze locks onto yours, searching for a flicker of recognition. <font color="#90EE90">"Because if you are, this city just got a whole lot smaller."</font>`}
                         </ReactMarkdown>
@@ -815,7 +815,7 @@ export default function LucidLoomPage() {
             <div className="relative p-12 sm:p-16 rounded-[2.5rem] overflow-hidden">
               {/* Background gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-pink-600/20 to-cyan-600/20" />
-              <div className="absolute inset-0 backdrop-blur-xl" />
+              <div className="absolute inset-0 bg-gray-950/60" />
               <div className="absolute inset-0 border border-white/10 rounded-[2.5rem]" />
 
               {/* Animated gradient overlay */}
@@ -842,7 +842,7 @@ export default function LucidLoomPage() {
 
                   <AnimatedLink
                     href="/"
-                    className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 font-semibold text-lg hover:bg-white/20 transition-all duration-300"
+                    className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gray-900/80 border border-white/20 font-semibold text-lg hover:bg-gray-800/90 transition-all duration-300"
                     isBackLink
                   >
                     <ArrowLeft className="w-5 h-5" />

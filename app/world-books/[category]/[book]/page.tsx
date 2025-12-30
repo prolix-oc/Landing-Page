@@ -259,7 +259,7 @@ export default function WorldBookDetailsPage() {
       >
         <AnimatedLink
           href={`/world-books?category=${encodeURIComponent(worldBook.category)}`}
-          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-white/10 hover:border-cyan-500/30 transition-all"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-gray-800/90 hover:border-cyan-500/30 transition-all"
           isBackLink
         >
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
@@ -275,8 +275,8 @@ export default function WorldBookDetailsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          {/* Single backdrop-blur layer */}
-          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
+          {/* Single backdrop-blur layer (md = 12px, optimized for Safari) */}
+          <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
           {/* Content grid inside */}
           <div className="relative flex-1 min-h-0 p-4 sm:p-6">

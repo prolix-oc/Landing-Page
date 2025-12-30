@@ -851,7 +851,7 @@ export default function PresetDownloadModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
         onClick={onClose}
       >
         {!isDataReady ? (
@@ -873,7 +873,7 @@ export default function PresetDownloadModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', duration: 0.5 }}
-            className="bg-gray-900/95 border border-gray-700/50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden backdrop-blur-xl"
+            className="bg-gray-900 border border-gray-700/50 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
           {/* Header */}

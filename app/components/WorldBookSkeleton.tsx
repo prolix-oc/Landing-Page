@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export default function WorldBookSkeleton() {
   return (
-    <div className="group bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden p-6">
+    <div className="group bg-gray-900/70 border border-gray-800 rounded-2xl overflow-hidden p-6">
       <div className="space-y-4">
         {/* Icon and Title Row */}
         <div className="flex items-center gap-3">

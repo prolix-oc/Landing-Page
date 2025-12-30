@@ -123,7 +123,7 @@ export default function SmartPagination({
         </motion.button>
 
         {/* Page Carousel */}
-        <div className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-full p-1">
+        <div className="relative bg-gray-900/80 border border-white/[0.08] rounded-full p-1">
           {/* Highlight Pill */}
           <motion.div
             className="absolute top-1 bottom-1 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-full z-10 shadow-[0_0_15px_rgba(6,182,212,0.4)]"
@@ -197,7 +197,7 @@ export default function SmartPagination({
             exit={{ opacity: 0, y: -10 }}
             className="absolute bottom-full mb-4 z-30"
           >
-            <form onSubmit={handleInputSubmit} className="bg-gray-900/95 backdrop-blur-xl border border-white/[0.1] rounded-xl p-2.5 shadow-xl flex items-center gap-2">
+            <form onSubmit={handleInputSubmit} className="bg-gray-900 border border-white/[0.1] rounded-xl p-2.5 shadow-xl flex items-center gap-2">
               <span className="text-xs text-gray-400 pl-2">Go to:</span>
               <input
                 ref={inputRef}
