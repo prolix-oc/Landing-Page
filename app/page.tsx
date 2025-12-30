@@ -321,39 +321,6 @@ export default function Home() {
         </motion.footer>
       </div>
 
-      {/* CSS for optimized orb animations */}
-      <style jsx>{`
-        .orb-1 {
-          animation: float-1 25s ease-in-out infinite;
-          will-change: transform;
-        }
-        .orb-2 {
-          animation: float-2 30s ease-in-out infinite;
-          will-change: transform;
-        }
-        .orb-3 {
-          animation: float-3 22s ease-in-out infinite;
-          will-change: transform;
-        }
-
-        @keyframes float-1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(60px, -40px) scale(1.05); }
-          50% { transform: translate(30px, 50px) scale(0.95); }
-          75% { transform: translate(-20px, 20px) scale(1.02); }
-        }
-
-        @keyframes float-2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-50px, 40px) scale(1.08); }
-          66% { transform: translate(30px, -30px) scale(0.92); }
-        }
-
-        @keyframes float-3 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(40px, -60px) scale(1.1); }
-        }
-      `}</style>
     </div>
   );
 }

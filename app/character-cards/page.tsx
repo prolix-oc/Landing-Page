@@ -204,35 +204,23 @@ function CharacterCardsContent() {
         <div className="orb-3 absolute bottom-[5%] left-[30%] w-[450px] h-[450px] bg-blue-600/15 rounded-full blur-[110px]" />
       </div>
 
-      <style jsx>{`
-        .orb-1 {
-          animation: float-1 28s ease-in-out infinite;
-          will-change: transform;
-        }
-        .orb-2 {
-          animation: float-2 32s ease-in-out infinite;
-          will-change: transform;
-        }
-        .orb-3 {
-          animation: float-3 26s ease-in-out infinite;
-          will-change: transform;
-        }
-        @keyframes float-1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(50px, -30px) scale(1.05); }
-          50% { transform: translate(20px, 40px) scale(0.95); }
-          75% { transform: translate(-30px, 15px) scale(1.02); }
-        }
-        @keyframes float-2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-40px, 30px) scale(1.03); }
-          66% { transform: translate(30px, -20px) scale(0.97); }
-        }
-        @keyframes float-3 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(-30px, -40px) scale(1.04); }
-        }
-      `}</style>
+
+      {/* Back Link - Fixed Pill Button */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        className="fixed top-6 left-6 z-50"
+      >
+        <AnimatedLink
+          href="/"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-white/10 hover:border-cyan-500/30 transition-all"
+          isBackLink
+        >
+          <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium">Back to Home</span>
+        </AnimatedLink>
+      </motion.div>
 
       <div className="relative container mx-auto px-4 py-8 sm:py-12">
         {/* Compact Hero Section */}
@@ -242,18 +230,6 @@ function CharacterCardsContent() {
           animate="visible"
           variants={containerVariants}
         >
-          {/* Back Link */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <AnimatedLink
-              href="/"
-              className="group inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors"
-              isBackLink
-            >
-              <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-medium">Back to Home</span>
-            </AnimatedLink>
-          </motion.div>
-
           {/* Floating Badge */}
           <motion.div
             variants={itemVariants}

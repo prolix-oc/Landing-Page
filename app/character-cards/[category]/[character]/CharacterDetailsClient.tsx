@@ -268,36 +268,23 @@ export default function CharacterDetailsClient({ character }: { character: Chara
         <div className="orb-3 absolute bottom-[10%] right-[20%] w-[450px] h-[450px] bg-cyan-600/15 rounded-full blur-[110px]" />
       </div>
 
-      <style jsx>{`
-        .orb-1 {
-          animation: float-1 30s ease-in-out infinite;
-          will-change: transform;
-          transition: background-color 1s ease;
-        }
-        .orb-2 {
-          animation: float-2 35s ease-in-out infinite;
-          will-change: transform;
-        }
-        .orb-3 {
-          animation: float-3 28s ease-in-out infinite;
-          will-change: transform;
-        }
-        @keyframes float-1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(-40px, 30px) scale(1.05); }
-          50% { transform: translate(-20px, -40px) scale(0.95); }
-          75% { transform: translate(30px, -10px) scale(1.02); }
-        }
-        @keyframes float-2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(50px, -20px) scale(1.03); }
-          66% { transform: translate(-30px, 40px) scale(0.97); }
-        }
-        @keyframes float-3 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(40px, 30px) scale(1.04); }
-        }
-      `}</style>
+      {/* Back Link - Fixed Pill Button */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        className="fixed top-6 left-6 z-50"
+      >
+        <AnimatedLink
+          href={`/character-cards?category=${encodeURIComponent(character.category)}`}
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-gray-400 hover:bg-white/10 transition-all"
+          style={{ ['--hover-color' as string]: accentColor }}
+          isBackLink
+        >
+          <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium">Back to {character.category}</span>
+        </AnimatedLink>
+      </motion.div>
 
       {/* Scroll to Top Button */}
       <AnimatePresence>
@@ -328,20 +315,10 @@ export default function CharacterDetailsClient({ character }: { character: Chara
         initial="hidden"
         animate="visible"
       >
-        {/* Header with Back Button and Category Badge */}
+        {/* Header with Category Badge */}
         <motion.header className="mb-8" variants={itemVariants}>
-          <AnimatedLink
-            href={`/character-cards?category=${encodeURIComponent(character.category)}`}
-            className="group inline-flex items-center gap-2 mb-4 transition-colors"
-            style={{ color: accentColor }}
-            isBackLink
-          >
-            <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">Back to {character.category}</span>
-          </AnimatedLink>
-
           {/* Category Badge */}
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex items-center gap-3">
             <motion.div
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm"
               style={{

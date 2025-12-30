@@ -2,7 +2,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import PersistentBackground from "./components/PersistentBackground";
 import { NavigationProvider } from "./contexts/NavigationContext";
 
 const geistSans = Geist({
@@ -53,7 +52,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <NavigationProvider>
-          <PersistentBackground />
           {children}
         </NavigationProvider>
       </body>

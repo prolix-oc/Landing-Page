@@ -37,35 +37,12 @@ import {
   Globe
 } from 'lucide-react';
 
-// Floating orbs component for atmospheric depth
+// Floating orbs component for atmospheric depth - CSS animated for GPU optimization
 const FloatingOrbs = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <motion.div
-      animate={{
-        x: [0, 100, 50, 0],
-        y: [0, -50, 100, 0],
-        scale: [1, 1.2, 0.9, 1],
-      }}
-      transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-      className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px]"
-    />
-    <motion.div
-      animate={{
-        x: [0, -80, 40, 0],
-        y: [0, 80, -40, 0],
-        scale: [1, 0.9, 1.1, 1],
-      }}
-      transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-      className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/15 rounded-full blur-[100px]"
-    />
-    <motion.div
-      animate={{
-        x: [0, 60, -30, 0],
-        y: [0, -60, 30, 0],
-      }}
-      transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 5 }}
-      className="absolute top-1/2 right-1/3 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[80px]"
-    />
+    <div className="orb-1 absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px]" />
+    <div className="orb-2 absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/15 rounded-full blur-[100px]" />
+    <div className="orb-3 absolute top-1/2 right-1/3 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[80px]" />
   </div>
 );
 
@@ -188,6 +165,23 @@ export default function LucidLoomPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
       <FloatingOrbs />
+
+      {/* Back Link - Top Left */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        className="fixed top-6 left-6 z-50"
+      >
+        <AnimatedLink
+          href="/"
+          className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-gray-400 hover:text-purple-400 hover:bg-white/10 hover:border-purple-500/30 transition-all"
+          isBackLink
+        >
+          <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-medium">Back to Home</span>
+        </AnimatedLink>
+      </motion.div>
 
       {/* ===== HERO SECTION ===== */}
       <motion.section
