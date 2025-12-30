@@ -53,12 +53,12 @@ interface VersionCategories {
   prolix: Version[];
 }
 
-// Floating atmospheric orbs - CSS animated for GPU optimization
+// Floating atmospheric orbs - CSS animated for GPU optimization (reduced blur for Safari perf)
 const FloatingOrbs = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <div className="orb-1 absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-600/15 rounded-full blur-[100px]" />
-    <div className="orb-2 absolute top-1/2 right-1/4 w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[120px]" />
-    <div className="orb-3 absolute bottom-1/4 left-1/3 w-[450px] h-[450px] bg-blue-600/10 rounded-full blur-[100px]" />
+    <div className="orb-1 absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[80px]" />
+    <div className="orb-2 absolute top-1/2 right-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[80px]" />
+    <div className="orb-3 absolute bottom-1/4 left-1/3 w-[450px] h-[450px] bg-blue-600/15 rounded-full blur-[80px]" />
   </div>
 );
 

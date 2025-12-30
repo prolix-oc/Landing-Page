@@ -21,7 +21,6 @@ import {
   FileText,
   Brain,
   ChevronDown,
-  ChevronUp,
   Download,
   Image as ImageIcon,
   FileJson2,
@@ -31,8 +30,7 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Maximize2,
-  Minimize2
+  Maximize2
 } from 'lucide-react';
 
 interface CharacterCardData {
@@ -72,19 +70,83 @@ interface Character {
   alternates?: AlternateScenario[];
 }
 
-// RevealSection component for scroll-triggered animations
-function RevealSection({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+// Accordion Section Component - smooth height transitions without layout thrashing
+function AccordionSection({
+  id,
+  title,
+  icon: Icon,
+  accentColor,
+  isOpen,
+  onToggle,
+  children,
+  delay = 0
+}: {
+  id: string;
+  title: string;
+  icon: React.ElementType;
+  accentColor: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  delay?: number;
+}) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
 
   return (
     <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
+      ref={sectionRef}
+      initial={{ opacity: 0, y: 20 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: 0.4, delay, ease: [0.4, 0, 0.2, 1] }}
+      className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden transition-colors duration-300 hover:border-white/[0.1]"
     >
-      {children}
+      {/* Header - always visible */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-4 sm:p-5 text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300"
+            style={{ backgroundColor: `${accentColor}20` }}
+          >
+            <Icon
+              className="w-5 h-5 transition-colors duration-300"
+              style={{ color: accentColor }}
+            />
+          </div>
+          <h3 className="text-lg font-semibold text-white group-hover:text-gray-100 transition-colors">
+            {title}
+          </h3>
+        </div>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/[0.05] group-hover:bg-white/[0.1] transition-colors"
+        >
+          <ChevronDown className="w-4 h-4 text-gray-400" />
+        </motion.div>
+      </button>
+
+      {/* Content - animated height */}
+      <div
+        className="overflow-hidden transition-all duration-300 ease-out"
+        style={{
+          maxHeight: isOpen ? `${contentRef.current?.scrollHeight || 2000}px` : '0px',
+          opacity: isOpen ? 1 : 0
+        }}
+      >
+        <div ref={contentRef} className="px-4 sm:px-5 pb-4 sm:pb-5">
+          {/* Accent gradient border */}
+          <div
+            className="h-px w-full mb-4 opacity-50"
+            style={{ background: `linear-gradient(to right, ${accentColor}, transparent)` }}
+          />
+          {children}
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -106,12 +168,20 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
   const selectedAlternate = getScenarioIndex();
   const [accentColor, setAccentColor] = useState<string>('#60a5fa');
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['firstMessage']));
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showFullScreenImage, setShowFullScreenImage] = useState(false);
 
-  const toggleCardExpansion = (cardId: string) => {
-    setExpandedCard(prev => prev === cardId ? null : cardId);
+  const toggleSection = (sectionId: string) => {
+    setOpenSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
   };
 
   // Extract average color from image
@@ -246,21 +316,21 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     }
   };
 
-  // Section configuration for Bento layout
-  const bentoSections = [
-    { id: 'firstMessage', title: 'First Message', icon: MessageSquare, content: charData.first_mes, gridClass: 'col-span-2 row-span-2' },
-    { id: 'scenario', title: 'Scenario', icon: Map, content: charData.scenario, gridClass: 'col-span-1 row-span-1' },
-    { id: 'description', title: 'Description', icon: FileText, content: charData.description, gridClass: 'col-span-1 row-span-2' },
-    { id: 'personality', title: 'Personality', icon: Brain, content: charData.personality, gridClass: 'col-span-2 row-span-1' },
+  // Content sections configuration
+  const contentSections = [
+    { id: 'firstMessage', title: 'First Message', icon: MessageSquare, content: charData.first_mes },
+    { id: 'scenario', title: 'Scenario', icon: Map, content: charData.scenario },
+    { id: 'description', title: 'Description', icon: FileText, content: charData.description },
+    { id: 'personality', title: 'Personality', icon: Brain, content: charData.personality },
   ].filter(section => section.content);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* CSS Animated Orbs - GPU Optimized with Dynamic Accent */}
+      {/* CSS Animated Orbs - GPU Optimized with Dynamic Accent (reduced blur for Safari perf) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="orb-1 absolute top-[5%] right-[10%] w-[500px] h-[500px] rounded-full blur-[120px]" style={{ backgroundColor: `${accentColor}20` }} />
-        <div className="orb-2 absolute top-[40%] left-[0%] w-[550px] h-[550px] bg-purple-600/15 rounded-full blur-[130px]" />
-        <div className="orb-3 absolute bottom-[10%] right-[20%] w-[450px] h-[450px] bg-cyan-600/15 rounded-full blur-[110px]" />
+        <div className="orb-1 absolute top-[5%] right-[10%] w-[500px] h-[500px] rounded-full blur-[80px]" style={{ backgroundColor: `${accentColor}25` }} />
+        <div className="orb-2 absolute top-[40%] left-[0%] w-[550px] h-[550px] bg-purple-600/20 rounded-full blur-[80px]" />
+        <div className="orb-3 absolute bottom-[10%] right-[20%] w-[450px] h-[450px] bg-cyan-600/20 rounded-full blur-[70px]" />
       </div>
 
       {/* Back Link - Fixed Pill Button */}
@@ -305,15 +375,14 @@ export default function CharacterDetailsClient({ character }: { character: Chara
       </AnimatePresence>
 
       <motion.div
-        className="relative container mx-auto px-4 py-8 sm:py-12"
+        className="relative container mx-auto px-4 py-8 sm:py-12 pt-20 sm:pt-24"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         {/* Header with Category Badge */}
-        <motion.header className="mb-8" variants={itemVariants}>
-          {/* Category Badge */}
-          <div className="flex items-center gap-3">
+        <motion.header className="mb-6" variants={itemVariants}>
+          <div className="flex items-center gap-3 flex-wrap">
             <motion.div
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm"
               style={{
@@ -334,11 +403,8 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
         {/* Alternate Scenarios Tabs */}
         {character.alternates && character.alternates.length > 1 && (
-          <motion.div
-            className="mb-8"
-            variants={itemVariants}
-          >
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <motion.div className="mb-6" variants={itemVariants}>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10">
               {selectedAlternate > 0 && (
                 <button
                   onClick={() => handleScenarioChange(selectedAlternate - 1)}
@@ -348,9 +414,9 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                 </button>
               )}
 
-              <div className="inline-flex bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-full p-1 gap-1">
+              <div className="inline-flex bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-full p-1 gap-1">
                 {character.alternates.map((alt, index) => (
-                  <motion.button
+                  <button
                     key={alt.id}
                     onClick={() => handleScenarioChange(index)}
                     className={`relative px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all text-sm ${
@@ -358,25 +424,13 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                         ? 'text-white'
                         : 'text-gray-400 hover:text-gray-200'
                     }`}
-                    whileHover={{ scale: selectedAlternate === index ? 1 : 1.03 }}
-                    whileTap={{ scale: 0.98 }}
+                    style={selectedAlternate === index ? {
+                      backgroundColor: accentColor,
+                      boxShadow: `0 8px 20px ${accentColor}40`
+                    } : {}}
                   >
-                    {selectedAlternate === index && (
-                      <motion.div
-                        layoutId="activeTab"
-                        className="absolute inset-0 rounded-full shadow-lg"
-                        initial={false}
-                        animate={{
-                          backgroundColor: accentColor,
-                          boxShadow: `0 8px 20px ${accentColor}40`
-                        }}
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                      />
-                    )}
-                    <span className="relative z-10">
-                      {alt.name.includes(' - ') ? alt.name.split(' - ')[1] : alt.name}
-                    </span>
-                  </motion.button>
+                    {alt.name.includes(' - ') ? alt.name.split(' - ')[1] : alt.name}
+                  </button>
                 ))}
               </div>
 
@@ -392,291 +446,165 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           </motion.div>
         )}
 
-        {/* Main Content - Bento Grid Layout */}
-        <motion.div
-          className="relative"
-          variants={itemVariants}
-        >
-          {/* Single backdrop-blur layer */}
-          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
+        {/* Main Content - Two Column Layout */}
+        <motion.div variants={itemVariants}>
+          {/* Single glass container */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
-          {/* Bento Grid Content */}
-          <div className="relative p-4 sm:p-6">
-            {/* Top Row: Character Card + Name/Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
-              {/* Character Portrait Card */}
-              <motion.div
-                className="lg:col-span-4 xl:col-span-3"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-              >
-                <div className="relative group">
-                  {/* Image */}
-                  <motion.button
-                    onClick={() => setShowFullScreenImage(true)}
-                    className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden cursor-pointer border border-white/[0.08] transition-all duration-300 hover:border-white/[0.15]"
-                    aria-label="View full-size image"
-                    whileHover="hover"
-                    initial="initial"
-                  >
-                    <AnimatePresence mode="wait" initial={false}>
-                      {currentScenario.thumbnailUrl && (
+            <div className="relative p-4 sm:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column: Image + Actions (sticky on desktop) */}
+                <div className="lg:col-span-4 xl:col-span-3">
+                  <div className="lg:sticky lg:top-6 space-y-4">
+                    {/* Character Portrait */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.4, delay: 0.1 }}
+                    >
+                      <button
+                        onClick={() => setShowFullScreenImage(true)}
+                        className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden cursor-pointer border border-white/[0.08] transition-all duration-300 hover:border-white/[0.15] group"
+                        aria-label="View full-size image"
+                      >
+                        <AnimatePresence mode="wait" initial={false}>
+                          {currentScenario.thumbnailUrl && (
+                            <motion.div
+                              key={currentScenario.id}
+                              className="absolute inset-0 w-full h-full"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              <div className="w-full h-full transition-transform duration-500 group-hover:scale-105">
+                                <LazyImage
+                                  src={currentScenario.thumbnailUrl}
+                                  alt={charData.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                        {/* View Full Size overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors opacity-0 group-hover:opacity-100">
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                            <Maximize2 className="w-4 h-4 text-white" />
+                            <span className="text-white text-sm font-medium">View Full Size</span>
+                          </div>
+                        </div>
+
+                        {/* Character Name overlaid at bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h1
+                            className="text-2xl sm:text-3xl font-bold text-white mb-1"
+                            style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
+                          >
+                            {charData.name}
+                          </h1>
+                          {currentScenario.lastModified && (
+                            <p className="flex items-center gap-2 text-sm text-gray-300">
+                              <Calendar className="w-3.5 h-3.5" />
+                              Updated {new Date(currentScenario.lastModified).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    </motion.div>
+
+                    {/* Action Buttons */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.15 }}
+                      className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 space-y-3"
+                    >
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Downloads</h3>
+
+                      {currentScenario.pngUrl && (
+                        <button
+                          onClick={() => downloadFile(currentScenario.pngUrl!, `${charData.name}.png`)}
+                          className="w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium shadow-lg flex items-center justify-center gap-2 text-white border hover:scale-[1.02] active:scale-[0.98]"
+                          style={{
+                            background: `linear-gradient(135deg, ${accentColor}, #a855f7)`,
+                            boxShadow: `0 8px 20px ${accentColor}30`,
+                            borderColor: `${accentColor}50`
+                          }}
+                        >
+                          <ImageIcon className="w-5 h-5" />
+                          Download PNG
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => downloadFile(currentScenario.jsonUrl, `${charData.name}.json`)}
+                        className="w-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <FileJson2 className="w-5 h-5 text-green-400" />
+                        Download JSON
+                      </button>
+
+                      <ShareButton
+                        url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
+                        title={charData.name}
+                      />
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Right Column: Content Sections */}
+                <div className="lg:col-span-8 xl:col-span-9 space-y-4">
+                  {contentSections.map((section, index) => (
+                    <AccordionSection
+                      key={section.id}
+                      id={section.id}
+                      title={section.title}
+                      icon={section.icon}
+                      accentColor={accentColor}
+                      isOpen={openSections.has(section.id)}
+                      onToggle={() => toggleSection(section.id)}
+                      delay={0.1 + index * 0.05}
+                    >
+                      <AnimatePresence mode="wait">
                         <motion.div
-                          key={currentScenario.id}
-                          className="absolute inset-0 w-full h-full"
+                          key={currentScenario.id + '-' + section.id}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
+                          transition={{ duration: 0.2 }}
+                          className="text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_p]:my-2"
                         >
-                          <motion.div
-                            className="w-full h-full"
-                            variants={{
-                              initial: { scale: 1 },
-                              hover: { scale: 1.05 }
-                            }}
-                            transition={{ duration: 0.4, ease: "easeOut" }}
-                          >
-                            <LazyImage
-                              src={currentScenario.thumbnailUrl}
-                              alt={charData.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </motion.div>
+                          {section.id === 'firstMessage' ? (
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkBreaks]}
+                              rehypePlugins={[rehypeRaw]}
+                              components={{
+                                p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
+                                em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
+                                code: ({node, inline, className, children, ...props}: any) => (
+                                  <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
+                                    {children}
+                                  </code>
+                                ),
+                              }}
+                            >
+                              {formatCharacterText(section.content)}
+                            </ReactMarkdown>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{section.content}</p>
+                          )}
                         </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                    {/* View Full Size overlay */}
-                    <motion.div
-                      className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-colors"
-                      variants={{
-                        initial: { opacity: 0 },
-                        hover: { opacity: 1 }
-                      }}
-                    >
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
-                        <Maximize2 className="w-4 h-4 text-white" />
-                        <span className="text-white text-sm font-medium">View Full Size</span>
-                      </div>
-                    </motion.div>
-
-                    {/* Character Name overlaid at bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <motion.h1
-                        className="text-2xl sm:text-3xl font-bold text-white mb-1"
-                        style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
-                      >
-                        {charData.name}
-                      </motion.h1>
-                      {currentScenario.lastModified && (
-                        <p className="flex items-center gap-2 text-sm text-gray-300">
-                          <Calendar className="w-3.5 h-3.5" />
-                          Updated {new Date(currentScenario.lastModified).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  </motion.button>
+                      </AnimatePresence>
+                    </AccordionSection>
+                  ))}
                 </div>
-              </motion.div>
-
-              {/* Action Buttons Card */}
-              <motion.div
-                className="lg:col-span-3 xl:col-span-2"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.15 }}
-              >
-                <div className="h-full bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 flex flex-col gap-3">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Downloads</h3>
-
-                  {currentScenario.pngUrl && (
-                    <motion.button
-                      onClick={() => downloadFile(currentScenario.pngUrl!, `${charData.name}.png`)}
-                      className="flex-1 min-h-[48px] px-4 py-3 rounded-xl transition-all duration-200 font-medium shadow-lg flex items-center justify-center gap-2 text-white border"
-                      style={{
-                        background: `linear-gradient(135deg, ${accentColor}, #a855f7)`,
-                        boxShadow: `0 8px 20px ${accentColor}30`,
-                        borderColor: `${accentColor}50`
-                      }}
-                      whileHover={{ scale: 1.02, boxShadow: `0 12px 25px ${accentColor}40` }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <ImageIcon className="w-5 h-5" />
-                      PNG
-                    </motion.button>
-                  )}
-
-                  <motion.button
-                    onClick={() => downloadFile(currentScenario.jsonUrl, `${charData.name}.json`)}
-                    className="flex-1 min-h-[48px] bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <FileJson2 className="w-5 h-5 text-green-400" />
-                    JSON
-                  </motion.button>
-
-                  <ShareButton
-                    url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
-                    title={charData.name}
-                  />
-                </div>
-              </motion.div>
-
-              {/* First Message - Featured Large Card */}
-              {charData.first_mes && (
-                <motion.div
-                  className={`lg:col-span-5 xl:col-span-7 ${expandedCard === 'firstMessage' ? 'lg:col-span-12 xl:col-span-12' : ''}`}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                  layout
-                >
-                  <BentoCard
-                    id="firstMessage"
-                    title="First Message"
-                    icon={MessageSquare}
-                    accentColor={accentColor}
-                    isExpanded={expandedCard === 'firstMessage'}
-                    onToggle={() => toggleCardExpansion('firstMessage')}
-                    featured
-                  >
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={currentScenario.id + '-firstmes'}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_p]:my-2"
-                      >
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm, remarkBreaks]}
-                          rehypePlugins={[rehypeRaw]}
-                          components={{
-                            p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
-                            em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
-                            code: ({node, inline, className, children, ...props}: any) => (
-                              <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
-                                {children}
-                              </code>
-                            ),
-                          }}
-                        >
-                          {formatCharacterText(charData.first_mes)}
-                        </ReactMarkdown>
-                      </motion.div>
-                    </AnimatePresence>
-                  </BentoCard>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Bottom Row: Smaller Detail Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Scenario Card */}
-              {charData.scenario && (
-                <motion.div
-                  className={expandedCard === 'scenario' ? 'md:col-span-2 lg:col-span-3' : ''}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.25 }}
-                  layout
-                >
-                  <BentoCard
-                    id="scenario"
-                    title="Scenario"
-                    icon={Map}
-                    accentColor={accentColor}
-                    isExpanded={expandedCard === 'scenario'}
-                    onToggle={() => toggleCardExpansion('scenario')}
-                  >
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={currentScenario.id + '-scenario'}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm"
-                      >
-                        {charData.scenario}
-                      </motion.p>
-                    </AnimatePresence>
-                  </BentoCard>
-                </motion.div>
-              )}
-
-              {/* Description Card */}
-              {charData.description && (
-                <motion.div
-                  className={expandedCard === 'description' ? 'md:col-span-2 lg:col-span-3' : ''}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3 }}
-                  layout
-                >
-                  <BentoCard
-                    id="description"
-                    title="Description"
-                    icon={FileText}
-                    accentColor={accentColor}
-                    isExpanded={expandedCard === 'description'}
-                    onToggle={() => toggleCardExpansion('description')}
-                  >
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={currentScenario.id + '-description'}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm"
-                      >
-                        {charData.description}
-                      </motion.p>
-                    </AnimatePresence>
-                  </BentoCard>
-                </motion.div>
-              )}
-
-              {/* Personality Card */}
-              {charData.personality && (
-                <motion.div
-                  className={expandedCard === 'personality' ? 'md:col-span-2 lg:col-span-3' : ''}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.35 }}
-                  layout
-                >
-                  <BentoCard
-                    id="personality"
-                    title="Personality"
-                    icon={Brain}
-                    accentColor={accentColor}
-                    isExpanded={expandedCard === 'personality'}
-                    onToggle={() => toggleCardExpansion('personality')}
-                  >
-                    <AnimatePresence mode="wait">
-                      <motion.p
-                        key={currentScenario.id + '-personality'}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm"
-                      >
-                        {charData.personality}
-                      </motion.p>
-                    </AnimatePresence>
-                  </BentoCard>
-                </motion.div>
-              )}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -690,7 +618,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4"
             onClick={() => setShowFullScreenImage(false)}
           >
             {/* Close Button */}
@@ -737,90 +665,5 @@ export default function CharacterDetailsClient({ character }: { character: Chara
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-// Bento Card Component - Expandable cards for character details
-function BentoCard({
-  id,
-  title,
-  icon: Icon,
-  accentColor,
-  isExpanded,
-  onToggle,
-  featured = false,
-  children
-}: {
-  id: string;
-  title: string;
-  icon: React.ElementType;
-  accentColor: string;
-  isExpanded: boolean;
-  onToggle: () => void;
-  featured?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <motion.div
-      layout
-      className={`relative h-full bg-gradient-to-br from-white/[0.04] to-transparent border rounded-2xl overflow-hidden transition-all duration-300 ${
-        isExpanded
-          ? 'border-white/[0.2] shadow-xl'
-          : 'border-white/[0.08] hover:border-white/[0.15]'
-      } ${featured ? 'min-h-[300px]' : 'min-h-[200px]'}`}
-      transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
-    >
-      {/* Accent gradient bar at top */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 h-1"
-        initial={false}
-        animate={{
-          background: isExpanded
-            ? `linear-gradient(to right, ${accentColor}, #a855f7)`
-            : `linear-gradient(to right, ${accentColor}40, transparent)`,
-          opacity: 1
-        }}
-        transition={{ duration: 0.3 }}
-      />
-
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/[0.05]">
-        <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2.5">
-          <div
-            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors duration-300"
-            style={{ backgroundColor: `${accentColor}20` }}
-          >
-            <Icon
-              className="w-4 h-4 transition-colors duration-300"
-              style={{ color: accentColor }}
-            />
-          </div>
-          {title}
-        </h2>
-        <motion.button
-          onClick={onToggle}
-          className="p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] transition-colors"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          aria-label={isExpanded ? 'Collapse' : 'Expand'}
-        >
-          {isExpanded ? (
-            <Minimize2 className="w-4 h-4 text-gray-400" />
-          ) : (
-            <Maximize2 className="w-4 h-4 text-gray-400" />
-          )}
-        </motion.button>
-      </div>
-
-      {/* Content */}
-      <div className={`p-4 ${isExpanded ? 'max-h-none' : featured ? 'max-h-[220px]' : 'max-h-[140px]'} overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent`}>
-        {children}
-      </div>
-
-      {/* Fade out gradient when collapsed */}
-      {!isExpanded && (
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-      )}
-    </motion.div>
   );
 }

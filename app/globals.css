@@ -647,7 +647,7 @@ a:active {
 
 /* Alternative: Use CSS custom property to control blur (easier to tune) */
 :root {
-  --orb-blur: 120px;
+  --orb-blur: 80px;
 }
 
 /* Reduce blur for Safari via feature detection */

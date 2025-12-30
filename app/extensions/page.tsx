@@ -103,11 +103,11 @@ function ExtensionsContent() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* CSS Animated Orbs - GPU Optimized */}
+      {/* CSS Animated Orbs - GPU Optimized (reduced blur for Safari perf) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="orb-1 absolute top-[10%] left-[5%] w-[500px] h-[500px] bg-orange-600/20 rounded-full blur-[120px]" />
-        <div className="orb-2 absolute top-[50%] right-[0%] w-[550px] h-[550px] bg-amber-600/15 rounded-full blur-[130px]" />
-        <div className="orb-3 absolute bottom-[5%] left-[40%] w-[400px] h-[400px] bg-red-600/15 rounded-full blur-[100px]" />
+        <div className="orb-1 absolute top-[10%] left-[5%] w-[500px] h-[500px] bg-orange-600/25 rounded-full blur-[80px]" />
+        <div className="orb-2 absolute top-[50%] right-[0%] w-[550px] h-[550px] bg-amber-600/20 rounded-full blur-[80px]" />
+        <div className="orb-3 absolute bottom-[5%] left-[40%] w-[400px] h-[400px] bg-red-600/20 rounded-full blur-[80px]" />
       </div>
 
 

@@ -37,12 +37,12 @@ import {
   Globe
 } from 'lucide-react';
 
-// Floating orbs component for atmospheric depth - CSS animated for GPU optimization
+// Floating orbs component for atmospheric depth - CSS animated for GPU optimization (reduced blur for Safari perf)
 const FloatingOrbs = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <div className="orb-1 absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px]" />
-    <div className="orb-2 absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/15 rounded-full blur-[100px]" />
-    <div className="orb-3 absolute top-1/2 right-1/3 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[80px]" />
+    <div className="orb-1 absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/25 rounded-full blur-[80px]" />
+    <div className="orb-2 absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[80px]" />
+    <div className="orb-3 absolute top-1/2 right-1/3 w-[400px] h-[400px] bg-pink-500/15 rounded-full blur-[80px]" />
   </div>
 );
 
@@ -489,7 +489,7 @@ export default function LucidLoomPage() {
       <section className="relative py-32 px-4 overflow-hidden">
         {/* Dramatic background */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/30 to-gray-950" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[150px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-600/15 rounded-full blur-[80px]" />
 
         <div className="relative max-w-6xl mx-auto">
           <RevealSection>
