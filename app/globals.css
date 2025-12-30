@@ -103,12 +103,29 @@ a:focus-visible {
   animation: shimmer 2s infinite;
 }
 
-/* Glassmorphism effect */
+/* Glassmorphism effect - optimized for GPU compositing */
 .glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Performance optimizations */
+  will-change: backdrop-filter;
+  contain: paint;
+  isolation: isolate;
+}
+
+/* Glass container variant for main page containers */
+.glass-container {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1.5rem;
+  /* Performance optimizations - isolate rendering */
+  will-change: backdrop-filter;
+  contain: paint;
+  isolation: isolate;
 }
 
 /* Card hover effect */
@@ -249,20 +266,20 @@ a:active {
   animation: fadeInScale 0.6s ease-out;
 }
 
-/* Background blur animation */
-@keyframes blurPulse {
+/* Background pulse animation - opacity + scale only (no blur animation for GPU perf) */
+@keyframes orbPulse {
   0%, 100% {
     opacity: 0.3;
-    filter: blur(60px);
+    transform: scale(1);
   }
   50% {
     opacity: 0.5;
-    filter: blur(80px);
+    transform: scale(1.05);
   }
 }
 
 .blur-pulse {
-  animation: blurPulse 8s ease-in-out infinite;
+  animation: orbPulse 8s ease-in-out infinite;
 }
 
 /* Breathing gradient animation for cards - continuously loops the gradient position */
@@ -598,17 +615,15 @@ a:active {
   animation: glassReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
 }
 
-/* Page transition - fade out when navigating */
+/* Page transition - fade out when navigating (no blur for GPU perf) */
 @keyframes pageFadeOut {
   from {
     opacity: 1;
     transform: scale(1);
-    filter: blur(0);
   }
   to {
-    opacity: 0.3;
-    transform: scale(0.99);
-    filter: blur(2px);
+    opacity: 0.5;
+    transform: scale(0.995);
   }
 }
 
@@ -627,32 +642,83 @@ a:active {
   transition: none !important;
 }
 
-/* Safari performance optimizations */
+/* ==================== */
+/* Safari Performance Optimizations */
+/* ==================== */
+
+/* CSS custom properties for blur control (easier to tune globally) */
+:root {
+  --orb-blur: 80px;
+  --orb-blur-safari: 50px;
+  --backdrop-blur: 12px;
+  --backdrop-blur-safari: 8px;
+}
+
+/* Safari-specific overrides using feature detection */
 /* Safari struggles with large blur radii - reduce them */
+@supports (-webkit-hyphens: none) {
+  :root {
+    --orb-blur: var(--orb-blur-safari);
+    --backdrop-blur: var(--backdrop-blur-safari);
+  }
+
+  /* Reduce orb blur for Safari */
+  .orb-1, .orb-2, .orb-3 {
+    filter: blur(var(--orb-blur-safari)) !important;
+    -webkit-filter: blur(var(--orb-blur-safari)) !important;
+    opacity: 0.4;
+  }
+
+  /* Reduce backdrop blur for Safari */
+  .glass,
+  .glass-container,
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: blur(var(--backdrop-blur-safari)) !important;
+    backdrop-filter: blur(var(--backdrop-blur-safari)) !important;
+  }
+
+  /* Disable complex animations on Safari for perf */
+  .blur-pulse {
+    animation: none !important;
+    opacity: 0.4;
+  }
+}
+
+/* Alternative Safari detection for older versions */
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance: none) {
-    /* This targets Safari specifically */
     .orb-1, .orb-2, .orb-3 {
-      filter: blur(60px) !important;
-      -webkit-filter: blur(60px) !important;
-      opacity: 0.5;
+      filter: blur(50px) !important;
+      -webkit-filter: blur(50px) !important;
+      opacity: 0.4;
     }
 
-    .backdrop-blur-xl {
-      -webkit-backdrop-filter: blur(12px) !important;
-      backdrop-filter: blur(12px) !important;
+    .backdrop-blur-xl,
+    .backdrop-blur-lg {
+      -webkit-backdrop-filter: blur(8px) !important;
+      backdrop-filter: blur(8px) !important;
+    }
+
+    .backdrop-blur-md {
+      -webkit-backdrop-filter: blur(6px) !important;
+      backdrop-filter: blur(6px) !important;
     }
   }
 }
 
-/* Alternative: Use CSS custom property to control blur (easier to tune) */
-:root {
-  --orb-blur: 80px;
-}
+/* Reduced motion preference - disable all blur animations */
+@media (prefers-reduced-motion: reduce) {
+  .orb-1, .orb-2, .orb-3 {
+    animation: none !important;
+  }
 
-/* Reduce blur for Safari via feature detection */
-@supports (-webkit-hyphens: none) {
-  :root {
-    --orb-blur: 50px;
+  .blur-pulse {
+    animation: none !important;
+  }
+
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
