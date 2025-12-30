@@ -5,29 +5,32 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Fetches a state file from the statefiles directory of a preset
- * Path: Chat Completion/{preset}/statefiles/{stateFile}
+ * Supports nested directories via catch-all route: statefiles/v3.2/model.state.json
+ * Path: Chat Completion/{preset}/statefiles/{...stateFile}
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ preset: string; stateFile: string }> }
+  { params }: { params: Promise<{ preset: string; stateFile: string[] }> }
 ) {
   try {
     const { preset, stateFile } = await params;
 
     // Decode URL-encoded parameters
     const decodedPreset = decodeURIComponent(preset);
-    const decodedStateFile = decodeURIComponent(stateFile);
+    // stateFile is an array of path segments for catch-all routes
+    // e.g., ["v3.2", "Kimi K2 Thinking.state.json"] -> "v3.2/Kimi K2 Thinking.state.json"
+    const decodedStateFilePath = stateFile.map(segment => decodeURIComponent(segment)).join('/');
 
     // Validate stateFile name (must end with .state.json)
-    if (!decodedStateFile.endsWith('.state.json')) {
+    if (!decodedStateFilePath.endsWith('.state.json')) {
       return NextResponse.json(
-        { error: 'Invalid state file name' },
+        { error: 'Invalid state file name - must end with .state.json' },
         { status: 400 }
       );
     }
 
-    // Construct the path to the state file
-    const stateFilePath = `Chat Completion/${decodedPreset}/statefiles/${decodedStateFile}`;
+    // Construct the path to the state file (supports nested directories)
+    const stateFilePath = `Chat Completion/${decodedPreset}/statefiles/${decodedStateFilePath}`;
 
     // Use the GitHub caching system to fetch the file
     const fileData = await fetchFromGitHub(encodeURI(stateFilePath));

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, AnimatePresence, Variants, useInView } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import { slugify } from '@/lib/slugify';
 import LazyImage from '@/app/components/LazyImage';
@@ -13,6 +13,24 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { FastAverageColor } from 'fast-average-color';
+import {
+  ArrowLeft,
+  ArrowUp,
+  MessageSquare,
+  Map,
+  FileText,
+  Brain,
+  ChevronDown,
+  Download,
+  Image as ImageIcon,
+  FileJson2,
+  X,
+  Info,
+  Calendar,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
 
 interface CharacterCardData {
   spec: string;
@@ -51,11 +69,27 @@ interface Character {
   alternates?: AlternateScenario[];
 }
 
+// RevealSection component for scroll-triggered animations
+function RevealSection({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay, ease: [0.4, 0, 0.2, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function CharacterDetailsClient({ character }: { character: Character }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
-  // Derive selected index directly from URL
+
   const getScenarioIndex = () => {
     const scenarioParam = searchParams.get('scenario');
     if (scenarioParam && character.alternates) {
@@ -68,7 +102,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
   };
 
   const selectedAlternate = getScenarioIndex();
-  const [accentColor, setAccentColor] = useState<string>('#60a5fa'); // Default generic blue
+  const [accentColor, setAccentColor] = useState<string>('#60a5fa');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     firstMessage: true,
     scenario: true,
@@ -88,24 +122,21 @@ export default function CharacterDetailsClient({ character }: { character: Chara
   // Extract average color from image
   useEffect(() => {
     const fac = new FastAverageColor();
-    const imageUrl = character.alternates?.[selectedAlternate]?.thumbnailUrl || 
-                    character.alternates?.[selectedAlternate]?.pngUrl || 
-                    character.thumbnailUrl || 
+    const imageUrl = character.alternates?.[selectedAlternate]?.thumbnailUrl ||
+                    character.alternates?.[selectedAlternate]?.pngUrl ||
+                    character.thumbnailUrl ||
                     character.pngUrl;
 
     if (imageUrl) {
-      // Ignore pure black and white to find more interesting colors
-      fac.getColorAsync(imageUrl, { 
+      fac.getColorAsync(imageUrl, {
         algorithm: 'dominant',
         ignoredColor: [
-          [255, 255, 255, 255], // White
-          [0, 0, 0, 255]        // Black
+          [255, 255, 255, 255],
+          [0, 0, 0, 255]
         ]
       })
         .then(color => {
           const [r, g, b] = color.value;
-          
-          // Convert RGB to HSL to strictly control saturation and lightness
           const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
           const max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
           let h = 0, s = 0, l = (max + min) / 2;
@@ -121,17 +152,11 @@ export default function CharacterDetailsClient({ character }: { character: Chara
             h /= 6;
           }
 
-          // Boost saturation to ensure "varied" look (avoid grays)
-          // We clamp it to a minimum of 40% to avoid muddy colors
-          s = Math.max(s, 0.4); // Min saturation 40%
-          s = Math.min(s * 1.3, 1.0); // 30% boost, max 100%
+          s = Math.max(s, 0.4);
+          s = Math.min(s * 1.3, 1.0);
+          l = Math.max(l, 0.6);
+          l = Math.min(l, 0.85);
 
-          // Ensure lightness is high enough for dark mode contrast
-          // Target range: 60% - 85%
-          l = Math.max(l, 0.6); // Min lightness 60%
-          l = Math.min(l, 0.85); // Max lightness 85%
-
-          // Convert back to RGB
           const hue2rgb = (p: number, q: number, t: number) => {
             if (t < 0) t += 1;
             if (t > 1) t -= 1;
@@ -143,14 +168,14 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
           const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
           const p = 2 * l - q;
-          
+
           const finalR = Math.round(hue2rgb(p, q, h + 1/3) * 255);
           const finalG = Math.round(hue2rgb(p, q, h) * 255);
           const finalB = Math.round(hue2rgb(p, q, h - 1/3) * 255);
-          
+
           const toHex = (c: number) => c.toString(16).padStart(2, '0');
           const finalHex = `#${toHex(finalR)}${toHex(finalG)}${toHex(finalB)}`;
-          
+
           setAccentColor(finalHex);
         })
         .catch(() => {
@@ -159,10 +184,8 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     }
   }, [selectedAlternate, character]);
 
-
   useEffect(() => {
     const handleScroll = () => {
-      // Show button when scrolled past 300px
       setShowScrollTop(window.scrollY > 300);
     };
 
@@ -170,9 +193,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Update URL when scenario changes
   const handleScenarioChange = (index: number) => {
-    // Update URL with scenario parameter
     const url = new URL(window.location.href);
     if (index > 0) {
       url.searchParams.set('scenario', index.toString());
@@ -183,13 +204,9 @@ export default function CharacterDetailsClient({ character }: { character: Chara
   };
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Get the current alternate scenario to display
   const currentScenario = character.alternates ? character.alternates[selectedAlternate] : {
     id: 'primary',
     name: character.cardData.data.name,
@@ -200,20 +217,13 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     cardData: character.cardData,
     lastModified: character.lastModified
   };
-  
+
   const { cardData } = currentScenario;
   const charData = cardData.data;
 
-  // Formatting helper function for character text
   const formatCharacterText = (text: string | undefined) => {
     if (!text) return '';
-    
-    // If the text already contains HTML tags for styling (like <font> or <span>), 
-    // assume it's pre-formatted and return as is to avoid breaking it.
     if (/<(font|span)\s+[^>]*>/.test(text)) return text;
-    
-    // Wrap quoted dialogue in a colored span
-    // Matches text between straight quotes "..."
     return text.replace(/"([^"]+)"/g, `<span style="color: ${accentColor}; opacity: 0.9; transition: color 0.5s ease;">"$1"</span>`);
   };
 
@@ -222,14 +232,14 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.03,
+        staggerChildren: 0.05,
         delayChildren: 0
       }
     }
   };
 
   const itemVariants: Variants = {
-    hidden: { y: 10, opacity: 0 },
+    hidden: { y: 15, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
@@ -241,8 +251,54 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     }
   };
 
+  // Section icons mapping
+  const sectionIcons = {
+    firstMessage: MessageSquare,
+    scenario: Map,
+    description: FileText,
+    personality: Brain
+  };
+
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* CSS Animated Orbs - GPU Optimized with Dynamic Accent */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
+        <div className="orb-1 absolute top-[5%] right-[10%] w-[500px] h-[500px] rounded-full blur-[120px]" style={{ backgroundColor: `${accentColor}20` }} />
+        <div className="orb-2 absolute top-[40%] left-[0%] w-[550px] h-[550px] bg-purple-600/15 rounded-full blur-[130px]" />
+        <div className="orb-3 absolute bottom-[10%] right-[20%] w-[450px] h-[450px] bg-cyan-600/15 rounded-full blur-[110px]" />
+      </div>
+
+      <style jsx>{`
+        .orb-1 {
+          animation: float-1 30s ease-in-out infinite;
+          will-change: transform;
+          transition: background-color 1s ease;
+        }
+        .orb-2 {
+          animation: float-2 35s ease-in-out infinite;
+          will-change: transform;
+        }
+        .orb-3 {
+          animation: float-3 28s ease-in-out infinite;
+          will-change: transform;
+        }
+        @keyframes float-1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(-40px, 30px) scale(1.05); }
+          50% { transform: translate(-20px, -40px) scale(0.95); }
+          75% { transform: translate(30px, -10px) scale(1.02); }
+        }
+        @keyframes float-2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(50px, -20px) scale(1.03); }
+          66% { transform: translate(-30px, 40px) scale(0.97); }
+        }
+        @keyframes float-3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(40px, 30px) scale(1.04); }
+        }
+      `}</style>
+
       {/* Scroll to Top Button */}
       <AnimatePresence>
         {showScrollTop && (
@@ -251,528 +307,374 @@ export default function CharacterDetailsClient({ character }: { character: Chara
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={scrollToTop}
-            className="fixed bottom-8 right-8 z-50 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white p-4 rounded-full shadow-lg shadow-blue-500/50 hover:shadow-blue-500/70 transition-all duration-200"
+            className="fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-lg transition-all duration-200 border"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}, #a855f7)`,
+              boxShadow: `0 10px 25px ${accentColor}50`,
+              borderColor: `${accentColor}50`
+            }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             aria-label="Scroll to top"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
+            <ArrowUp className="w-5 h-5 text-white" />
           </motion.button>
         )}
       </AnimatePresence>
 
-      <motion.div 
-        className="relative container mx-auto px-4 py-16"
+      <motion.div
+        className="relative container mx-auto px-4 py-8 sm:py-12"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        {/* Header with Back Button */}
-        <motion.div className="mb-8" variants={itemVariants}>
-          <AnimatedLink 
-            href={`/character-cards?category=${encodeURIComponent(character.category)}`} 
-            className="group transition-colors duration-500 inline-flex items-center mb-4"
+        {/* Header with Back Button and Category Badge */}
+        <motion.header className="mb-8" variants={itemVariants}>
+          <AnimatedLink
+            href={`/character-cards?category=${encodeURIComponent(character.category)}`}
+            className="group inline-flex items-center gap-2 mb-4 transition-colors"
             style={{ color: accentColor }}
             isBackLink
           >
-            <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to {character.category}
+            <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-medium">Back to {character.category}</span>
           </AnimatedLink>
-        </motion.div>
+
+          {/* Category Badge */}
+          <div className="flex items-center gap-3 mt-4">
+            <motion.div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm"
+              style={{
+                backgroundColor: `${accentColor}15`,
+                borderColor: `${accentColor}30`
+              }}
+            >
+              <Sparkles className="w-3.5 h-3.5" style={{ color: accentColor }} />
+              <span style={{ color: accentColor }}>{character.category}</span>
+            </motion.div>
+            {character.alternates && character.alternates.length > 1 && (
+              <span className="text-sm text-gray-500">
+                {character.alternates.length} versions available
+              </span>
+            )}
+          </div>
+        </motion.header>
 
         {/* Alternate Scenarios Tabs */}
         {character.alternates && character.alternates.length > 1 && (
           <motion.div
-            className="mb-8 flex justify-center"
+            className="mb-8"
             variants={itemVariants}
           >
-            <div className="inline-flex bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-full p-1 gap-1">
-              {character.alternates.map((alt, index) => (
-                <motion.button
-                  key={alt.id}
-                  onClick={() => handleScenarioChange(index)}
-                  className={`relative px-6 py-2.5 rounded-full font-medium whitespace-nowrap transition-colors ${
-                    selectedAlternate === index
-                      ? 'text-white'
-                      : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                  whileHover={{ scale: selectedAlternate === index ? 1 : 1.05 }}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              {selectedAlternate > 0 && (
+                <button
+                  onClick={() => handleScenarioChange(selectedAlternate - 1)}
+                  className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-gray-400 hover:text-white hover:bg-white/[0.06] transition-all flex-shrink-0"
                 >
-                  {selectedAlternate === index && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 rounded-full shadow-lg"
-                      initial={false}
-                      animate={{ 
-                        backgroundColor: accentColor,
-                        boxShadow: `0 10px 15px -3px ${accentColor}40`
-                      }}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 text-sm">
-                    {alt.name.includes(' - ') ? alt.name.split(' - ')[1] : alt.name}
-                  </span>
-                </motion.button>
-              ))}
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+
+              <div className="inline-flex bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-full p-1 gap-1">
+                {character.alternates.map((alt, index) => (
+                  <motion.button
+                    key={alt.id}
+                    onClick={() => handleScenarioChange(index)}
+                    className={`relative px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all text-sm ${
+                      selectedAlternate === index
+                        ? 'text-white'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                    whileHover={{ scale: selectedAlternate === index ? 1 : 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {selectedAlternate === index && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 rounded-full shadow-lg"
+                        initial={false}
+                        animate={{
+                          backgroundColor: accentColor,
+                          boxShadow: `0 8px 20px ${accentColor}40`
+                        }}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                      />
+                    )}
+                    <span className="relative z-10">
+                      {alt.name.includes(' - ') ? alt.name.split(' - ')[1] : alt.name}
+                    </span>
+                  </motion.button>
+                ))}
+              </div>
+
+              {selectedAlternate < (character.alternates?.length || 0) - 1 && (
+                <button
+                  onClick={() => handleScenarioChange(selectedAlternate + 1)}
+                  className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-gray-400 hover:text-white hover:bg-white/[0.06] transition-all flex-shrink-0"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </motion.div>
         )}
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Character Image and Download */}
-          <motion.div
-            className="lg:col-span-1"
-            variants={itemVariants}
-          >
-            <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden sticky top-4">
-              <motion.button
-                onClick={() => setShowFullScreenImage(true)}
-                className="relative aspect-square bg-gray-900/50 overflow-hidden w-full cursor-pointer"
-                aria-label="View full-size image"
-                whileHover="hover"
-                initial="initial"
-                animate="initial"
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {currentScenario.thumbnailUrl && (
+        {/* Main Content - Single Glass Container */}
+        <motion.div
+          className="relative"
+          variants={itemVariants}
+        >
+          {/* Single backdrop-blur layer */}
+          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
+
+          {/* Content grid inside */}
+          <div className="relative p-4 sm:p-6 lg:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+              {/* Character Image and Download */}
+              <div className="lg:col-span-1">
+                <div className="lg:sticky lg:top-8 space-y-4">
+                  {/* Image */}
+                  <motion.button
+                    onClick={() => setShowFullScreenImage(true)}
+                    className="relative aspect-square w-full rounded-2xl overflow-hidden cursor-pointer group border border-white/[0.08]"
+                    aria-label="View full-size image"
+                    whileHover="hover"
+                    initial="initial"
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      {currentScenario.thumbnailUrl && (
+                        <motion.div
+                          key={currentScenario.id}
+                          className="absolute inset-0 w-full h-full"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <motion.div
+                            className="w-full h-full"
+                            variants={{
+                              initial: { scale: 1 },
+                              hover: { scale: 1.05 }
+                            }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                          >
+                            <LazyImage
+                              src={currentScenario.thumbnailUrl}
+                              alt={charData.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Hover overlay */}
                     <motion.div
-                      key={currentScenario.id}
-                      className="absolute inset-0 w-full h-full"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 flex items-center justify-center"
+                      variants={{
+                        initial: { backgroundColor: 'rgba(0, 0, 0, 0)' },
+                        hover: { backgroundColor: 'rgba(0, 0, 0, 0.4)' }
+                      }}
                       transition={{ duration: 0.3 }}
                     >
                       <motion.div
-                        className="w-full h-full"
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20"
                         variants={{
-                          initial: { scale: 1 },
-                          hover: { scale: 1.05 }
+                          initial: { opacity: 0, scale: 0.9 },
+                          hover: { opacity: 1, scale: 1 }
                         }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        transition={{ duration: 0.3 }}
                       >
-                        <LazyImage
-                          src={currentScenario.thumbnailUrl}
-                          alt={charData.name}
-                          className="w-full h-full object-cover"
-                        />
+                        <ImageIcon className="w-5 h-5 text-white" />
+                        <span className="text-white text-sm font-medium">View Full Size</span>
                       </motion.div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-                
-                {/* Hover overlay */}
-                <motion.div
-                  className="absolute inset-0 flex items-center justify-center"
-                  variants={{
-                    initial: { backgroundColor: 'rgba(0, 0, 0, 0)' },
-                    hover: { 
-                      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                      transition: { duration: 0.3, ease: "easeOut" }
-                    }
-                  }}
-                >
-                  <motion.div
-                    variants={{
-                      initial: { opacity: 0, scale: 0.9 },
-                      hover: { 
-                        opacity: 1, 
-                        scale: 1,
-                        transition: { duration: 0.3, ease: "easeOut" }
-                      }
-                    }}
-                  >
-                    <svg className="w-12 h-12 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                    </svg>
-                  </motion.div>
-                </motion.div>
-              </motion.button>
-              
-              <div className="p-6 space-y-4">
-                <div>
-                  <motion.h1 
-                    className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text mb-2 pb-1"
-                    initial={false}
-                    animate={{ 
-                      backgroundImage: `linear-gradient(to right, ${accentColor}, #fff, ${accentColor})`,
-                      backgroundSize: '200% auto',
-                    }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {charData.name}
-                  </motion.h1>
-                  
-                  {currentScenario.lastModified && (
-                    <p className="text-sm text-gray-400">
-                      Updated: {new Date(currentScenario.lastModified).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
+                  </motion.button>
 
-                {/* Download and Share Buttons */}
-                <div className="space-y-2 pt-4">
-                  {currentScenario.pngUrl && (
+                  {/* Character Name */}
+                  <div>
+                    <motion.h1
+                      className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text mb-2"
+                      initial={false}
+                      animate={{
+                        backgroundImage: `linear-gradient(to right, ${accentColor}, #fff, ${accentColor})`,
+                        backgroundSize: '200% auto',
+                      }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      {charData.name}
+                    </motion.h1>
+
+                    {currentScenario.lastModified && (
+                      <p className="flex items-center gap-2 text-sm text-gray-500">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Updated {new Date(currentScenario.lastModified).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Download and Share Buttons */}
+                  <div className="space-y-2 pt-2">
+                    {currentScenario.pngUrl && (
+                      <motion.button
+                        onClick={() => downloadFile(currentScenario.pngUrl!, `${charData.name}.png`)}
+                        className="w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium shadow-lg flex items-center justify-center gap-2 text-white border"
+                        style={{
+                          background: `linear-gradient(135deg, ${accentColor}, #a855f7)`,
+                          boxShadow: `0 8px 20px ${accentColor}30`,
+                          borderColor: `${accentColor}50`
+                        }}
+                        whileHover={{ scale: 1.02, boxShadow: `0 12px 25px ${accentColor}40` }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <ImageIcon className="w-5 h-5" />
+                        Download PNG
+                      </motion.button>
+                    )}
+
                     <motion.button
-                      onClick={() => downloadFile(currentScenario.pngUrl!, `${charData.name}.png`)}
-                      className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-4 py-3 rounded-lg transition-all duration-200 font-medium shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-center gap-2"
+                      onClick={() => downloadFile(currentScenario.jsonUrl, `${charData.name}.json`)}
+                      className="w-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      Download PNG
+                      <FileJson2 className="w-5 h-5 text-green-400" />
+                      Download JSON
                     </motion.button>
-                  )}
-                  
-                  <motion.button
-                    onClick={() => downloadFile(currentScenario.jsonUrl, `${charData.name}.json`)}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-4 py-3 rounded-lg transition-all duration-200 font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 flex items-center justify-center gap-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Download JSON
-                  </motion.button>
 
-                  <ShareButton 
-                    url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
-                    title={charData.name}
-                  />
+                    <ShareButton
+                      url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
+                      title={charData.name}
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Character Details */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* First Message */}
+                {charData.first_mes && (
+                  <RevealSection delay={0}>
+                    <ExpandableSection
+                      title="First Message"
+                      icon={MessageSquare}
+                      isExpanded={expandedSections.firstMessage}
+                      onToggle={() => toggleSection('firstMessage')}
+                      accentColor={accentColor}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={currentScenario.id + '-firstmes'}
+                          initial={{ opacity: 0, filter: "blur(4px)" }}
+                          animate={{ opacity: 1, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, filter: "blur(4px)" }}
+                          transition={{ duration: 0.4 }}
+                          className="text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_p]:my-2"
+                        >
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkBreaks]}
+                            rehypePlugins={[rehypeRaw]}
+                            components={{
+                              p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+                              em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
+                              code: ({node, inline, className, children, ...props}: any) => (
+                                <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
+                                  {children}
+                                </code>
+                              ),
+                            }}
+                          >
+                            {formatCharacterText(charData.first_mes)}
+                          </ReactMarkdown>
+                        </motion.div>
+                      </AnimatePresence>
+                    </ExpandableSection>
+                  </RevealSection>
+                )}
+
+                {/* Scenario */}
+                {charData.scenario && (
+                  <RevealSection delay={0.1}>
+                    <ExpandableSection
+                      title="Scenario"
+                      icon={Map}
+                      isExpanded={expandedSections.scenario}
+                      onToggle={() => toggleSection('scenario')}
+                      accentColor={accentColor}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.p
+                          key={currentScenario.id + '-scenario'}
+                          initial={{ opacity: 0, filter: "blur(4px)" }}
+                          animate={{ opacity: 1, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, filter: "blur(4px)" }}
+                          transition={{ duration: 0.4 }}
+                          className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                        >
+                          {charData.scenario}
+                        </motion.p>
+                      </AnimatePresence>
+                    </ExpandableSection>
+                  </RevealSection>
+                )}
+
+                {/* Description */}
+                {charData.description && (
+                  <RevealSection delay={0.2}>
+                    <ExpandableSection
+                      title="Description"
+                      icon={FileText}
+                      isExpanded={expandedSections.description}
+                      onToggle={() => toggleSection('description')}
+                      accentColor={accentColor}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.p
+                          key={currentScenario.id + '-description'}
+                          initial={{ opacity: 0, filter: "blur(4px)" }}
+                          animate={{ opacity: 1, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, filter: "blur(4px)" }}
+                          transition={{ duration: 0.4 }}
+                          className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                        >
+                          {charData.description}
+                        </motion.p>
+                      </AnimatePresence>
+                    </ExpandableSection>
+                  </RevealSection>
+                )}
+
+                {/* Personality */}
+                {charData.personality && (
+                  <RevealSection delay={0.3}>
+                    <ExpandableSection
+                      title="Personality"
+                      icon={Brain}
+                      isExpanded={expandedSections.personality}
+                      onToggle={() => toggleSection('personality')}
+                      accentColor={accentColor}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.p
+                          key={currentScenario.id + '-personality'}
+                          initial={{ opacity: 0, filter: "blur(4px)" }}
+                          animate={{ opacity: 1, filter: "blur(0px)" }}
+                          exit={{ opacity: 0, filter: "blur(4px)" }}
+                          transition={{ duration: 0.4 }}
+                          className="text-gray-300 whitespace-pre-wrap leading-relaxed"
+                        >
+                          {charData.personality}
+                        </motion.p>
+                      </AnimatePresence>
+                    </ExpandableSection>
+                  </RevealSection>
+                )}
+              </div>
             </div>
-          </motion.div>
-
-          {/* Character Details */}
-          <motion.div 
-            className="lg:col-span-2 space-y-6"
-            variants={itemVariants}
-          >
-            {/* First Message */}
-            {charData.first_mes && (
-              <motion.div 
-                layout
-                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
-                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
-              >
-                <button
-                  onClick={() => toggleSection('firstMessage')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
-                >
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    First Message
-                  </h2>
-                  <motion.svg
-                    className="w-6 h-6 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    animate={{ rotate: expandedSections.firstMessage ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </motion.svg>
-                </button>
-                <AnimatePresence>
-                  {expandedSections.firstMessage && (
-                    <motion.div
-                      layout
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ 
-                        height: { duration: 0.2 },
-                        opacity: { duration: 0.2 },
-                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <motion.div layout className="px-6 pb-6 pt-2">
-                        <AnimatePresence mode="wait">
-                          <motion.div
-                            key={currentScenario.id + '-firstmes'}
-                            initial={{ opacity: 0, filter: "blur(4px)" }}
-                            animate={{ 
-                              opacity: 1, 
-                              filter: "blur(0px)",
-                              transition: { 
-                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
-                              }
-                            }}
-                            exit={{ 
-                              opacity: 0,
-                              filter: "blur(4px)",
-                              transition: { 
-                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
-                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
-                              }
-                            }}
-                            className="text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_p]:my-2"
-                          >
-                            <ReactMarkdown 
-                              remarkPlugins={[remarkGfm, remarkBreaks]} 
-                              rehypePlugins={[rehypeRaw]}
-                              components={{
-                                p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
-                                em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
-                                code: ({node, inline, className, children, ...props}: any) => (
-                                  <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
-                                    {children}
-                                  </code>
-                                ),
-                              }}
-                            >
-                              {formatCharacterText(charData.first_mes)}
-                            </ReactMarkdown>
-                          </motion.div>
-                        </AnimatePresence>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-
-            {/* Scenario */}
-            {charData.scenario && (
-              <motion.div 
-                layout
-                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
-                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
-              >
-                <button
-                  onClick={() => toggleSection('scenario')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
-                >
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-                    </svg>
-                    Scenario
-                  </h2>
-                  <motion.svg
-                    className="w-6 h-6 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    animate={{ rotate: expandedSections.scenario ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </motion.svg>
-                </button>
-                <AnimatePresence>
-                  {expandedSections.scenario && (
-                    <motion.div
-                      layout
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ 
-                        height: { duration: 0.2 },
-                        opacity: { duration: 0.2 },
-                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <motion.div layout className="px-6 pb-6 pt-2">
-                        <AnimatePresence mode="wait">
-                          <motion.p
-                            key={currentScenario.id + '-scenario'}
-                            initial={{ opacity: 0, filter: "blur(4px)" }}
-                            animate={{ 
-                              opacity: 1, 
-                              filter: "blur(0px)",
-                              transition: { 
-                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
-                              }
-                            }}
-                            exit={{ 
-                              opacity: 0,
-                              filter: "blur(4px)",
-                              transition: { 
-                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
-                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
-                              }
-                            }}
-                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
-                          >
-                            {charData.scenario}
-                          </motion.p>
-                        </AnimatePresence>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-
-            {/* Description */}
-            {charData.description && (
-              <motion.div 
-                layout
-                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
-                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
-              >
-                <button
-                  onClick={() => toggleSection('description')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
-                >
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Description
-                  </h2>
-                  <motion.svg
-                    className="w-6 h-6 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    animate={{ rotate: expandedSections.description ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </motion.svg>
-                </button>
-                <AnimatePresence>
-                  {expandedSections.description && (
-                    <motion.div
-                      layout
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ 
-                        height: { duration: 0.2 },
-                        opacity: { duration: 0.2 },
-                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <motion.div layout className="px-6 pb-6 pt-2">
-                        <AnimatePresence mode="wait">
-                          <motion.p
-                            key={currentScenario.id + '-description'}
-                            initial={{ opacity: 0, filter: "blur(4px)" }}
-                            animate={{ 
-                              opacity: 1, 
-                              filter: "blur(0px)",
-                              transition: { 
-                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
-                              }
-                            }}
-                            exit={{ 
-                              opacity: 0,
-                              filter: "blur(4px)",
-                              transition: { 
-                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
-                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
-                              }
-                            }}
-                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
-                          >
-                            {charData.description}
-                          </motion.p>
-                        </AnimatePresence>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-
-            {/* Personality */}
-            {charData.personality && (
-              <motion.div 
-                layout
-                className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden"
-                transition={{ layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
-              >
-                <button
-                  onClick={() => toggleSection('personality')}
-                  className="w-full p-6 flex items-center justify-between hover:bg-gray-700/30 transition-colors active:bg-gray-700/40"
-                >
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-6 h-6 transition-colors duration-500" style={{ color: accentColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Personality
-                  </h2>
-                  <motion.svg
-                    className="w-6 h-6 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    animate={{ rotate: expandedSections.personality ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </motion.svg>
-                </button>
-                <AnimatePresence>
-                  {expandedSections.personality && (
-                    <motion.div
-                      layout
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ 
-                        height: { duration: 0.2 },
-                        opacity: { duration: 0.2 },
-                        layout: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <motion.div layout className="px-6 pb-6 pt-2">
-                        <AnimatePresence mode="wait">
-                          <motion.p
-                            key={currentScenario.id + '-personality'}
-                            initial={{ opacity: 0, filter: "blur(4px)" }}
-                            animate={{ 
-                              opacity: 1, 
-                              filter: "blur(0px)",
-                              transition: { 
-                                opacity: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-                                filter: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
-                              }
-                            }}
-                            exit={{ 
-                              opacity: 0,
-                              filter: "blur(4px)",
-                              transition: { 
-                                opacity: { duration: 0.3, ease: [0.4, 0, 1, 1] },
-                                filter: { duration: 0.3, ease: [0.4, 0, 1, 1] }
-                              }
-                            }}
-                            className="text-gray-300 whitespace-pre-wrap leading-relaxed"
-                          >
-                            {charData.personality}
-                          </motion.p>
-                        </AnimatePresence>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </motion.div>
 
       {/* Full-Screen Image Modal */}
@@ -783,7 +685,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
             onClick={() => setShowFullScreenImage(false)}
           >
             {/* Close Button */}
@@ -793,12 +695,10 @@ export default function CharacterDetailsClient({ character }: { character: Chara
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ delay: 0.1 }}
               onClick={() => setShowFullScreenImage(false)}
-              className="absolute top-4 right-4 z-[101] bg-gray-800/90 hover:bg-gray-700/90 text-white p-3 rounded-full shadow-xl border border-gray-600/50 transition-colors"
+              className="absolute top-4 right-4 z-[101] bg-white/[0.1] hover:bg-white/[0.2] text-white p-3 rounded-full shadow-xl border border-white/[0.1] transition-colors"
               aria-label="Close full-screen view"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-6 h-6" />
             </motion.button>
 
             {/* Image */}
@@ -812,7 +712,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
               <img
                 src={currentScenario.pngUrl}
                 alt={charData.name}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl pointer-events-auto"
+                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl pointer-events-auto border border-white/[0.1]"
                 onClick={(e) => e.stopPropagation()}
               />
             </motion.div>
@@ -823,16 +723,92 @@ export default function CharacterDetailsClient({ character }: { character: Chara
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ delay: 0.2 }}
-              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-400 text-sm flex items-center gap-2 bg-gray-800/80 px-4 py-2 rounded-full backdrop-blur-sm"
+              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-400 text-sm flex items-center gap-2 bg-white/[0.05] px-4 py-2 rounded-full backdrop-blur-md border border-white/[0.1]"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Info className="w-4 h-4" />
               Click anywhere to close
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// Expandable Section Component
+function ExpandableSection({
+  title,
+  icon: Icon,
+  isExpanded,
+  onToggle,
+  accentColor,
+  children
+}: {
+  title: string;
+  icon: React.ElementType;
+  isExpanded: boolean;
+  onToggle: () => void;
+  accentColor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.div
+      layout
+      className="relative bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden"
+      transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
+    >
+      {/* Gradient left border when expanded */}
+      <motion.div
+        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+        initial={false}
+        animate={{
+          background: isExpanded
+            ? `linear-gradient(to bottom, ${accentColor}, #a855f7)`
+            : 'transparent',
+          opacity: isExpanded ? 1 : 0
+        }}
+        transition={{ duration: 0.3 }}
+      />
+
+      <button
+        onClick={onToggle}
+        className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-white/[0.03] transition-colors"
+      >
+        <h2 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-3">
+          <Icon
+            className="w-5 h-5 transition-colors duration-300"
+            style={{ color: isExpanded ? accentColor : '#9ca3af' }}
+          />
+          {title}
+        </h2>
+        <motion.div
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown className="w-5 h-5 text-gray-400" />
+        </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            layout
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              height: { duration: 0.25 },
+              opacity: { duration: 0.2 },
+              layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+            }}
+            className="overflow-hidden"
+          >
+            <motion.div layout className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
+              {children}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

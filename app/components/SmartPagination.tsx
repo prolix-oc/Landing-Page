@@ -1,14 +1,15 @@
 'use client';
 
-import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 
 interface SmartPaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   className?: string;
-  siblingCount?: number; // Number of pages to show around current page
+  siblingCount?: number;
 }
 
 export default function SmartPagination({
@@ -52,10 +53,8 @@ export default function SmartPagination({
 
   // Use a simplified pagination range generator
   const generatePagination = () => {
-    // Total numbers: first + last + current + 2*siblings + 2*dots
     const totalNumbers = siblingCount * 2 + 5;
 
-    // Case 1: Total pages is less than what we want to show
     if (totalPages <= totalNumbers) {
       return Array.from({ length: totalPages }, (_, i) => i);
     }
@@ -69,32 +68,29 @@ export default function SmartPagination({
     const firstPage = 0;
     const lastPage = totalPages - 1;
 
-    // Case 2: No left dots, show right dots
     if (!shouldShowLeftDots && shouldShowRightDots) {
       const leftItemCount = 3 + 2 * siblingCount;
       const leftRange = Array.from({ length: leftItemCount }, (_, i) => i);
       return [...leftRange, 'dots-right', lastPage];
     }
 
-    // Case 3: No right dots, show left dots
     if (shouldShowLeftDots && !shouldShowRightDots) {
       const rightItemCount = 3 + 2 * siblingCount;
       const rightRange = Array.from({ length: rightItemCount }, (_, i) => totalPages - rightItemCount + i);
       return [firstPage, 'dots-left', ...rightRange];
     }
 
-    // Case 4: Show both dots
     if (shouldShowLeftDots && shouldShowRightDots) {
       const middleRange = Array.from({ length: rightSiblingIndex - leftSiblingIndex + 1 }, (_, i) => leftSiblingIndex + i);
       return [firstPage, 'dots-left', ...middleRange, 'dots-right', lastPage];
     }
-    
+
     return [];
   };
 
   const pageNumbers = generatePagination();
 
-  // Calculate highlight position for desktop (different width than mobile)
+  // Calculate highlight position
   const getHighlightPosition = (pages: (number | string)[]) => {
     let visualPosition = 0;
     for (let i = 0; i < pages.length; i++) {
@@ -110,41 +106,39 @@ export default function SmartPagination({
 
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Previous Button */}
         <motion.button
           onClick={() => currentPage > 0 && onPageChange(currentPage - 1)}
           disabled={currentPage === 0}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border ${
             currentPage === 0
-              ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-              : 'bg-white/10 hover:bg-white/20 text-white shadow-lg hover:shadow-blue-500/20'
+              ? 'bg-white/[0.02] border-white/[0.05] text-gray-600 cursor-not-allowed'
+              : 'bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] hover:border-cyan-500/30 text-white shadow-lg hover:shadow-cyan-500/10'
           }`}
           whileHover={currentPage > 0 ? { scale: 1.05 } : {}}
           whileTap={currentPage > 0 ? { scale: 0.95 } : {}}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-5 h-5" />
         </motion.button>
 
         {/* Page Carousel */}
-        <div className="relative bg-gray-900/60 backdrop-blur-xl border border-gray-800 rounded-full p-1">
+        <div className="relative bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-full p-1">
           {/* Highlight Pill */}
           <motion.div
-            className="absolute top-1 bottom-1 bg-blue-600 rounded-full z-10 shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+            className="absolute top-1 bottom-1 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-full z-10 shadow-[0_0_15px_rgba(6,182,212,0.4)]"
             style={{ width: '48px' }}
-            animate={{ 
-              left: `${getHighlightPosition(pageNumbers) * 48 + 4}px` // 4px padding + index * width (48px)
+            animate={{
+              left: `${getHighlightPosition(pageNumbers) * 48 + 4}px`
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
 
           <div className="relative flex items-center">
             <AnimatePresence mode="popLayout">
-              {pageNumbers.map((page, index) => {
+              {pageNumbers.map((page) => {
                 const isDots = typeof page === 'string';
-                
+
                 return (
                   <motion.div
                     key={isDots ? page : `page-${page}`}
@@ -157,7 +151,7 @@ export default function SmartPagination({
                     {isDots ? (
                       <button
                         onClick={() => setIsInputVisible(!isInputVisible)}
-                        className="w-[48px] h-[40px] flex items-center justify-center text-gray-400 hover:text-blue-400 transition-colors relative z-20"
+                        className="w-[48px] h-[40px] flex items-center justify-center text-gray-400 hover:text-cyan-400 transition-colors relative z-20"
                       >
                         <span className="text-lg leading-none mb-2">...</span>
                       </button>
@@ -182,17 +176,15 @@ export default function SmartPagination({
         <motion.button
           onClick={() => currentPage < totalPages - 1 && onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages - 1}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border ${
             currentPage === totalPages - 1
-              ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed'
-              : 'bg-white/10 hover:bg-white/20 text-white shadow-lg hover:shadow-blue-500/20'
+              ? 'bg-white/[0.02] border-white/[0.05] text-gray-600 cursor-not-allowed'
+              : 'bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] hover:border-cyan-500/30 text-white shadow-lg hover:shadow-cyan-500/10'
           }`}
           whileHover={currentPage < totalPages - 1 ? { scale: 1.05 } : {}}
           whileTap={currentPage < totalPages - 1 ? { scale: 0.95 } : {}}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="w-5 h-5" />
         </motion.button>
       </div>
 
@@ -205,7 +197,7 @@ export default function SmartPagination({
             exit={{ opacity: 0, y: -10 }}
             className="absolute bottom-full mb-4 z-30"
           >
-            <form onSubmit={handleInputSubmit} className="bg-gray-800 border border-gray-700 rounded-xl p-2 shadow-xl flex items-center gap-2">
+            <form onSubmit={handleInputSubmit} className="bg-gray-900/95 backdrop-blur-xl border border-white/[0.1] rounded-xl p-2.5 shadow-xl flex items-center gap-2">
               <span className="text-xs text-gray-400 pl-2">Go to:</span>
               <input
                 ref={inputRef}
@@ -214,16 +206,14 @@ export default function SmartPagination({
                 max={totalPages}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-16 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:border-blue-500 text-white"
+                className="w-16 bg-white/[0.05] border border-white/[0.1] rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-cyan-500/50 text-white"
                 placeholder="#"
               />
               <button
                 type="submit"
-                className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                className="p-1.5 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white rounded-lg transition-all"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
+                <ChevronsRight className="w-4 h-4" />
               </button>
             </form>
           </motion.div>

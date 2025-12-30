@@ -6,12 +6,24 @@ import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
-import { slugify } from '@/lib/slugify';
 import LazyImage from '@/app/components/LazyImage';
 import SmartPagination from '@/app/components/SmartPagination';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import CardSkeleton from '@/app/components/CardSkeleton';
 import SortDropdown, { SortOption } from '@/app/components/SortDropdown';
+import {
+  ArrowLeft,
+  Users,
+  ChevronRight,
+  Download,
+  ChevronDown,
+  Image as ImageIcon,
+  FileJson2,
+  Layers,
+  Calendar,
+  HardDrive,
+  Sparkles
+} from 'lucide-react';
 
 interface Category {
   name: string;
@@ -36,13 +48,13 @@ function CharacterCardsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Animation variants consistent with landing page
+  // Animation variants
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
+        staggerChildren: 0.05,
         delayChildren: 0.1
       }
     }
@@ -55,8 +67,8 @@ function CharacterCardsContent() {
       opacity: 1,
       transition: {
         type: "spring",
-        stiffness: 50,
-        damping: 15
+        stiffness: 80,
+        damping: 20
       }
     }
   };
@@ -76,16 +88,9 @@ function CharacterCardsContent() {
   useEffect(() => {
     const calculateCardsPerPage = () => {
       const width = window.innerWidth;
-      if (width < 768) {
-        // Mobile: 1 column
-        return 6;
-      } else if (width < 1024) {
-        // Tablet: 2 columns
-        return 12;
-      } else {
-        // Desktop: 3 columns
-        return 15;
-      }
+      if (width < 768) return 6;
+      else if (width < 1024) return 12;
+      else return 15;
     };
 
     setCardsPerPage(calculateCardsPerPage());
@@ -94,7 +99,7 @@ function CharacterCardsContent() {
       const newCardsPerPage = calculateCardsPerPage();
       if (newCardsPerPage !== cardsPerPage) {
         setCardsPerPage(newCardsPerPage);
-        setCurrentPage(0); // Reset to first page on resize
+        setCurrentPage(0);
       }
     };
 
@@ -119,8 +124,7 @@ function CharacterCardsContent() {
         if (data.success) {
           setCategories(data.categories);
           setAllCards(data.cards || []);
-          setFilteredCards(data.cards || []); // Show all by default
-          // Small delay to ensure all data is ready before showing content
+          setFilteredCards(data.cards || []);
           setTimeout(() => setIsContentLoaded(true), 100);
         }
       } catch (error) {
@@ -139,7 +143,6 @@ function CharacterCardsContent() {
       ? allCards.filter(card => card.category === selectedCategory)
       : allCards;
 
-    // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'a-z':
@@ -150,16 +153,14 @@ function CharacterCardsContent() {
           if (!a.lastModified || !b.lastModified) return 0;
           return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
         case 'alt-count':
-          const aCount = a.alternateCount || 0;
-          const bCount = b.alternateCount || 0;
-          return bCount - aCount;
+          return (b.alternateCount || 0) - (a.alternateCount || 0);
         default:
           return 0;
       }
     });
 
     setFilteredCards(sorted);
-    setCurrentPage(0); // Reset to first page when filtering or sorting
+    setCurrentPage(0);
   }, [selectedCategory, allCards, sortBy]);
 
   const formatFileSize = (bytes: number) => {
@@ -171,7 +172,6 @@ function CharacterCardsContent() {
   const handleCategoryChange = (categoryName: string | null) => {
     if (categoryName !== selectedCategory) {
       setSelectedCategory(categoryName);
-      // Update URL with category parameter
       if (categoryName) {
         router.push(`/character-cards?category=${encodeURIComponent(categoryName)}`, { scroll: false });
       } else {
@@ -182,317 +182,402 @@ function CharacterCardsContent() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Don't scroll - let user control scroll position
   };
 
-  // Paginate cards
   const totalPages = Math.ceil(filteredCards.length / cardsPerPage);
   const paginatedCards = filteredCards.slice(
     currentPage * cardsPerPage,
     (currentPage + 1) * cardsPerPage
   );
 
+  // Calculate stats
+  const totalCards = allCards.length;
+  const totalCategories = categories.length;
+  const totalAlts = allCards.reduce((sum, card) => sum + (card.alternateCount || 0), 0);
+
   return (
-    <div className="min-h-screen relative">
-      <div className="relative container mx-auto px-4 py-16">
-        {/* Header */}
-        <motion.div 
-          className="mb-12"
+    <div className="min-h-screen relative overflow-hidden">
+      {/* CSS Animated Orbs - GPU Optimized */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
+        <div className="orb-1 absolute top-[10%] left-[5%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px]" />
+        <div className="orb-2 absolute top-[50%] right-[0%] w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[140px]" />
+        <div className="orb-3 absolute bottom-[5%] left-[30%] w-[450px] h-[450px] bg-blue-600/15 rounded-full blur-[110px]" />
+      </div>
+
+      <style jsx>{`
+        .orb-1 {
+          animation: float-1 28s ease-in-out infinite;
+          will-change: transform;
+        }
+        .orb-2 {
+          animation: float-2 32s ease-in-out infinite;
+          will-change: transform;
+        }
+        .orb-3 {
+          animation: float-3 26s ease-in-out infinite;
+          will-change: transform;
+        }
+        @keyframes float-1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(50px, -30px) scale(1.05); }
+          50% { transform: translate(20px, 40px) scale(0.95); }
+          75% { transform: translate(-30px, 15px) scale(1.02); }
+        }
+        @keyframes float-2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-40px, 30px) scale(1.03); }
+          66% { transform: translate(30px, -20px) scale(0.97); }
+        }
+        @keyframes float-3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-30px, -40px) scale(1.04); }
+        }
+      `}</style>
+
+      <div className="relative container mx-auto px-4 py-8 sm:py-12">
+        {/* Compact Hero Section */}
+        <motion.header
+          className="text-center mb-8 sm:mb-10"
           initial="hidden"
           animate="visible"
           variants={containerVariants}
         >
-          <motion.div variants={itemVariants}>
-            <AnimatedLink href="/" className="group text-cyan-400 hover:text-cyan-300 transition-colors inline-flex items-center mb-6" isBackLink>
-              <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Home
+          {/* Back Link */}
+          <motion.div variants={itemVariants} className="mb-6">
+            <AnimatedLink
+              href="/"
+              className="group inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors"
+              isBackLink
+            >
+              <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium">Back to Home</span>
             </AnimatedLink>
           </motion.div>
-          
-          <motion.h1 
-            className="text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient mb-4"
+
+          {/* Floating Badge */}
+          <motion.div
             variants={itemVariants}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4"
           >
-            Character Cards
-          </motion.h1>
-          <motion.p 
-            className="text-xl text-gray-300 max-w-3xl"
+            <Users className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-medium text-cyan-300">Character Collection</span>
+          </motion.div>
+
+          {/* Title */}
+          <motion.h1
             variants={itemVariants}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3"
+          >
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient bg-[length:200%_auto]">
+              Character
+            </span>
+            <span className="text-white/90 ml-3">Cards</span>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            variants={itemVariants}
+            className="text-gray-400 text-lg max-w-2xl mx-auto mb-5"
           >
             Browse and download character cards organized by category
           </motion.p>
-        </motion.div>
+
+          {/* Stats Row */}
+          <motion.div
+            variants={itemVariants}
+            className="flex items-center justify-center gap-6 text-sm"
+          >
+            <div className="flex items-center gap-2 text-gray-400">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span><strong className="text-white">{totalCards}</strong> characters</span>
+            </div>
+            <div className="w-1 h-1 rounded-full bg-gray-600" />
+            <div className="flex items-center gap-2 text-gray-400">
+              <Layers className="w-4 h-4 text-purple-400" />
+              <span><strong className="text-white">{totalCategories}</strong> categories</span>
+            </div>
+            <div className="w-1 h-1 rounded-full bg-gray-600 hidden sm:block" />
+            <div className="hidden sm:flex items-center gap-2 text-gray-400">
+              <FileJson2 className="w-4 h-4 text-blue-400" />
+              <span><strong className="text-white">{totalAlts}</strong> alt scenarios</span>
+            </div>
+          </motion.div>
+        </motion.header>
 
         {loading ? (
           <div className="text-center text-gray-400 py-12">
             <LoadingSpinner message="Loading character cards..." />
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              {/* Categories Sidebar */}
-              <motion.div 
-                className="lg:col-span-1 h-fit"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 sticky top-24">
-                  <h2 className="text-xl font-bold text-white mb-6">Categories</h2>
-                  <div className="space-y-2">
-                    {/* All Cards button */}
-                    <button
-                      onClick={() => handleCategoryChange(null)}
-                      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
-                        selectedCategory === null
-                          ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.2)]'
-                          : 'bg-gray-800/30 text-gray-400 border border-transparent hover:bg-gray-800/60 hover:text-gray-200'
-                      }`}
-                    >
-                      {selectedCategory === null && (
-                        <div className="absolute inset-0 bg-blue-500/10 blur-lg" />
-                      )}
-                      <span className="relative z-10 font-medium">All Cards</span>
-                    </button>
+          /* Single Glass Container */
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            {/* Single backdrop-blur layer */}
+            <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
-                    {categories.map((category) => (
-                      <button
+            {/* Content grid inside */}
+            <div className="relative p-4 sm:p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Categories Sidebar */}
+                <div className="lg:col-span-1">
+                  <div className="lg:sticky lg:top-24 space-y-3">
+                    <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4 px-1">
+                      <Layers className="w-5 h-5 text-purple-400" />
+                      Categories
+                    </h2>
+
+                    {/* All Cards button */}
+                    <motion.button
+                      onClick={() => handleCategoryChange(null)}
+                      className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between ${
+                        selectedCategory === null
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/10 text-white border border-cyan-500/30'
+                          : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
+                      }`}
+                      whileHover={{ x: 4 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <span className="font-medium">All Cards</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{allCards.length}</span>
+                        <ChevronRight className={`w-4 h-4 transition-all ${
+                          selectedCategory === null ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
+                        }`} />
+                      </div>
+                    </motion.button>
+
+                    {categories.map((category, index) => (
+                      <motion.button
                         key={category.name}
                         onClick={() => handleCategoryChange(category.name)}
-                        className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
+                        className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between ${
                           selectedCategory === category.name
-                            ? 'bg-blue-600/20 text-white border border-blue-500/50 shadow-[0_0_15px_rgba(37,99,235,0.2)]'
-                            : 'bg-gray-800/30 text-gray-400 border border-transparent hover:bg-gray-800/60 hover:text-gray-200'
+                            ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/10 text-white border border-cyan-500/30'
+                            : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
                         }`}
+                        whileHover={{ x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
                       >
-                        {selectedCategory === category.name && (
-                          <div className="absolute inset-0 bg-blue-500/10 blur-lg" />
-                        )}
-                        <span className="relative z-10 font-medium flex items-center justify-between">
-                          {category.displayName}
-                          {selectedCategory === category.name && (
-                            <motion.div layoutId="activeCategory" className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                          )}
-                        </span>
-                      </button>
+                        <span className="font-medium">{category.displayName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            {allCards.filter(c => c.category === category.name).length}
+                          </span>
+                          <ChevronRight className={`w-4 h-4 transition-all ${
+                            selectedCategory === category.name ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
+                          }`} />
+                        </div>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
-              </motion.div>
 
-              {/* Files Grid */}
-              <div className="lg:col-span-3">
-                {/* Sort Dropdown */}
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3 }}
-                  className="mb-6"
-                >
-                  <SortDropdown value={sortBy} onChange={setSortBy} />
-                </motion.div>
+                {/* Cards Grid */}
+                <div className="lg:col-span-3">
+                  {/* Sort Dropdown */}
+                  <div className="mb-6 flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                      Showing <span className="text-white font-medium">{filteredCards.length}</span> character{filteredCards.length !== 1 ? 's' : ''}
+                    </p>
+                    <SortDropdown value={sortBy} onChange={setSortBy} />
+                  </div>
 
-                {filteredCards.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-12 text-center"
-                  >
-                    <p className="text-xl text-gray-400">No character cards found</p>
-                  </motion.div>
-                ) : (
-                  <>
-                    <AnimatePresence mode="wait">
-                      {!isContentLoaded ? (
-                        <motion.div
-                          key="skeleton"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                        >
-                          {Array.from({ length: cardsPerPage }).map((_, index) => (
-                            <CardSkeleton key={`skeleton-${index}`} />
-                          ))}
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key={`cards-${selectedCategory || 'all'}-${sortBy}-${currentPage}`}
-                          initial="hidden"
-                          animate="visible"
-                          exit="hidden"
-                          variants={containerVariants}
-                          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                        >
-                          {paginatedCards.map((card) => (
-                        <motion.div
-                          key={card.path}
-                          variants={itemVariants}
-                          className="group relative bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden transition-colors duration-300 hover:bg-gray-900/90 hover:border-gray-700 hover:shadow-2xl"
-                          whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                        >
-                          {/* Glow effect on hover */}
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
-                          
-                          {/* Accent bar */}
-                          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-10" />
-
-                          {/* Thumbnail */}
-                          <div className="relative">
-                            {card.thumbnailUrl ? (
-                              <Link 
-                                href={`/character-cards/${encodeURIComponent(card.category)}/${card.slug}`}
-                                className="block relative aspect-square bg-gray-900/50 overflow-hidden cursor-pointer"
+                  {filteredCards.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-12 text-center"
+                    >
+                      <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-xl text-gray-400">No character cards found</p>
+                      <p className="text-sm text-gray-500 mt-2">Try selecting a different category</p>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <AnimatePresence mode="wait">
+                        {!isContentLoaded ? (
+                          <motion.div
+                            key="skeleton"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+                          >
+                            {Array.from({ length: cardsPerPage }).map((_, index) => (
+                              <CardSkeleton key={`skeleton-${index}`} />
+                            ))}
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key={`cards-${selectedCategory || 'all'}-${sortBy}-${currentPage}`}
+                            initial="hidden"
+                            animate="visible"
+                            variants={containerVariants}
+                            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+                          >
+                            {paginatedCards.map((card) => (
+                              <motion.div
+                                key={card.path}
+                                variants={itemVariants}
+                                className="group relative bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10"
+                                whileHover={{ y: -4, transition: { duration: 0.2 } }}
                               >
-                                <motion.div
-                                  whileHover={{ scale: 1.05 }}
-                                  transition={{ duration: 0.4 }}
-                                  className="w-full h-full"
-                                >
-                                  <LazyImage
-                                    src={card.thumbnailUrl}
-                                    alt={card.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </motion.div>
-                              </Link>
-                            ) : (
-                              <div className="aspect-square bg-gray-800/50 flex items-center justify-center text-gray-600">
-                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </div>
-                            )}
+                                {/* Gradient overlay on hover */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-                            {/* Category Badge */}
-                            <div className="absolute top-3 left-3 z-10">
-                              <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
-                                {card.categoryDisplayName}
-                              </div>
-                            </div>
+                                {/* Accent bar */}
+                                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-purple-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-10" />
 
-                            {/* Alternate Scenarios Badge */}
-                            {(card.alternateCount ?? 0) > 0 && (
-                              <div className="absolute top-3 right-3 z-10">
-                                <div className="bg-purple-600/90 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg border border-purple-500/50">
-                                  +{card.alternateCount} alt{(card.alternateCount || 0) > 1 ? 's' : ''}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Card Info */}
-                          <div className="relative p-5">
-                            <Link href={`/character-cards/${encodeURIComponent(card.category)}/${card.slug}`}>
-                              <h3 className="text-lg font-bold text-white mb-2 truncate group-hover:text-blue-400 transition-colors" title={card.name}>
-                                {card.name}
-                              </h3>
-                            </Link>
-                            <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
-                              {card.lastModified && (
-                                <span>{new Date(card.lastModified).toLocaleDateString()}</span>
-                              )}
-                              {card.size > 0 && (
-                                <>
-                                  <span className="w-1 h-1 rounded-full bg-gray-600" />
-                                  <span>{formatFileSize(card.size)}</span>
-                                </>
-                              )}
-                            </div>
-                            
-                            {/* Download Dropdown */}
-                            {card.jsonUrl && (
-                              <div className="relative">
-                                <motion.button
-                                  onClick={() => setOpenDropdown(openDropdown === card.path ? null : card.path)}
-                                  className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-200 hover:text-white px-4 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm flex items-center justify-center gap-2 group/btn relative overflow-hidden"
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  <span className="relative z-10 flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    Download
-                                    <motion.svg 
-                                      className="w-3.5 h-3.5 ml-1" 
-                                      fill="none" 
-                                      stroke="currentColor" 
-                                      viewBox="0 0 24 24"
-                                      animate={{ rotate: openDropdown === card.path ? 180 : 0 }}
-                                      transition={{ duration: 0.2 }}
+                                {/* Thumbnail */}
+                                <div className="relative">
+                                  {card.thumbnailUrl ? (
+                                    <Link
+                                      href={`/character-cards/${encodeURIComponent(card.category)}/${card.slug}`}
+                                      className="block relative aspect-square overflow-hidden cursor-pointer"
                                     >
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </motion.svg>
-                                  </span>
-                                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-                                </motion.button>
-                                
-                                <AnimatePresence>
-                                  {openDropdown === card.path && (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                      transition={{ duration: 0.2 }}
-                                      className="absolute bottom-full mb-2 w-full bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden z-20 ring-1 ring-white/10"
-                                      onMouseLeave={() => setOpenDropdown(null)}
-                                    >
-                                      {card.thumbnailUrl && (
-                                        <button
-                                          onClick={() => downloadFile(card.thumbnailUrl!, card.name.replace(/\.json$/, '.png'))}
-                                          className="group/item flex items-center gap-3 px-4 py-3 hover:bg-blue-500/10 transition-colors text-gray-300 hover:text-blue-400 text-sm font-medium border-b border-gray-700/50 w-full text-left"
-                                        >
-                                          <svg className="w-5 h-5 text-blue-500/70 group-hover/item:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                          </svg>
-                                          <span>Download PNG</span>
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={() => downloadFile(card.jsonUrl!, card.name)}
-                                        className="group/item flex items-center gap-3 px-4 py-3 hover:bg-green-500/10 transition-colors text-gray-300 hover:text-green-400 text-sm font-medium w-full text-left"
+                                      <motion.div
+                                        whileHover={{ scale: 1.05 }}
+                                        transition={{ duration: 0.4 }}
+                                        className="w-full h-full"
                                       >
-                                        <svg className="w-5 h-5 text-green-500/70 group-hover/item:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        <span>Download JSON</span>
-                                      </button>
-                                    </motion.div>
+                                        <LazyImage
+                                          src={card.thumbnailUrl}
+                                          alt={card.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </motion.div>
+                                    </Link>
+                                  ) : (
+                                    <div className="aspect-square bg-gray-800/50 flex items-center justify-center text-gray-600">
+                                      <ImageIcon className="w-12 h-12" />
+                                    </div>
                                   )}
-                                </AnimatePresence>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Shimmer effect */}
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                          </div>
-                        </motion.div>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
 
-                    {/* Bottom padding to prevent content from being hidden behind sticky pagination */}
-                    {totalPages > 1 && isContentLoaded && (
-                      <div className="h-24" />
-                    )}
-                  </>
-                )}
+                                  {/* Category Badge */}
+                                  <div className="absolute top-3 left-3 z-10">
+                                    <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700/50 text-white text-xs font-medium px-2.5 py-1 rounded-full shadow-lg">
+                                      {card.categoryDisplayName}
+                                    </div>
+                                  </div>
+
+                                  {/* Alt Scenarios Badge */}
+                                  {(card.alternateCount ?? 0) > 0 && (
+                                    <div className="absolute top-3 right-3 z-10">
+                                      <div className="flex items-center gap-1.5 bg-purple-600/90 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1 rounded-full shadow-lg border border-purple-500/50">
+                                        <Layers className="w-3 h-3" />
+                                        +{card.alternateCount}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Card Info */}
+                                <div className="relative p-4">
+                                  <Link href={`/character-cards/${encodeURIComponent(card.category)}/${card.slug}`}>
+                                    <h3 className="text-base font-semibold text-white mb-2 truncate group-hover:text-cyan-400 transition-colors" title={card.name}>
+                                      {card.name}
+                                    </h3>
+                                  </Link>
+                                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                                    {card.lastModified && (
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {new Date(card.lastModified).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                    {card.size > 0 && (
+                                      <span className="flex items-center gap-1">
+                                        <HardDrive className="w-3 h-3" />
+                                        {formatFileSize(card.size)}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Download Dropdown */}
+                                  {card.jsonUrl && (
+                                    <div className="relative">
+                                      <motion.button
+                                        onClick={() => setOpenDropdown(openDropdown === card.path ? null : card.path)}
+                                        className="w-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] hover:border-cyan-500/30 text-gray-300 hover:text-white px-4 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm flex items-center justify-center gap-2 group/btn"
+                                        whileTap={{ scale: 0.98 }}
+                                      >
+                                        <Download className="w-4 h-4 group-hover/btn:text-cyan-400 transition-colors" />
+                                        <span>Download</span>
+                                        <motion.div
+                                          animate={{ rotate: openDropdown === card.path ? 180 : 0 }}
+                                          transition={{ duration: 0.2 }}
+                                        >
+                                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                                        </motion.div>
+                                      </motion.button>
+
+                                      <AnimatePresence>
+                                        {openDropdown === card.path && (
+                                          <motion.div
+                                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="absolute bottom-full mb-2 w-full bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-2xl overflow-hidden z-20 ring-1 ring-white/10"
+                                            onMouseLeave={() => setOpenDropdown(null)}
+                                          >
+                                            {card.thumbnailUrl && (
+                                              <button
+                                                onClick={() => downloadFile(card.thumbnailUrl!, card.name.replace(/\.json$/, '.png'))}
+                                                className="group/item flex items-center gap-3 px-4 py-3 hover:bg-cyan-500/10 transition-colors text-gray-300 hover:text-cyan-400 text-sm font-medium border-b border-gray-700/50 w-full text-left"
+                                              >
+                                                <ImageIcon className="w-5 h-5 text-cyan-500/70 group-hover/item:text-cyan-400" />
+                                                <span>Download PNG</span>
+                                              </button>
+                                            )}
+                                            <button
+                                              onClick={() => downloadFile(card.jsonUrl!, card.name)}
+                                              className="group/item flex items-center gap-3 px-4 py-3 hover:bg-green-500/10 transition-colors text-gray-300 hover:text-green-400 text-sm font-medium w-full text-left"
+                                            >
+                                              <FileJson2 className="w-5 h-5 text-green-500/70 group-hover/item:text-green-400" />
+                                              <span>Download JSON</span>
+                                            </button>
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Shimmer effect */}
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-20 overflow-hidden">
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                                </div>
+                              </motion.div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Bottom padding for sticky pagination */}
+                      {totalPages > 1 && isContentLoaded && (
+                        <div className="h-24" />
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </>
+          </motion.div>
         )}
       </div>
 
       {/* Sticky Pagination at Bottom */}
       {!loading && totalPages > 1 && isContentLoaded && (
         <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-          <div className="pt-6 pb-6">
+          <div className="pt-4 pb-6">
             <div className="container mx-auto px-4">
               <SmartPagination
                 currentPage={currentPage}
@@ -512,7 +597,9 @@ export default function CharacterCardsPage() {
     <Suspense fallback={
       <div className="min-h-screen relative">
         <div className="relative container mx-auto px-4 py-16">
-          <div className="text-center text-gray-400 py-12">Loading...</div>
+          <div className="text-center text-gray-400 py-12">
+            <LoadingSpinner message="Loading..." />
+          </div>
         </div>
       </div>
     }>

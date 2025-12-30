@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Left card (rotated left) -->
+  <g transform="rotate(-20, 32, 50)">
+    <rect x="18" y="8" width="28" height="40" rx="3" ry="3" fill="#7B4DBF" stroke="#5C3A8C" stroke-width="1"/>
+    <rect x="20" y="10" width="24" height="36" rx="2" ry="2" fill="none" stroke="#9B6DD9" stroke-width="0.5"/>
+    <!-- Gold star -->
+    <polygon points="32,18 34.5,25 42,25 36,30 38.5,38 32,34 25.5,38 28,30 22,25 29.5,25" fill="#FFD700" stroke="#CC9900" stroke-width="0.5"/>
+  </g>
+  
+  <!-- Center card -->
+  <g transform="rotate(0, 32, 50)">
+    <rect x="18" y="8" width="28" height="40" rx="3" ry="3" fill="#8B5FC7" stroke="#6B4A9E" stroke-width="1"/>
+    <rect x="20" y="10" width="24" height="36" rx="2" ry="2" fill="none" stroke="#A87FD9" stroke-width="0.5"/>
+    <!-- Gold star -->
+    <polygon points="32,18 34.5,25 42,25 36,30 38.5,38 32,34 25.5,38 28,30 22,25 29.5,25" fill="#FFD700" stroke="#CC9900" stroke-width="0.5"/>
+  </g>
+  
+  <!-- Right card (rotated right) -->
+  <g transform="rotate(20, 32, 50)">
+    <rect x="18" y="8" width="28" height="40" rx="3" ry="3" fill="#7B4DBF" stroke="#5C3A8C" stroke-width="1"/>
+    <rect x="20" y="10" width="24" height="36" rx="2" ry="2" fill="none" stroke="#9B6DD9" stroke-width="0.5"/>
+    <!-- Gold star -->
+    <polygon points="32,18 34.5,25 42,25 36,30 38.5,38 32,34 25.5,38 28,30 22,25 29.5,25" fill="#FFD700" stroke="#CC9900" stroke-width="0.5"/>
+  </g>
+</svg>

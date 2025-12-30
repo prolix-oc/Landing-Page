@@ -1,223 +1,359 @@
 'use client';
 
-import { motion, Variants } from 'framer-motion';
+import { motion } from 'framer-motion';
 import AnimatedLink from '@/app/components/AnimatedLink';
+import {
+  Sparkles,
+  Users,
+  MessageSquare,
+  BookOpen,
+  Puzzle,
+  ExternalLink,
+  Github,
+  Lightbulb,
+  ArrowRight
+} from 'lucide-react';
+
+// Category data with Lucide icons
+const categories = [
+  {
+    id: 'lucid-loom',
+    title: 'Lucid Loom',
+    subtitle: 'What is it?',
+    description: 'Discover Lumia and her 13 unique personas — a character system designed for deep, immersive roleplay',
+    href: '/lucid-loom',
+    icon: Lightbulb,
+    gradient: 'from-purple-500 via-pink-500 to-rose-500',
+    glowColor: 'purple',
+    featured: true
+  },
+  {
+    id: 'character-cards',
+    title: 'Character Cards',
+    description: 'Browse and download character cards',
+    href: '/character-cards',
+    icon: Users,
+    gradient: 'from-cyan-500 via-blue-500 to-cyan-600',
+    glowColor: 'cyan'
+  },
+  {
+    id: 'chat-presets',
+    title: 'Chat Presets',
+    description: 'Optimized completion settings',
+    href: '/chat-presets',
+    icon: MessageSquare,
+    gradient: 'from-violet-500 via-purple-500 to-indigo-500',
+    glowColor: 'violet'
+  },
+  {
+    id: 'world-books',
+    title: 'World Books',
+    description: 'Detailed world information',
+    href: '/world-books',
+    icon: BookOpen,
+    gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
+    glowColor: 'emerald'
+  },
+  {
+    id: 'extensions',
+    title: 'Extensions',
+    description: 'Custom SillyTavern extensions',
+    href: '/extensions',
+    icon: Puzzle,
+    gradient: 'from-orange-500 via-amber-500 to-yellow-500',
+    glowColor: 'amber'
+  }
+];
+
+// Glow color mapping for hover states
+const glowColors: Record<string, string> = {
+  purple: 'hover:shadow-purple-500/20',
+  cyan: 'hover:shadow-cyan-500/20',
+  violet: 'hover:shadow-violet-500/20',
+  emerald: 'hover:shadow-emerald-500/20',
+  amber: 'hover:shadow-amber-500/20'
+};
+
+const borderColors: Record<string, string> = {
+  purple: 'hover:border-purple-500/40',
+  cyan: 'hover:border-cyan-500/40',
+  violet: 'hover:border-violet-500/40',
+  emerald: 'hover:border-emerald-500/40',
+  amber: 'hover:border-amber-500/40'
+};
 
 export default function Home() {
-  const categories = [
-    {
-      title: 'What is Lucid Loom?',
-      description: 'Discover Lumia and her 13 unique personas',
-      href: '/lucid-loom',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-      ),
-      gradient: 'from-purple-500 via-pink-500 to-purple-600',
-      accentColor: 'bg-pink-500',
-      iconBg: 'bg-pink-600',
-      iconColor: 'text-pink-100',
-      featured: true
-    },
-    {
-      title: 'Character Cards',
-      description: 'Browse and download my character cards',
-      href: '/character-cards',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-      gradient: 'from-blue-500 via-cyan-500 to-blue-600',
-      accentColor: 'bg-cyan-500',
-      iconBg: 'bg-cyan-600',
-      iconColor: 'text-cyan-100'
-    },
-    {
-      title: 'Chat Completion Presets',
-      description: 'Get the latest and greatest in ST Chat Presets',
-      href: '/chat-presets',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      ),
-      gradient: 'from-indigo-500 via-purple-500 to-indigo-600',
-      accentColor: 'bg-purple-500',
-      iconBg: 'bg-purple-600',
-      iconColor: 'text-purple-100'
-    },
-    {
-      title: 'World Books',
-      description: 'Enhance your RPs with detailed world information',
-      href: '/world-books',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      ),
-      gradient: 'from-green-500 via-emerald-500 to-green-600',
-      accentColor: 'bg-emerald-500',
-      iconBg: 'bg-emerald-600',
-      iconColor: 'text-emerald-100'
-    },
-    {
-      title: 'Extensions',
-      description: 'Custom extensions by me for SillyTavern',
-      href: '/extensions',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-      gradient: 'from-orange-500 via-red-500 to-orange-600',
-      accentColor: 'bg-red-500',
-      iconBg: 'bg-red-600',
-      iconColor: 'text-red-100'
-    }
-  ];
-
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 50,
-        damping: 15
-      }
-    }
-  };
-
-  const cardVariants: Variants = {
-    hover: { 
-      y: -8,
-      transition: { duration: 0.3, ease: "easeOut" }
-    }
-  };
-
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Main content container */}
-      <motion.div 
-        className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20 max-w-7xl"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Header */}
-        <motion.div className="text-center mb-12 sm:mb-16 lg:mb-20" variants={itemVariants}>
-          <div className="inline-block mb-6">
-            <div className="relative">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">
-                Lucid.cards
-              </h1>
-              <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 opacity-20 blur-lg"></div>
-            </div>
-          </div>
-          <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            A collection of character cards, chat presets, world books, and extensions for <span className="text-cyan-400 font-semibold">SillyTavern</span>—made by yours truly.
-          </p>
-        </motion.div>
+    <div className="h-screen flex flex-col overflow-hidden relative">
+      {/* Optimized Background: CSS-animated orbs (GPU optimized) */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
+        <div className="orb-1 absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-purple-600/25 rounded-full blur-[120px]" />
+        <div className="orb-2 absolute top-[50%] right-[5%] w-[600px] h-[600px] bg-cyan-600/20 rounded-full blur-[140px]" />
+        <div className="orb-3 absolute bottom-[5%] left-[25%] w-[450px] h-[450px] bg-blue-600/20 rounded-full blur-[100px]" />
+      </div>
 
-        {/* Category Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto mb-12 sm:mb-16">
-          {categories.map((category) => (
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl relative z-10">
+
+        {/* Compact Hero */}
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-4 sm:mb-6 flex-shrink-0"
+        >
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 mb-3"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span className="text-xs sm:text-sm font-medium text-purple-300">SillyTavern Resources</span>
+          </motion.div>
+
+          {/* Title */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2"
+          >
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">
+              Lucid.cards
+            </span>
+          </motion.h1>
+
+          {/* Tagline */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-sm sm:text-base text-gray-400 max-w-lg mx-auto"
+          >
+            Character cards, presets, world books & extensions
+            <span className="hidden sm:inline"> — crafted for immersive roleplay</span>
+          </motion.p>
+        </motion.header>
+
+        {/* Single Glass Container (ONE backdrop-blur for all cards) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex-1 min-h-0 relative"
+        >
+          {/* The single backdrop-blur layer */}
+          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
+
+          {/* Bento Grid inside the glass container */}
+          <div className="relative h-full p-3 sm:p-4 grid grid-cols-6 grid-rows-4 gap-3 sm:gap-4">
+
+            {/* Featured Card - Lucid Loom (spans more area) */}
             <motion.div
-              key={category.href}
-              variants={itemVariants}
-              className={`${category.featured ? 'lg:col-span-2' : ''}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="col-span-6 sm:col-span-3 lg:col-span-2 row-span-4 sm:row-span-4"
             >
-              <AnimatedLink
-                href={category.href}
-                className="block h-full group relative"
-              >
-                <motion.div 
-                  className="relative h-full overflow-hidden rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 transition-colors duration-300 group-hover:bg-gray-900/90 group-hover:shadow-2xl group-hover:border-gray-700"
-                  whileHover="hover"
-                  variants={cardVariants}
-                >
-                  {/* Glow effect on hover */}
-                  <div 
-                    className={`absolute -inset-0.5 bg-gradient-to-r ${category.gradient} opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500`}
-                  />
-                  
-                  {/* Breathing gradient overlay */}
-                  <div 
-                    data-breathing-gradient="true"
-                    className={`absolute inset-0 bg-gradient-to-br ${category.gradient} opacity-0 transition-opacity duration-500`}
-                    style={{ backgroundSize: '200% 200%' }}
-                  ></div>
-                  
-                  {/* Accent bar */}
-                  <div 
-                    className={`absolute top-0 left-0 right-0 h-1 ${category.accentColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`}
-                  ></div>
-                  
-                  <div className="relative p-6 sm:p-8 lg:p-10">
+              <AnimatedLink href="/lucid-loom" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-2xl ${glowColors.purple} ${borderColors.purple} hover:bg-white/[0.03]`}>
+                  {/* Decorative gradient orb */}
+                  <div className="absolute -top-16 -right-16 w-32 h-32 bg-purple-500/30 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
+
+                  <div className="relative h-full p-5 sm:p-6 flex flex-col">
                     {/* Icon */}
-                    <div className="mb-4 sm:mb-6">
-                      <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${category.iconBg} ${category.iconColor} group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                        {category.icon}
+                    <div className="mb-4">
+                      <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
+                        <Lightbulb className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                       </div>
                     </div>
 
-                    {/* Title */}
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4 transition-colors duration-300 group-hover:text-gray-100">
-                      {category.title}
-                    </h2>
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col">
+                      <span className="text-xs text-purple-400 font-medium mb-1 uppercase tracking-wider">Featured</span>
+                      <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 group-hover:text-purple-100 transition-colors">
+                        Lucid Loom
+                      </h2>
+                      <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors flex-1">
+                        Discover Lumia and her 13 unique personas — a character system for deep, immersive roleplay
+                      </p>
+                    </div>
 
-                    {/* Description */}
-                    <p className="text-gray-400 text-base sm:text-lg leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                      {category.description}
-                    </p>
+                    {/* CTA */}
+                    <div className="mt-4 flex items-center gap-2 text-purple-400 text-sm font-medium">
+                      <span>Explore</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
-
-                  {/* Shimmer effect */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-                  </div>
-                </motion.div>
+                </div>
               </AnimatedLink>
             </motion.div>
-          ))}
-        </div>
 
-        {/* Footer */}
-        <motion.div variants={itemVariants} className="text-center">
-          <div className="inline-block px-6 py-3 rounded-full bg-gray-900/50 backdrop-blur-sm border border-gray-800">
-            <p className="text-gray-400 text-sm sm:text-base">
-              Data sourced from{' '}
-              <a 
-                href="https://github.com/prolix-oc/ST-Presets" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium inline-flex items-center gap-1 group"
-              >
-                prolix-oc/ST-Presets
-                <svg className="w-4 h-4 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
-                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"></path>
-                </svg>
-              </a>
-            </p>
+            {/* Character Cards */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="col-span-3 sm:col-span-3 lg:col-span-2 row-span-2"
+            >
+              <AnimatedLink href="/character-cards" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.cyan} ${borderColors.cyan} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
+                    <div className="mb-3">
+                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-cyan-100 transition-colors">
+                      Character Cards
+                    </h3>
+                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                      Browse and download character cards
+                    </p>
+                  </div>
+                </div>
+              </AnimatedLink>
+            </motion.div>
+
+            {/* Chat Presets */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.55 }}
+              className="col-span-3 sm:col-span-3 lg:col-span-2 row-span-2"
+            >
+              <AnimatedLink href="/chat-presets" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.violet} ${borderColors.violet} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
+                    <div className="mb-3">
+                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                        <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-violet-100 transition-colors">
+                      Chat Presets
+                    </h3>
+                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                      Optimized completion settings
+                    </p>
+                  </div>
+                </div>
+              </AnimatedLink>
+            </motion.div>
+
+            {/* World Books */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.6 }}
+              className="col-span-3 lg:col-span-2 row-span-2"
+            >
+              <AnimatedLink href="/world-books" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.emerald} ${borderColors.emerald} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
+                    <div className="mb-3">
+                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                        <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-emerald-100 transition-colors">
+                      World Books
+                    </h3>
+                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                      Detailed world information
+                    </p>
+                  </div>
+                </div>
+              </AnimatedLink>
+            </motion.div>
+
+            {/* Extensions */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.65 }}
+              className="col-span-3 lg:col-span-2 row-span-2"
+            >
+              <AnimatedLink href="/extensions" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.amber} ${borderColors.amber} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
+                    <div className="mb-3">
+                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                        <Puzzle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-amber-100 transition-colors">
+                      Extensions
+                    </h3>
+                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                      Custom SillyTavern extensions
+                    </p>
+                  </div>
+                </div>
+              </AnimatedLink>
+            </motion.div>
+
           </div>
         </motion.div>
-      </motion.div>
+
+        {/* Compact Footer */}
+        <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className="flex-shrink-0 pt-3 sm:pt-4 flex items-center justify-center"
+        >
+          <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500">
+            <span>Data from</span>
+            <a
+              href="https://github.com/prolix-oc/ST-Presets"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-gray-400 hover:text-cyan-400 transition-colors group"
+            >
+              <Github className="w-4 h-4" />
+              <span className="font-medium">prolix-oc/ST-Presets</span>
+              <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+          </div>
+        </motion.footer>
+      </div>
+
+      {/* CSS for optimized orb animations */}
+      <style jsx>{`
+        .orb-1 {
+          animation: float-1 25s ease-in-out infinite;
+          will-change: transform;
+        }
+        .orb-2 {
+          animation: float-2 30s ease-in-out infinite;
+          will-change: transform;
+        }
+        .orb-3 {
+          animation: float-3 22s ease-in-out infinite;
+          will-change: transform;
+        }
+
+        @keyframes float-1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(60px, -40px) scale(1.05); }
+          50% { transform: translate(30px, 50px) scale(0.95); }
+          75% { transform: translate(-20px, 20px) scale(1.02); }
+        }
+
+        @keyframes float-2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-50px, 40px) scale(1.08); }
+          66% { transform: translate(30px, -30px) scale(0.92); }
+        }
+
+        @keyframes float-3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(40px, -60px) scale(1.1); }
+        }
+      `}</style>
     </div>
   );
 }

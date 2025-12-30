@@ -105,6 +105,39 @@ interface PresetDownloadModalProps {
   presetName: string;
 }
 
+/**
+ * Downloads a JSON file with proper handling for mobile browsers
+ * Uses application/octet-stream to prevent browsers from adding .txt extension
+ * Also adds a small delay before cleanup for slower mobile browsers
+ */
+const downloadJsonFile = (content: string | object, fileName: string): void => {
+  // Ensure filename ends with .json
+  const finalFileName = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
+
+  // Convert to string if object
+  const jsonString = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+
+  // Use application/octet-stream to force download behavior on mobile
+  // This prevents browsers from trying to "help" by adding .txt
+  const blob = new Blob([jsonString], { type: 'application/octet-stream' });
+  const blobUrl = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = finalFileName;
+
+  // Some mobile browsers need the element to be in the DOM
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+
+  // Delay cleanup for mobile browsers that process downloads asynchronously
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  }, 150);
+};
+
 export default function PresetDownloadModal({
   isOpen,
   onClose,
@@ -169,18 +202,10 @@ export default function PresetDownloadModal({
         throw new Error(`Failed to fetch preset: ${response.statusText}`);
       }
 
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      // Get JSON content and use our helper for proper mobile download handling
+      const jsonContent = await response.json();
+      downloadJsonFile(jsonContent, presetName);
 
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = presetName;
-      document.body.appendChild(a);
-      a.click();
-
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      
       onClose();
     } catch (error) {
       console.error('Error downloading preset:', error);
@@ -799,12 +824,6 @@ export default function PresetDownloadModal({
         }
       }
 
-      // Create blob and download
-      const blob = new Blob([JSON.stringify(customizedPreset, null, 2)], {
-        type: 'application/json',
-      });
-      const blobUrl = URL.createObjectURL(blob);
-
       // Append slugName to filename if available
       let downloadFileName = presetName;
       if (samplerConfig.slugName) {
@@ -812,15 +831,9 @@ export default function PresetDownloadModal({
         downloadFileName = presetName.replace(/\.json$/i, ` - ${samplerConfig.slugName}.json`);
       }
 
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = downloadFileName;
-      document.body.appendChild(a);
-      a.click();
+      // Use helper for proper mobile download handling
+      downloadJsonFile(customizedPreset, downloadFileName);
 
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      
       onClose();
     } catch (error) {
       console.error('Error customizing preset:', error);
@@ -1009,21 +1022,9 @@ export default function PresetDownloadModal({
                           throw new Error('No updated preset available');
                         }
 
-                        // Create blob and download
-                        const blob = new Blob([JSON.stringify(updatedPreset, null, 2)], {
-                          type: 'application/json',
-                        });
-                        const blobUrl = URL.createObjectURL(blob);
+                        // Use helper for proper mobile download handling
+                        downloadJsonFile(updatedPreset, presetName);
 
-                        const a = document.createElement('a');
-                        a.href = blobUrl;
-                        a.download = presetName;
-                        document.body.appendChild(a);
-                        a.click();
-
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(blobUrl);
-                        
                         onClose();
                       } catch (error) {
                         console.error('Error downloading preset:', error);

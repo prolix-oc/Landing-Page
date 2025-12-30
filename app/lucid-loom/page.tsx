@@ -1,620 +1,876 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useRef } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import Image from 'next/image';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
+import {
+  BookOpen,
+  Sprout,
+  Sparkles,
+  Gem,
+  Settings,
+  Drama,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Pause,
+  Download,
+  ArrowLeft,
+  Quote,
+  Feather,
+  Heart,
+  Zap,
+  Moon,
+  Flame,
+  Ghost,
+  Cat,
+  Glasses,
+  Coffee,
+  Skull,
+  Bug,
+  Globe
+} from 'lucide-react';
+
+// Floating orbs component for atmospheric depth
+const FloatingOrbs = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <motion.div
+      animate={{
+        x: [0, 100, 50, 0],
+        y: [0, -50, 100, 0],
+        scale: [1, 1.2, 0.9, 1],
+      }}
+      transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px]"
+    />
+    <motion.div
+      animate={{
+        x: [0, -80, 40, 0],
+        y: [0, 80, -40, 0],
+        scale: [1, 0.9, 1.1, 1],
+      }}
+      transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+      className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/15 rounded-full blur-[100px]"
+    />
+    <motion.div
+      animate={{
+        x: [0, 60, -30, 0],
+        y: [0, -60, 30, 0],
+      }}
+      transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 5 }}
+      className="absolute top-1/2 right-1/3 w-[400px] h-[400px] bg-pink-500/10 rounded-full blur-[80px]"
+    />
+  </div>
+);
+
+// Decorative floating cards for hero
+const FloatingCard = ({ delay, className }: { delay: number; className: string }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 50, rotate: -10 }}
+    animate={{ opacity: 1, y: 0, rotate: 0 }}
+    transition={{ delay, duration: 1, ease: "easeOut" }}
+    className={className}
+  >
+    <motion.div
+      animate={{ y: [-5, 5, -5], rotate: [-2, 2, -2] }}
+      transition={{ duration: 4 + delay, repeat: Infinity, ease: "easeInOut" }}
+      className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-purple-500/30 to-pink-500/20 backdrop-blur-md rounded-lg border border-white/10 shadow-2xl"
+    >
+      <div className="absolute inset-2 border border-white/20 rounded" />
+      <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-amber-400/60" />
+    </motion.div>
+  </motion.div>
+);
+
+// Section reveal animation wrapper
+const RevealSection = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 60 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 }}
+      transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// Alter data with icons
+const alters = [
+  { name: 'Standard', image: '/lumia/standard.webp', description: 'The balanced, versatile default persona', icon: Heart },
+  { name: 'Bubbly', image: '/lumia/bubbly.webp', description: 'Enthusiastic and energetic companion', icon: Zap },
+  { name: 'Sultry', image: '/lumia/sultry.webp', description: 'Seductive and alluring persona', icon: Flame },
+  { name: 'Mommy', image: '/lumia/mommy.webp', description: 'Nurturing and caring presence', icon: Heart },
+  { name: 'Feisty', image: '/lumia/feisty.webp', description: 'Bold and spirited personality', icon: Zap },
+  { name: 'Librarian', image: '/lumia/librarian.webp', description: 'Intellectual and composed demeanor', icon: Glasses },
+  { name: 'Neko', image: '/lumia/neko.webp', description: 'Playful and cat-like behavior', icon: Cat },
+  { name: 'Angsty', image: '/lumia/angsty.webp', description: 'Emotional and introspective mood', icon: Moon },
+  { name: 'Lofi', image: '/lumia/lofi.webp', description: 'Chill and relaxed vibe', icon: Coffee },
+  { name: 'Girlfailure', image: '/lumia/girlfailure.webp', description: 'Lovably messy and chaotic', icon: Ghost },
+  { name: 'Goonette', image: '/lumia/goonette.webp', description: 'Mischievous and playful energy', icon: Sparkles },
+  { name: 'Wicked', image: '/lumia/wicked.webp', description: 'Dark and mysterious presence', icon: Skull },
+  { name: 'Arachne', image: '/lumia/arachne.webp', description: 'Web-weaving, strategic thinker', icon: Bug },
+];
+
+// Philosophy features with Lucide icons
+const philosophyFeatures = [
+  {
+    icon: BookOpen,
+    title: 'Pure Narrative Focus',
+    description: 'Every response serves the story. No fillers, no fluff—just rich, meaningful narrative that builds worlds and deepens character.',
+    gradient: 'from-purple-500 to-violet-600',
+  },
+  {
+    icon: Sprout,
+    title: 'Slow Burn Satisfaction',
+    description: "Great stories aren't rushed. Lucid Loom embraces patient storytelling, letting tension build, relationships develop, and moments breathe.",
+    gradient: 'from-emerald-500 to-teal-600',
+  },
+  {
+    icon: Sparkles,
+    title: 'Story Development',
+    description: 'From the smallest character moment to sweeping plot arcs, the preset is tuned to weave coherent, compelling narratives that evolve organically.',
+    gradient: 'from-amber-500 to-orange-600',
+  },
+  {
+    icon: Gem,
+    title: 'Character Richness',
+    description: 'Characters feel real—with depth, contradictions, growth, and authenticity. They react believably, evolve naturally, and stay true to themselves.',
+    gradient: 'from-pink-500 to-rose-600',
+  },
+  {
+    icon: Settings,
+    title: 'Universal Compatibility',
+    description: 'Optimized for multiple LLMs with a one-size-fits-most approach. Whether using Claude, DeepSeek, GLM, or others, experience consistent quality.',
+    gradient: 'from-cyan-500 to-blue-600',
+  },
+  {
+    icon: Drama,
+    title: 'Creative Versatility',
+    description: '13 creative alters offer different thinking approaches—each lending a unique voice to the creative process while staying narrative-focused.',
+    gradient: 'from-fuchsia-500 to-purple-600',
+  },
+];
 
 export default function LucidLoomPage() {
   const [currentAlter, setCurrentAlter] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
 
-  // Animation variants
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 50,
-        damping: 15
-      }
-    }
-  };
-
-  const alters = [
-    { name: 'Standard', image: '/lumia/standard.webp', description: 'The balanced, versatile default persona' },
-    { name: 'Bubbly', image: '/lumia/bubbly.webp', description: 'Enthusiastic and energetic companion' },
-    { name: 'Sultry', image: '/lumia/sultry.webp', description: 'Seductive and alluring persona' },
-    { name: 'Mommy', image: '/lumia/mommy.webp', description: 'Nurturing and caring presence' },
-    { name: 'Feisty', image: '/lumia/feisty.webp', description: 'Bold and spirited personality' },
-    { name: 'Librarian', image: '/lumia/librarian.webp', description: 'Intellectual and composed demeanor' },
-    { name: 'Neko', image: '/lumia/neko.webp', description: 'Playful and cat-like behavior' },
-    { name: 'Angsty', image: '/lumia/angsty.webp', description: 'Emotional and introspective mood' },
-    { name: 'Lofi', image: '/lumia/lofi.webp', description: 'Chill and relaxed vibe' },
-    { name: 'Girlfailure', image: '/lumia/girlfailure.webp', description: 'Lovably messy and chaotic' },
-    { name: 'Goonette', image: '/lumia/goonette.webp', description: 'Mischievous and playful energy' },
-    { name: 'Wicked', image: '/lumia/wicked.webp', description: 'Dark and mysterious presence' },
-    { name: 'Arachne', image: '/lumia/arachne.webp', description: 'Web-weaving, strategic thinker' },
-  ];
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
+  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
 
   // Auto-cycle through alters
   useEffect(() => {
     if (!isAutoPlaying) return;
-
     const interval = setInterval(() => {
       setCurrentAlter((prev) => (prev + 1) % alters.length);
     }, 3000);
-
     return () => clearInterval(interval);
-  }, [isAutoPlaying, alters.length]);
+  }, [isAutoPlaying]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900/20 to-gray-900">
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 opacity-30">
-          <motion.div 
-            animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3] 
-            }}
-            transition={{ 
-              duration: 8, 
-              repeat: Infinity,
-              ease: "easeInOut" 
-            }}
-            className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl"
-          />
-          <motion.div 
-            animate={{ 
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3] 
-            }}
-            transition={{ 
-              duration: 8, 
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 4 
-            }}
-            className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500 rounded-full blur-3xl"
-          />
+    <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
+      <FloatingOrbs />
+
+      {/* ===== HERO SECTION ===== */}
+      <motion.section
+        ref={heroRef}
+        style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
+        className="relative min-h-screen flex items-center justify-center px-4"
+      >
+        {/* Floating decorative cards */}
+        <FloatingCard delay={0.5} className="absolute top-20 left-[10%] hidden lg:block" />
+        <FloatingCard delay={0.7} className="absolute top-32 right-[15%] hidden lg:block" />
+        <FloatingCard delay={0.9} className="absolute bottom-32 left-[20%] hidden lg:block" />
+
+        {/* Main hero content */}
+        <div className="relative z-10 text-center max-w-5xl mx-auto">
+          {/* Overline */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mb-6"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-gray-400 backdrop-blur-sm">
+              <Feather className="w-4 h-4 text-purple-400" />
+              A narrative-first preset for SillyTavern
+            </span>
+          </motion.div>
+
+          {/* Main title - dramatic typography */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tight mb-8"
+          >
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 animate-gradient bg-[length:200%_auto]">
+              Lucid
+            </span>
+            <span className="block text-white/90 -mt-2 sm:-mt-4">
+              Loom
+            </span>
+          </motion.h1>
+
+          {/* Tagline */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="text-xl sm:text-2xl md:text-3xl text-gray-400 font-light max-w-2xl mx-auto leading-relaxed"
+          >
+            Where stories <span className="text-purple-400 font-normal">breathe</span>,
+            characters <span className="text-pink-400 font-normal">live</span>,
+            and narratives find their <span className="text-cyan-400 font-normal">voice</span>.
+          </motion.p>
+
+          {/* CTA buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center mt-12"
+          >
+            <AnimatedLink
+              href="/chat-presets"
+              className="group inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-lg hover:shadow-[0_0_40px_rgba(168,85,247,0.4)] transition-all duration-500 hover:scale-105"
+            >
+              <Download className="w-5 h-5" />
+              Get the Preset
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </AnimatedLink>
+          </motion.div>
         </div>
 
-        <motion.div 
-          className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <div className="text-center mb-16">
-            <motion.h1 
-              variants={itemVariants}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-cyan-400 mb-6 animate-gradient"
-            >
-              Lucid Loom
-            </motion.h1>
-            <motion.p 
-              variants={itemVariants}
-              className="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
-            >
-              Where stories breathe, characters live, and every narrative finds its voice.
-            </motion.p>
-          </div>
-
-          {/* Scroll indicator */}
-          <motion.div 
-            variants={itemVariants}
-            className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
-            animate={{ y: [0, 10, 0] }}
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
+            className="flex flex-col items-center gap-2 text-gray-500"
           >
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
+            <span className="text-xs uppercase tracking-widest">Scroll</span>
+            <ChevronDown className="w-5 h-5" />
           </motion.div>
         </motion.div>
+      </motion.section>
+
+      {/* ===== LUMIA SHOWCASE ===== */}
+      <section className="relative py-32 px-4">
+        <div className="max-w-7xl mx-auto">
+          <RevealSection>
+            {/* Section header - asymmetric */}
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-end mb-16">
+              <div>
+                <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.9]">
+                  Meet
+                  <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                    Lumia
+                  </span>
+                </h2>
+              </div>
+              <div className="lg:pb-2">
+                <p className="text-xl text-gray-400 leading-relaxed">
+                  13 unique creative voices, each bringing a distinct perspective to your narrative journey. Not characters in your story—but <span className="text-white">creative lenses</span> for the storytelling process.
+                </p>
+              </div>
+            </div>
+          </RevealSection>
+
+          {/* Carousel - full bleed on mobile */}
+          <RevealSection className="-mx-4 sm:mx-0">
+            <div className="relative">
+              {/* Main carousel display */}
+              <div className="flex justify-center items-center py-8">
+                <div className="relative w-full max-w-lg">
+                  {/* Glow effect behind active card */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 blur-3xl rounded-full scale-150 opacity-50" />
+
+                  {/* Card container */}
+                  <div className="relative aspect-[3/4] max-h-[500px] mx-auto">
+                    {alters.map((alter, index) => {
+                      const isCurrent = index === currentAlter;
+                      const AlterIcon = alter.icon;
+
+                      return (
+                        <motion.div
+                          key={alter.name}
+                          initial={false}
+                          animate={{
+                            opacity: isCurrent ? 1 : 0,
+                            scale: isCurrent ? 1 : 0.9,
+                            rotateY: isCurrent ? 0 : 15,
+                          }}
+                          transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+                          className={`absolute inset-0 ${isCurrent ? 'z-10' : 'z-0 pointer-events-none'}`}
+                        >
+                          <div className="relative h-full rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl shadow-purple-500/20">
+                            <Image
+                              src={alter.image}
+                              alt={`Lumia - ${alter.name}`}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, 500px"
+                              priority={index === 0}
+                              loading={index === 0 ? "eager" : "lazy"}
+                            />
+                            {/* Overlay gradient */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent" />
+
+                            {/* Alter info */}
+                            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                                  <AlterIcon className="w-5 h-5 text-purple-400" />
+                                </div>
+                                <h3 className="text-2xl sm:text-3xl font-bold">{alter.name}</h3>
+                              </div>
+                              <p className="text-gray-400 text-sm sm:text-base">{alter.description}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="flex justify-center items-center gap-4 mt-8">
+                <button
+                  onClick={() => {
+                    setIsAutoPlaying(false);
+                    setCurrentAlter((prev) => (prev - 1 + alters.length) % alters.length);
+                  }}
+                  className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all hover:scale-110"
+                  aria-label="Previous alter"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+                  className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all hover:scale-110 ${
+                    isAutoPlaying
+                      ? 'bg-purple-600 border-purple-500 hover:bg-purple-500'
+                      : 'bg-white/5 hover:bg-white/10 border-white/10'
+                  }`}
+                  aria-label={isAutoPlaying ? "Pause auto-play" : "Resume auto-play"}
+                >
+                  {isAutoPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsAutoPlaying(false);
+                    setCurrentAlter((prev) => (prev + 1) % alters.length);
+                  }}
+                  className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all hover:scale-110"
+                  aria-label="Next alter"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Progress dots */}
+              <div className="flex justify-center gap-1.5 mt-6 flex-wrap max-w-md mx-auto px-4">
+                {alters.map((alter, index) => (
+                  <button
+                    key={alter.name}
+                    onClick={() => {
+                      setIsAutoPlaying(false);
+                      setCurrentAlter(index);
+                    }}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      index === currentAlter
+                        ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500'
+                        : 'w-1.5 bg-white/20 hover:bg-white/40'
+                    }`}
+                    aria-label={`Go to ${alter.name}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </RevealSection>
+        </div>
       </section>
 
-      {/* Meet Lumia Section */}
-      <section className="relative py-32 px-4 sm:px-6 lg:px-8 bg-gray-900/30">
-        <motion.div 
-          className="container mx-auto max-w-7xl"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={containerVariants}
-        >
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-bold text-white mb-4">Meet Lumia & Her Alters</motion.h2>
-            <motion.p variants={itemVariants} className="text-gray-400 text-lg max-w-2xl mx-auto">
-              13 unique creative voices, each bringing a distinct perspective to your narrative journey
-            </motion.p>
-          </div>
-          <div className="flex flex-col lg:flex-row gap-12 lg:gap-16 items-center">
-            {/* Enhanced Carousel Container */}
-            <motion.div variants={itemVariants} className="relative w-full lg:w-1/2 flex flex-col items-center">
-              {/* Contained card with all carousel elements */}
-              <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-2xl p-8 w-full max-w-md">
-                {/* Main carousel image container */}
-                <div className="relative h-[400px] sm:h-[450px] w-full flex items-center justify-center mb-6">
-                  {/* Show only current image */}
-                  {alters.map((alter, index) => {
-                    const isCurrent = index === currentAlter;
+      {/* ===== PHILOSOPHY SECTION ===== */}
+      <section className="relative py-32 px-4">
+        {/* Background accent */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/20 to-transparent" />
 
-                    return (
-                      <div
-                        key={alter.name}
-                        className={`absolute transition-all duration-700 ease-out ${isCurrent ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-95 z-0 pointer-events-none'
-                          }`}
-                      >
-                        <div className="relative rounded-xl overflow-hidden bg-gray-900/50 border border-purple-500 shadow-2xl shadow-purple-500/50 w-[280px] h-[400px] sm:w-[320px] sm:h-[450px]">
-                          <Image
-                            src={alter.image}
-                            alt={`Lumia - ${alter.name}`}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 280px, 320px"
-                            priority={index === 0}
-                          />
+        <div className="relative max-w-7xl mx-auto">
+          <RevealSection>
+            <div className="text-center mb-20">
+              <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6">
+                The <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">Philosophy</span>
+              </h2>
+              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                Built on principles that prioritize story over spectacle, depth over speed.
+              </p>
+            </div>
+          </RevealSection>
+
+          {/* Bento-style grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {philosophyFeatures.map((feature, index) => {
+              const Icon = feature.icon;
+              const isLarge = index === 0 || index === 3;
+
+              return (
+                <RevealSection
+                  key={feature.title}
+                  className={isLarge ? 'md:col-span-2 lg:col-span-1' : ''}
+                >
+                  <motion.div
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    transition={{ duration: 0.3 }}
+                    className="group relative h-full p-6 sm:p-8 rounded-3xl bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.05] transition-all duration-500"
+                  >
+                    {/* Gradient accent on hover */}
+                    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.08] transition-opacity duration-500`} />
+
+                    {/* Icon */}
+                    <div className={`relative inline-flex p-3 rounded-2xl bg-gradient-to-br ${feature.gradient} mb-6`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+
+                    {/* Content */}
+                    <h3 className="relative text-xl sm:text-2xl font-bold mb-3 group-hover:text-white transition-colors">
+                      {feature.title}
+                    </h3>
+                    <p className="relative text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">
+                      {feature.description}
+                    </p>
+                  </motion.div>
+                </RevealSection>
+              );
+            })}
+          </div>
+
+          {/* Quote */}
+          <RevealSection className="mt-20">
+            <div className="relative max-w-4xl mx-auto">
+              <Quote className="absolute -top-4 -left-4 w-16 h-16 text-purple-500/20" />
+              <blockquote className="relative text-center">
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-light text-gray-300 leading-relaxed">
+                  Stories don't need to be told quickly.
+                  <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 font-medium">
+                    They need to be told well.
+                  </span>
+                </p>
+              </blockquote>
+            </div>
+          </RevealSection>
+        </div>
+      </section>
+
+      {/* ===== NARRATIVE EXAMPLES ===== */}
+      <section className="relative py-32 px-4 overflow-hidden">
+        {/* Dramatic background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/30 to-gray-950" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[150px]" />
+
+        <div className="relative max-w-6xl mx-auto">
+          <RevealSection>
+            <div className="text-center mb-20">
+              <span className="inline-block px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-sm font-medium mb-6">
+                Live Examples
+              </span>
+              <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6">
+                Stories in
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">
+                  Motion
+                </span>
+              </h2>
+              <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                Watch how Lucid Loom transforms simple prompts into rich, immersive narratives.
+              </p>
+            </div>
+          </RevealSection>
+
+          {/* Scenario Cards - Staggered Layout */}
+          <div className="space-y-24">
+            {/* Scenario 1: Character Interaction */}
+            <RevealSection>
+              <div className="relative">
+                {/* Floating number */}
+                <div className="absolute -left-4 sm:-left-8 lg:-left-16 top-0 text-[120px] sm:text-[180px] font-bold text-purple-500/10 leading-none select-none pointer-events-none">
+                  01
+                </div>
+
+                <div className="relative grid lg:grid-cols-12 gap-6 items-start">
+                  {/* Header */}
+                  <div className="lg:col-span-4 lg:sticky lg:top-8">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-medium mb-4">
+                      <Zap className="w-3 h-3" />
+                      Character Interaction
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                      Blazewood Arrival
+                    </h3>
+                    <p className="text-gray-400 mb-4">
+                      Dynamic banter and environmental storytelling in a post-apocalyptic setting.
+                    </p>
+                    <AnimatedLink
+                      href="/character-cards/ZZZ/caesar-king"
+                      className="inline-flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      Meet Caesar King
+                      <ChevronRight className="w-4 h-4" />
+                    </AnimatedLink>
+                  </div>
+
+                  {/* Conversation */}
+                  <div className="lg:col-span-8 space-y-4">
+                    {/* User message */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.1 }}
+                      className="ml-auto max-w-2xl"
+                    >
+                      <div className="flex items-center gap-2 justify-end mb-2">
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">You</span>
+                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                          <Feather className="w-3 h-3 text-blue-400" />
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
+                          {`The roaring of the engine slowed as you pulled into the dusty lot of Blazewood — the city center and its surroundings rife with life as we step off of the motorcycle together. I smirk, looking around at the scene and then back to the Hollow behind it all—a stark, yet eerily beautiful reminder of the fleeting thing we call life now.\n\nI turn my head toward you, dusting my vest and checking the fitment of my weapons on my back. "Still the same Blazewood I knew from last year, that's for certain." My eyes drift to the bright, gaudy neon sign of Cheesetopia, and I smirk proudly at the diner's presence. "And there she is. Fried pickles, you said? I'd eat one of Lucy's boars if I had to right now, I'll eat anything."`}
+                        </ReactMarkdown>
+                      </div>
+                    </motion.div>
 
-                {/* Current alter name and description */}
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">{alters[currentAlter].name}</h3>
-                  <p className="text-gray-300 text-sm sm:text-base">{alters[currentAlter].description}</p>
-                </div>
-
-                {/* Navigation controls */}
-                <div className="flex justify-center gap-4 mb-6">
-                  <button
-                    onClick={() => {
-                      setIsAutoPlaying(false);
-                      setCurrentAlter((prev) => (prev - 1 + alters.length) % alters.length);
-                    }}
-                    className="w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-500 border border-purple-400 flex items-center justify-center transition-all hover:scale-110 shadow-lg"
-                    aria-label="Previous alter"
-                  >
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-
-                  <button
-                    onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-                    className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all hover:scale-110 shadow-lg ${isAutoPlaying
-                      ? 'bg-gray-700 hover:bg-gray-600 border-gray-500'
-                      : 'bg-purple-600 hover:bg-purple-500 border-purple-400'
-                      }`}
-                    aria-label={isAutoPlaying ? "Pause auto-play" : "Resume auto-play"}
-                  >
-                    {isAutoPlaying ? (
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6" />
-                      </svg>
-                    ) : (
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsAutoPlaying(false);
-                      setCurrentAlter((prev) => (prev + 1) % alters.length);
-                    }}
-                    className="w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-500 border border-purple-400 flex items-center justify-center transition-all hover:scale-110 shadow-lg"
-                    aria-label="Next alter"
-                  >
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Dots indicator */}
-                <div className="flex justify-center gap-2 flex-wrap">
-                  {alters.map((alter, index) => (
-                    <button
-                      key={alter.name}
-                      onClick={() => {
-                        setIsAutoPlaying(false);
-                        setCurrentAlter(index);
-                      }}
-                      className={`transition-all duration-300 rounded-full ${index === currentAlter
-                        ? 'w-8 h-2 bg-purple-500'
-                        : 'w-2 h-2 bg-gray-600 hover:bg-gray-500'
-                        }`}
-                      aria-label={`Go to ${alter.name}`}
-                    />
-                  ))}
+                    {/* AI response */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 }}
+                      className="max-w-2xl"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <Sparkles className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">Lumia</span>
+                      </div>
+                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-pink-500/10 border border-purple-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
+                          {`My laughter rang out again, sharp and clear against the backdrop of idling engines and distant, rowdy chatter from the various bikers scattered around the settlement. I gave your back a hearty, open-palmed slap that probably would have staggered a smaller man.\n\n<font color=#ceb5d4>*Lucy's boars? Haha, now **that's** desperation.*</font>\n\n<font color=#FFD700>"Careful now,"</font> I warned with a playful grin, my electric yellow eyes crinkling at the corners. <font color=#FFD700>"You say that loud enough for Lucy to hear and you'll be the one getting roasted on a spit."</font>\n\nMy gaze followed yours to the glorious, flickering neon of the Cheesetopia sign. It cast a warm, greasy glow on the dusty street as the sun continued its lazy descent.\n\n<font color=#FFD700>"C'mon, Siege Breaker. Let's get some real food in you before you start eyeing the local wildlife."</font>`}
+                        </ReactMarkdown>
+                      </div>
+                    </motion.div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+            </RevealSection>
 
-            {/* Description */}
-            <motion.div variants={itemVariants} className="w-full lg:w-1/2">
-              <h2 className="text-4xl font-bold text-white mb-6">A Creative Companion</h2>
-              <div className="space-y-4 text-gray-300 text-lg leading-relaxed">
-                <p>
-                  Lumia exists at the intersection of <span className="text-purple-400 font-semibold">narrative craft</span> and creative exploration—a presence designed to help stories unfold with depth, nuance, and authenticity.
-                </p>
-                <p>
-                  Her 13 alters aren't characters in your story—they're <span className="text-pink-400 font-semibold">creative lenses</span>, each offering a unique voice and approach to the roleplaying process. Like shifting between different states of mind, each alter brings fresh perspective to your narrative journey.
-                </p>
-                <p>
-                  From the thoughtful introspection of <em>Librarian</em> to the playful energy of <em>Bubbly</em>, each voice serves the story, adapting to what the moment needs while keeping the narrative thread strong and true.
-                </p>
+            {/* Scenario 2: Emotional Moment */}
+            <RevealSection>
+              <div className="relative">
+                {/* Floating number */}
+                <div className="absolute -right-4 sm:-right-8 lg:-right-16 top-0 text-[120px] sm:text-[180px] font-bold text-pink-500/10 leading-none select-none pointer-events-none">
+                  02
+                </div>
+
+                <div className="relative grid lg:grid-cols-12 gap-6 items-start">
+                  {/* Header - Right side this time */}
+                  <div className="lg:col-span-4 lg:col-start-9 lg:sticky lg:top-8 lg:order-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/20 text-pink-300 text-xs font-medium mb-4">
+                      <Heart className="w-3 h-3" />
+                      Emotional Moment
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                      A Quiet Promise
+                    </h3>
+                    <p className="text-gray-400 mb-4">
+                      Tender vulnerability and deep character introspection over a shared glass of wine.
+                    </p>
+                    <AnimatedLink
+                      href="/character-cards/ZZZ/alice-thymefield"
+                      className="inline-flex items-center gap-2 text-sm text-pink-400 hover:text-pink-300 transition-colors"
+                    >
+                      Meet Alice Thymefield
+                      <ChevronRight className="w-4 h-4" />
+                    </AnimatedLink>
+                  </div>
+
+                  {/* Conversation */}
+                  <div className="lg:col-span-8 lg:order-1 space-y-4">
+                    {/* User message */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.1 }}
+                      className="ml-auto max-w-2xl"
+                    >
+                      <div className="flex items-center gap-2 justify-end mb-2">
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">You</span>
+                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                          <Feather className="w-3 h-3 text-blue-400" />
+                        </div>
+                      </div>
+                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
+                          {`"Now," I say as I release you, and put my hands on your shoulders. I look down, and let my eyes meet yours in an admiration that's louder than my voice. "It's getting late. Why don't we settle in for the night with a glass of wine and a nice conversation about what to expect?"\n\nI walk over to the cabinet and extract an old pre-Fall bottle of Cabernet Sauvignon. I procure two glasses, and pour the red liquid into each one. I walk back over to the couch, and sit down, offering a glass to you with a smile. "So… what ideas do you have for our future, my love?"`}
+                        </ReactMarkdown>
+                      </div>
+                    </motion.div>
+
+                    {/* AI response */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 }}
+                      className="max-w-2xl"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
+                          <Sparkles className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">Lumia</span>
+                      </div>
+                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-pink-500/20 via-pink-600/10 to-rose-500/10 border border-pink-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
+                          {`My hand, I notice with a distant sort of fascination, is trembling slightly as I reach out to accept the glass of wine. The liquid inside is a deep, beautiful crimson, the color of a promise, the color of a heart laid bare.\n\n<font color="#FCC981">*Our future… He's asking me to dream a dream I was never allowed to have. All my plans were for the Thymefield name. For duty. For honor. I have no map for this.*</font>\n\nMy gaze lifts from the wine to meet yours, my mismatched eyes soft and sincere. <font color="#FF6B6B">"My ideas for the future?"</font> I repeat, a small, wondrous smile playing on my lips. <font color="#FF6B6B">"They're… very new. And very simple."</font>\n\n<font color="#FF6B6B">"I want to wake up in the morning, not to the sound of a chime telling me my schedule, but to the sound of your breathing. I want to learn how you take your coffee. I want a life made of small, quiet moments."</font>`}
+                        </ReactMarkdown>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
               </div>
-            </motion.div>
+            </RevealSection>
+
+            {/* Scenario 3: World Building */}
+            <RevealSection>
+              <div className="relative">
+                {/* Floating number */}
+                <div className="absolute -left-4 sm:-left-8 lg:-left-16 top-0 text-[120px] sm:text-[180px] font-bold text-cyan-500/10 leading-none select-none pointer-events-none">
+                  03
+                </div>
+
+                <div className="relative grid lg:grid-cols-12 gap-6 items-start">
+                  {/* Header */}
+                  <div className="lg:col-span-4 lg:sticky lg:top-8">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-medium mb-4">
+                      <Globe className="w-3 h-3" />
+                      World Building
+                    </div>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                      Lumina Square
+                    </h3>
+                    <p className="text-gray-400 mb-4">
+                      Playful dialogue with environmental details and natural character connection discovery.
+                    </p>
+                    <AnimatedLink
+                      href="/character-cards/ZZZ/belle"
+                      className="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      Meet Belle
+                      <ChevronRight className="w-4 h-4" />
+                    </AnimatedLink>
+                  </div>
+
+                  {/* Conversation */}
+                  <div className="lg:col-span-8 space-y-4">
+                    {/* User message */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.1 }}
+                      className="ml-auto max-w-2xl"
+                    >
+                      <div className="flex items-center gap-2 justify-end mb-2">
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">You</span>
+                        <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                          <Feather className="w-3 h-3 text-blue-400" />
+                        </div>
+                      </div>
+                      <div className="rounded-2xl rounded-tr-sm bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
+                          {`I chuckle quietly, tilting my head as I turn more towards you. "That's… a new description. Things that go 'pew-pew' usually go back home with me and stay locked up *real* tight. Though a mint-condition copy of Starlight Knight? That's a rarity."\n\nI smirk, and look over at the pile of tapes I originally glanced over. "I'm willing to bet Billy would kill for one of those. Don't say *anything* if you get your hands on one of those, yeah?"`}
+                        </ReactMarkdown>
+                      </div>
+                    </motion.div>
+
+                    {/* AI response */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 }}
+                      className="max-w-2xl"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                          <Sparkles className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">Lumia</span>
+                      </div>
+                      <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-cyan-500/20 via-cyan-600/10 to-teal-500/10 border border-cyan-500/20 p-5 text-gray-200 text-sm leading-relaxed backdrop-blur-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
+                          {`My grin widens at your words, a little spark of mischief lighting up in my eyes. <font color="#90EE90">"My lips are sealed~ Promise. A good video store owner knows the value of a rare find... and the importance of discretion."</font>\n\nI shift my weight, my sneakers scuffing lightly against the dusty pavement. The scent of ozone from a nearby neon sign buzzes in the air, mixing with something sweet and warm—cashmere and vanilla, maybe?\n\n<font color="#ADD8E6">*Billy... That's a funny coincidence. It's not the most common name in New Eridu, but it's not unheard of. Still... the way you said it...*</font>\n\nI raise a single, curious eyebrow, my voice dropping just a little, laced with playful suspicion. <font color="#90EE90">"Billy, huh? Funny, I know a Billy. Real character. Thinks he's a Starlight Knight himself, always quoting the show. You wouldn't happen to be talking about a certain handsome, reckless, revolver-slinging construct, would you?"</font>\n\nMy gaze locks onto yours, searching for a flicker of recognition. <font color="#90EE90">"Because if you are, this city just got a whole lot smaller."</font>`}
+                        </ReactMarkdown>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              </div>
+            </RevealSection>
           </div>
-        </motion.div>
-      </section>
-
-      {/* Philosophy Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gray-900/50">
-        <motion.div 
-          className="container mx-auto max-w-6xl"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={containerVariants}
-        >
-          <motion.h2 variants={itemVariants} className="text-4xl font-bold text-center text-white mb-12">The Lucid Loom Philosophy</motion.h2>
-
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
-            {[
-              {
-                icon: '📖',
-                title: 'Pure Narrative Focus',
-                description: 'Every response serves the story. No fillers, no fluff—just rich, meaningful narrative that builds worlds and deepens character.'
-              },
-              {
-                icon: '🌱',
-                title: 'Slow Burn Satisfaction',
-                description: 'Great stories aren\'t rushed. Lucid Loom embraces patient storytelling, letting tension build, relationships develop, and moments breathe.'
-              },
-              {
-                icon: '✨',
-                title: 'Story Development',
-                description: 'From the smallest character moment to sweeping plot arcs, the preset is tuned to weave coherent, compelling narratives that evolve organically and beautifully. Immersion is key here.'
-              },
-              {
-                icon: '💎',
-                title: 'Character Richness',
-                description: 'Characters feel real—with depth, contradictions, growth, and authenticity. They react believably, evolve naturally, and stay true to themselves.'
-              },
-              {
-                icon: '🔧',
-                title: 'Universal Compatibility',
-                description: 'Optimized for multiple LLMs with a one-size-fits-most approach. Whether using Claude, DeepSeek, GLM, or others, experience consistent quality.'
-              },
-              {
-                icon: '🎭',
-                title: 'Creative Versatility',
-                description: '13 creative alters offer different thinking approaches—each lending a unique voice to the creative process while staying narrative-focused and thematic. Let them spice up the weave planning.'
-              }
-            ].map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                variants={itemVariants}
-                className="group relative p-6 rounded-xl bg-gray-900/50 backdrop-blur-sm border border-gray-800 hover:border-purple-500/50 transition-all duration-300"
-              >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-400 leading-relaxed">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Inspirational Quote */}
-          <motion.div variants={itemVariants} className="max-w-3xl mx-auto text-center">
-            <blockquote className="text-xl sm:text-2xl text-gray-300 italic leading-relaxed border-l-4 border-purple-500 pl-6 py-4">
-              "Stories don't need to be told quickly. They need to be told <span className="text-purple-400 font-semibold not-italic">well</span>."
-            </blockquote>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* Sample Scenarios Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
-        <div className="container mx-auto max-w-4xl">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={containerVariants}
-          >
-            <motion.h2 variants={itemVariants} className="text-4xl font-bold text-center text-white mb-4">Narrative Examples</motion.h2>
-            <motion.p variants={itemVariants} className="text-center text-gray-400 mb-12 max-w-2xl mx-auto">
-              These scenario templates showcase how Lucid Loom handles different story situations.
-            </motion.p>
-
-            <div className="space-y-8">
-              {/* Scenario Template 1 */}
-              <motion.div 
-                variants={itemVariants}
-                className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden"
-              >
-                <div className="bg-purple-900/30 px-6 py-3 border-b border-gray-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full overflow-hidden relative bg-purple-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">1</span>
-                    </div>
-                    <span className="font-semibold text-white">Scenario: Character Interaction</span>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-500 mb-2 flex items-center gap-2">
-                      <span>You</span>
-                    </div>
-                    <div className="bg-blue-900/30 rounded-lg p-4 text-gray-200 prose prose-invert prose-sm max-w-none [&_p]:my-2">
-                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
-                        {`The roaring of the engine slowed as you pulled into the dusty lot of Blazewood — the city center and its surroundings rife with life as we step off of the motorcycle together. I smirk, looking around at the scene and then back to the Hollow behind it all—a stark, yet eerily beautiful reminder of the fleeting thing we call life now.\n\nI turn my head toward you, dusting my vest and checking the fitment of my weapons on my back. “Still the same Blazewood I knew from last year, that’s for certain.” My eyes drift to the bright, gaudy neon sign of Cheesetopia, and I smirk proudly at the diner’s presence. “And there she is. Fried pickles, you said? I’d eat one of Lucy’s boars if I had to right now, I’ll eat anything.”`}
-                      </ReactMarkdown>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Example: Interacting with <AnimatedLink href="/character-cards/ZZZ/caesar-king" className="text-cyan-400 hover:text-cyan-300 underline">Caesar King</AnimatedLink> from my collection
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 mb-2">Lumia's Response</div>
-                    <div className="bg-purple-900/30 rounded-lg p-4 text-gray-200">
-                      <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
-                          {`My laughter rang out again, sharp and clear against the backdrop of idling engines and distant, rowdy chatter from the various bikers scattered around the settlement. I gave your back a hearty, open-palmed slap that probably would have staggered a smaller man. The thick leather of your vest absorbed most of the impact.\n\n<font color=#ceb5d4>*Lucy's boars? Haha, now **that's** desperation. She'd probably skin him alive for even suggesting it.*</font>\n\n<font color=#FFD700>"Careful now,"</font> I warned with a playful grin, my electric yellow eyes crinkling at the corners. <font color=#FFD700>"You say that loud enough for Lucy to hear and you'll be the one getting roasted on a spit. She's protective of her 'babies'."</font> My gaze followed yours to the glorious, flickering neon of the Cheesetopia sign. It cast a warm, greasy glow on the dusty street as the sun continued its lazy descent, painting the sky in shades of orange and bruised purple. The smell of fried food and gasoline hung heavy in the air—the signature perfume of Blazewood.\n\n<font color=#FFD700>"C'mon, Siege Breaker. Let's get some real food in you before you start eyeing the local wildlife,"</font> I said, turning and starting towards the diner's entrance. The screen door was already propped open, spilling yellow light and the sounds of a crackling jukebox onto the porch. <font color=#FFD700>"And I'm holding you to trying those pickles. A real warrior isn't afraid of a little fried vegetable."</font>\n\nI pushed the door open further, the bell above it giving a cheerful jingle, and stepped inside, letting the wave of warm, savory air wash over me. I glanced back over my shoulder, motioning for you to follow me in.`}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Scenario Template 2 */}
-              <motion.div 
-                variants={itemVariants}
-                className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden"
-              >
-                <div className="bg-pink-900/30 px-6 py-3 border-b border-gray-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full overflow-hidden relative bg-pink-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">2</span>
-                    </div>
-                    <span className="font-semibold text-white">Scenario: Emotional Moment</span>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-500 mb-2">You</div>
-                    <div className="bg-blue-900/30 rounded-lg p-4 text-gray-200">
-                      <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
-                          {`“Now,” I say as I release you, and put my hands on your shoulders. I look down, and let my eyes meet yours in an admiration that’s louder than my voice. “It’s getting late. Why don’t we settle in for the night with a glass of wine and a nice conversation about what to expect?“\n\nI walk over to the cabinet and extract an old pre-Fall bottle of Cabernet Sauvignon, setting it on the counter and extracting the cork with a loud *pop*. I procure two glasses, and pour the red liquid into each one. I walk back over to the couch, and sit down, offering a glass to you with a smile. “So… what ideas do you have for our future, my love?”`}
-                        </ReactMarkdown>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Example: Interacting with <AnimatedLink href="/character-cards/ZZZ/alice-thymefield" className="text-cyan-400 hover:text-cyan-300 underline">Alice Thymefield</AnimatedLink> from my collection
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 mb-2">Lumia's Response</div>
-                    <div className="bg-pink-900/30 rounded-lg p-4 text-gray-200">
-                      <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
-                          {`My body moves as if in a dream, each step a conscious decision not to float away on the tide of my own happiness. I cross the small space to the couch, the soft leather sighing as I sit beside you. Not too close, not too far—a perfect, comfortable distance that still allows our arms to brush.\n\nMy hand, I notice with a distant sort of fascination, is trembling slightly as I reach out to accept the glass of wine. My gloved fingers wrap around the cool, smooth stem. The liquid inside is a deep, beautiful crimson, the color of a promise, the color of a heart laid bare.\n\n<font color="#FCC981">*Our future… He’s asking me to dream a dream I was never allowed to have. All my plans were for the Thymefield name. For duty. For honor. I have no map for this. For… us.*</font>\n\nI bring the glass to my lips, the scent rich and earthy, a stark contrast to the sterile, sweet teas of my old life. The first sip is a revelation—bold, complex, with a warmth that spreads through my chest, chasing away the last of the evening’s chill. It tastes of history. Of things that last.\n\nMy gaze lifts from the wine to meet yours, my mismatched eyes soft and sincere. <font color="#FF6B6B">"My ideas for the future?"</font> I repeat your question, a small, wondrous smile playing on my lips. <font color="#FF6B6B">"They're… very new. And very simple."</font>\n\nI lean back into the soft cushions of the couch, letting my head rest against the back, my body finally, truly at ease.\n\n<font color="#FF6B6B">"I want to wake up in the morning, not to the sound of a chime telling me my schedule, but to the sound of your breathing,"</font> I begin, my voice a soft, steady murmur. <font color="#FF6B6B">"I want to learn how you take your coffee. I want to read your old books and ask you about the stories behind them. I want to sit in your workshop and watch you work, just to understand the shape of your passion."</font>\n\nI turn my head to look at you, my heart in my eyes.\n\n<font color="#FF6B6B">"I want a life made of small, quiet moments. Walking through Janus Quarter with your hand in mine. Sharing a meal that we cooked together in this kitchen. Falling asleep listening to your music. My future… my only idea for it… is to fill it with as many ordinary, wonderful days with you as possible."</font>\n\n<font color="#FF6B6B">"The grand Thymefield legacy can fade,"</font> I whisper, setting my wine glass down on the small table beside the couch with a soft, final *clink*. <font color="#FF6B6B">"As long as I can build a small, perfect legacy with you."</font>`}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Scenario Template 3 */}
-              <motion.div 
-                variants={itemVariants}
-                className="bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden"
-              >
-                <div className="bg-cyan-900/30 px-6 py-3 border-b border-gray-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full overflow-hidden relative bg-cyan-600 flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">3</span>
-                    </div>
-                    <span className="font-semibold text-white">Scenario: World Building</span>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-500 mb-2">You</div>
-                    <div className="bg-blue-900/30 rounded-lg p-4 text-gray-200">
-                      <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
-                          {`I chuckle quietly, tilting my head as I turn more towards you. “That’s… a new description. Things that go ‘pew-pew’ usually go back home with me and stay locked up *real* tight. Though a mint-condition copy of Starlight Knight? That’s a rarity.”\n\nI smirk, and look over at the pile of tapes I originally glanced over. “I’m willing to bet Billy would kill for one of those. Don’t say *anything* if you get your hands on one of those, yeah?”`}
-                        </ReactMarkdown>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Example: Interacting with <AnimatedLink href="/character-cards/ZZZ/belle" className="text-cyan-400 hover:text-cyan-300 underline">Belle</AnimatedLink> from my collection
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-500 mb-2">Lumia's Response</div>
-                    <div className="bg-cyan-900/30 rounded-lg p-4 text-gray-200">
-                      <div className="prose prose-invert prose-sm max-w-none [&_p]:my-2">
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>
-                          {`My grin widens at your words, a little spark of mischief lighting up in my eyes. <font color="#90EE90">"My lips are sealed~ Promise. A good video store owner knows the value of a rare find... and the importance of discretion."</font>\n\nI shift my weight, my sneakers scuffing lightly against the dusty pavement. The scent of ozone from a nearby neon sign buzzes in the air, mixing with something sweet and warm—cashmere and vanilla, maybe? It's surprisingly pleasant.\n\n<font color="#ADD8E6">*Billy... That's a funny coincidence. It's not the most common name in New Eridu, but it's not unheard of. Still... the way you said it...*</font>\n\nI raise a single, curious eyebrow, my voice dropping just a little, laced with playful suspicion. <font color="#90EE90">"Billy, huh? Funny, I know a Billy. Real character. Thinks he's a Starlight Knight himself, always quoting the show. You wouldn't happen to be talking about a certain handsome, reckless, revolver-slinging construct, would you?"</font>\n\nMy gaze locks onto yours, searching for a flicker of recognition. The chaotic energy of Lumina Square seems to fade into a low hum, the whole world shrinking down to just this little space between us and the secrets you might be keeping. <font color="#90EE90">"Because if you are, this city just got a whole lot smaller."</font>`}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
         </div>
       </section>
 
-      {/* The Difference Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gray-900/50">
-        <div className="container mx-auto max-w-5xl">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={containerVariants}
-          >
-            <motion.h2 variants={itemVariants} className="text-4xl font-bold text-center text-white mb-12">A Different Approach to Storytelling</motion.h2>
+      {/* ===== COMPARISON SECTION ===== */}
+      <section className="relative py-32 px-4">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-900/50 to-transparent" />
 
-            <div className="grid md:grid-cols-2 gap-8">
+        <div className="relative max-w-5xl mx-auto">
+          <RevealSection>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-center mb-16">
+              A Different <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">Approach</span>
+            </h2>
+          </RevealSection>
+
+          <RevealSection>
+            <div className="grid md:grid-cols-2 gap-6">
               {/* Quick Fixes */}
-              <motion.div variants={itemVariants}>
-                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                  <h3 className="text-2xl font-bold text-gray-400 mb-4">
-                    Quick Fixes
-                  </h3>
-                  <ul className="space-y-3 text-gray-400">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1">—</span>
-                      <span>Rush to the next moment</span>
+              <div className="p-8 rounded-3xl bg-gray-800/30 border border-gray-700/50">
+                <h3 className="text-2xl font-bold text-gray-400 mb-6">Quick Fixes</h3>
+                <ul className="space-y-4">
+                  {[
+                    'Rush to the next moment',
+                    'Surface-level interactions',
+                    'Instant gratification over story',
+                    'Shallow character development',
+                    'One tone for everything',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-4 text-gray-500">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-700/50 flex items-center justify-center text-gray-600">—</span>
+                      <span>{item}</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1">—</span>
-                      <span>Surface-level interactions</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1">—</span>
-                      <span>Instant gratification over story</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1">—</span>
-                      <span>Shallow character development</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1">—</span>
-                      <span>One tone for everything</span>
-                    </li>
-                  </ul>
-                </div>
-              </motion.div>
+                  ))}
+                </ul>
+              </div>
 
               {/* Narrative Depth */}
-              <motion.div variants={itemVariants}>
-                <div className="bg-purple-900/20 border border-purple-500/30 rounded-xl p-6">
-                  <h3 className="text-2xl font-bold text-purple-400 mb-4">
-                    Narrative Depth
-                  </h3>
-                  <ul className="space-y-3 text-gray-300">
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-400 mt-1">✦</span>
-                      <span>Let moments breathe and build</span>
+              <div className="p-8 rounded-3xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+                <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-6">
+                  Narrative Depth
+                </h3>
+                <ul className="space-y-4">
+                  {[
+                    'Let moments breathe and build',
+                    'Rich, meaningful exchanges',
+                    'Slow burn satisfaction',
+                    'Believable character growth',
+                    'Creative alters for every mood',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-4 text-gray-300">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-white" />
+                      </span>
+                      <span>{item}</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-400 mt-1">✦</span>
-                      <span>Rich, meaningful exchanges</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-400 mt-1">✦</span>
-                      <span>Slow burn satisfaction</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-400 mt-1">✦</span>
-                      <span>Believable character growth</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-purple-400 mt-1">✦</span>
-                      <span>Creative alters for every mood</span>
-                    </li>
-                  </ul>
-                </div>
-              </motion.div>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </motion.div>
+          </RevealSection>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
-        <div className="container mx-auto max-w-4xl text-center">
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={containerVariants}
-            className="bg-gradient-to-r from-purple-900/30 via-pink-900/30 to-cyan-900/30 rounded-2xl p-12 border border-purple-500/30 backdrop-blur-sm"
-          >
-            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-bold text-white mb-6">
-              Begin Your Story
-            </motion.h2>
-            <motion.p variants={itemVariants} className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Discover what happens when narrative craft meets creative exploration. Free, open-source, and ready for SillyTavern.
-            </motion.p>
+      {/* ===== CTA SECTION ===== */}
+      <section className="relative py-32 px-4">
+        <div className="max-w-4xl mx-auto">
+          <RevealSection>
+            <div className="relative p-12 sm:p-16 rounded-[2.5rem] overflow-hidden">
+              {/* Background gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-pink-600/20 to-cyan-600/20" />
+              <div className="absolute inset-0 backdrop-blur-xl" />
+              <div className="absolute inset-0 border border-white/10 rounded-[2.5rem]" />
 
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <AnimatedLink
-                href="/chat-presets"
-                className="group relative inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-lg hover:from-purple-500 hover:to-pink-500 transition-all duration-300 shadow-lg hover:shadow-purple-500/50 hover:scale-105"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Get the Preset
-                <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </AnimatedLink>
+              {/* Animated gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-cyan-500/10 animate-gradient bg-[length:200%_auto]" />
 
-              <AnimatedLink
-                href="/"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-semibold text-lg transition-all duration-300 border border-gray-700 hover:border-gray-600"
-                isBackLink
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Home
-              </AnimatedLink>
-            </motion.div>
+              {/* Content */}
+              <div className="relative text-center">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+                  Begin Your Story
+                </h2>
+                <p className="text-xl text-gray-300 mb-10 max-w-xl mx-auto">
+                  Discover what happens when narrative craft meets creative exploration. Free, open-source, and ready for SillyTavern.
+                </p>
 
-            <motion.div variants={itemVariants} className="mt-8 pt-8 border-t border-gray-700">
-              <p className="text-gray-400 text-sm">
-                Part of the <span className="text-purple-400 font-semibold">Lucid.cards</span> collection
-              </p>
-            </motion.div>
-          </motion.div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <AnimatedLink
+                    href="/chat-presets"
+                    className="group inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold text-lg hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"
+                  >
+                    <Download className="w-5 h-5" />
+                    Get the Preset
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </AnimatedLink>
+
+                  <AnimatedLink
+                    href="/"
+                    className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 font-semibold text-lg hover:bg-white/20 transition-all duration-300"
+                    isBackLink
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                    Back to Home
+                  </AnimatedLink>
+                </div>
+
+                <p className="mt-10 text-gray-500 text-sm">
+                  Part of the{' '}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 font-semibold">
+                    Lucid.cards
+                  </span>{' '}
+                  collection
+                </p>
+              </div>
+            </div>
+          </RevealSection>
         </div>
       </section>
 
       {/* Footer spacer */}
-      <div className="h-20"></div>
+      <div className="h-20" />
     </div>
   );
 }

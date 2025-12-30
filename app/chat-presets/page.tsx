@@ -1,13 +1,31 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import PresetDownloadModal from '@/app/components/PresetDownloadModal';
+import {
+  ArrowLeft,
+  Download,
+  Github,
+  Clock,
+  FileJson,
+  Sparkles,
+  Star,
+  History,
+  ChevronRight,
+  Zap,
+  Settings,
+  Layers,
+  Package,
+  Crown,
+  Archive,
+  ExternalLink
+} from 'lucide-react';
 
 interface Preset {
   name: string;
@@ -35,6 +53,76 @@ interface VersionCategories {
   prolix: Version[];
 }
 
+// Floating atmospheric orbs
+const FloatingOrbs = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <motion.div
+      animate={{
+        x: [0, 80, 40, 0],
+        y: [0, -40, 80, 0],
+        scale: [1, 1.15, 0.95, 1],
+      }}
+      transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-600/15 rounded-full blur-[100px]"
+    />
+    <motion.div
+      animate={{
+        x: [0, -60, 30, 0],
+        y: [0, 60, -30, 0],
+        scale: [1, 0.9, 1.1, 1],
+      }}
+      transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute top-1/2 right-1/4 w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[120px]"
+    />
+    <motion.div
+      animate={{
+        x: [0, 50, -50, 0],
+        y: [0, -70, 40, 0],
+        scale: [1, 1.2, 0.85, 1],
+      }}
+      transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+      className="absolute bottom-1/4 left-1/3 w-[450px] h-[450px] bg-blue-600/10 rounded-full blur-[100px]"
+    />
+  </div>
+);
+
+// Reveal section with scroll animation
+const RevealSection = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+      transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1], delay }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// Floating card wrapper
+const FloatingCard = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => (
+  <motion.div
+    animate={{
+      y: [0, -8, 0],
+      rotate: [0, 0.5, -0.5, 0],
+    }}
+    transition={{
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay,
+    }}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
+
 function ChatPresetsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -47,30 +135,15 @@ function ChatPresetsContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalPreset, setModalPreset] = useState<{ url: string; name: string } | null>(null);
 
-  // Animation variants consistent with other pages
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 50,
-        damping: 15
-      }
-    }
-  };
+  // Scroll-linked hero parallax
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
+  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, 80]);
 
   // Check URL parameters on mount and set default to "Lucid Loom"
   useEffect(() => {
@@ -78,7 +151,6 @@ function ChatPresetsContent() {
     if (presetParam) {
       setSelectedPreset(decodeURIComponent(presetParam));
     } else {
-      // Default to "Lucid Loom" if no preset parameter is present
       setSelectedPreset('Lucid Loom');
     }
   }, [searchParams]);
@@ -110,10 +182,9 @@ function ChatPresetsContent() {
     async function fetchVersions() {
       setIsTransitioning(true);
       setVersionsLoading(true);
-      
-      // Small delay to ensure fade out completes
+
       await new Promise(resolve => setTimeout(resolve, 150));
-      
+
       try {
         const response = await fetch(`/api/chat-presets/${encodeURIComponent(selectedPreset as string)}`);
         const data = await response.json();
@@ -149,50 +220,32 @@ function ChatPresetsContent() {
   const handlePresetChange = (presetName: string) => {
     if (presetName !== selectedPreset) {
       setSelectedPreset(presetName);
-      // Update URL with preset parameter
       router.push(`/chat-presets?preset=${encodeURIComponent(presetName)}`, { scroll: false });
     }
   };
 
-  // Helper function to format version name (remove .json and extract version)
   const formatVersionName = (name: string) => {
-    // Remove .json extension
-    let formatted = name.replace('.json', '');
-    return formatted;
+    return name.replace('.json', '');
   };
 
-  // Helper function to extract version number and descriptors (e.g., v1.0, v1.0 Hotfix, v2.9.2)
   const extractVersion = (name: string) => {
-    // Match version pattern with optional descriptors (but not "Prolix Preferred" or "Prolix Edition")
-    // Matches: v2.8, v2.8.1, v2.9.2, v2.8 Hotfix, v2.8.1 Quick Fix, v2.8 Beta 1, etc.
-    // Does NOT match Prolix as a descriptor: v2.8 Prolix Preferred should extract as just "v2.8"
-    // Captures from 'v' character through all numeric segments (e.g., v2.9.2)
     const versionMatch = name.match(/v\d+(?:\.\d+)*(?:\s+(?:(?!Prolix)[A-Z][a-z]+(?:\s+(?:[A-Z][a-z]+|\d+))?))?/);
     return versionMatch ? versionMatch[0] : null;
   };
 
-  // Helper function to get name without version
   const getNameWithoutVersion = (name: string) => {
-    // Remove .json extension first
     let formatted = name.replace('.json', '');
-    // Then remove everything from "Prolix" onwards (Prolix Preferred, Prolix Edition, etc.)
     formatted = formatted.replace(/\s*Prolix.*$/i, '').trim();
-    // Finally, remove the version number and any descriptors (Hotfix, Quick Fix, Beta 1, etc.)
-    // Updated regex to handle semantic versioning like v2.9.2
     formatted = formatted.replace(/\s*v\d+(?:\.\d+)*(?:\s+(?:Hotfix|Quick\s+Fix|Repatch|[A-Z][a-z]+(?:\s+\d+)?))?\s*/g, '').trim();
     return formatted;
   };
 
-  // Separate standard and prolix latest/historical versions
   const standardLatest = versions.standard.filter(v => v.isLatest);
   const standardHistorical = versions.standard.filter(v => !v.isLatest);
   const prolixLatest = versions.prolix.filter(v => v.isLatest);
   const prolixHistorical = versions.prolix.filter(v => !v.isLatest);
-  
-  // Check if there are any versions at all
-  const hasVersions = versions.standard.length > 0 || versions.prolix.length > 0;
 
-  // Combine all presets for rendering
+  const hasVersions = versions.standard.length > 0 || versions.prolix.length > 0;
   const allPresets = [...presetCategories.standard, ...presetCategories.prolix];
 
   const handleDownloadClick = (url: string, name: string) => {
@@ -206,519 +259,595 @@ function ChatPresetsContent() {
   };
 
   return (
-    <div className="min-h-screen relative">
-      <div className="relative container mx-auto px-4 py-16">
-        {/* Header */}
-        <motion.div 
-          className="mb-12"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
-          <motion.div variants={itemVariants}>
-            <AnimatedLink href="/" className="group text-cyan-400 hover:text-cyan-300 transition-colors inline-flex items-center mb-6" isBackLink>
-              <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Home
+    <div className="min-h-screen relative overflow-hidden">
+      <FloatingOrbs />
+
+      {/* Hero Section with Parallax */}
+      <motion.section
+        ref={heroRef}
+        style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
+        className="relative min-h-[50vh] flex items-center justify-center pt-12 pb-8"
+      >
+        <div className="container mx-auto px-4">
+          {/* Back Link */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <AnimatedLink
+              href="/"
+              className="group inline-flex items-center gap-2 text-gray-400 hover:text-cyan-400 transition-colors"
+              isBackLink
+            >
+              <ArrowLeft className="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium">Back to Home</span>
             </AnimatedLink>
           </motion.div>
-          
-          <motion.h1 
-            className="text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient mb-4"
-            variants={itemVariants}
-          >
-            Chat Completion Presets
-          </motion.h1>
-          <motion.p 
-            className="text-xl text-gray-300 max-w-3xl"
-            variants={itemVariants}
-          >
-            Download the latest versions of chat completion presets
-          </motion.p>
-        </motion.div>
 
-        {loading ? (
-          <div className="text-center text-gray-400 py-12">
-            <LoadingSpinner message="Loading presets..." />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Presets Sidebar */}
-            <motion.div 
-              className="lg:col-span-1 h-fit"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+          {/* Hero Content */}
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Floating badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-8"
             >
-              <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6 sticky top-24">
-                <h2 className="text-xl font-bold text-white mb-6">Presets</h2>
-                <div className="space-y-2">
-                  {allPresets.map((preset) => (
-                    <button
-                      key={preset.name}
-                      onClick={() => handlePresetChange(preset.name)}
-                      className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
-                        selectedPreset === preset.name
-                          ? 'bg-purple-600/20 text-white border border-purple-500/50 shadow-[0_0_15px_rgba(147,51,234,0.2)]'
-                          : 'bg-gray-800/30 text-gray-400 border border-transparent hover:bg-gray-800/60 hover:text-gray-200'
-                      }`}
-                    >
-                      {selectedPreset === preset.name && (
-                        <div className="absolute inset-0 bg-purple-500/10 blur-lg" />
-                      )}
-                      <span className="relative z-10 font-medium flex items-center justify-between">
-                        {preset.name}
-                        {selectedPreset === preset.name && (
-                          <motion.div layoutId="activePreset" className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                        )}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <Settings className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-400">Chat Completion Configuration</span>
             </motion.div>
 
-            {/* Versions Grid */}
-            <div className="lg:col-span-3">
-              <AnimatePresence mode="wait">
-                {!selectedPreset ? (
-                  <motion.div
-                    key="empty-state"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-12 text-center"
-                  >
-                    <motion.div 
-                      className="text-6xl mb-4"
-                      animate={{ x: [0, 10, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    >
-                      👈
-                    </motion.div>
-                    <p className="text-xl text-gray-400">Select a preset to view available versions</p>
-                  </motion.div>
-                ) : isTransitioning || versionsLoading ? (
-                  <motion.div
-                    key="loading-state"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="text-center text-gray-400 py-12"
-                  >
-                    <LoadingSpinner message="Loading versions..." />
-                  </motion.div>
-                ) : !hasVersions ? (
-                  <motion.div
-                    key="no-versions"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-12 text-center"
-                  >
-                    <p className="text-xl text-gray-400">No versions found for this preset</p>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={`versions-${selectedPreset}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-6"
-                  >
-                    {/* Standard Versions - Latest */}
-                    {standardLatest.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <div className="flex items-center gap-2 mb-4">
-                          <motion.div 
-                            className="p-2 bg-purple-500/20 rounded-lg"
-                            animate={{ rotate: [0, 10, -10, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                          >
-                            <svg className="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
-                            </svg>
-                          </motion.div>
-                          <h2 className="text-xl font-bold text-white">Latest Version</h2>
-                        </div>
-                        {standardLatest.map((version) => {
-                          const versionNum = extractVersion(version.name);
-                          const displayName = getNameWithoutVersion(version.name);
-                          return (
-                          <motion.div
-                            key={version.path}
-                            className="bg-gradient-to-br from-purple-900/30 to-gray-900/50 backdrop-blur-xl border-2 border-purple-500/50 rounded-2xl p-6 hover:border-purple-400 transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 relative overflow-hidden group"
-                            whileHover={{ scale: 1.01, y: -2 }}
-                          >
-                            {/* Shimmer effect */}
-                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0">
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            </div>
+            {/* Main Title */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="mb-6"
+            >
+              <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient pb-2">
+                  Chat
+                </span>
+                <span className="block text-white/90 mt-2">
+                  Presets
+                </span>
+              </h1>
+            </motion.div>
 
-                            <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 sm:gap-3 mb-3 flex-wrap">
-                                  <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 wrap-break-word" title={formatVersionName(version.name)}>
-                                    {displayName}
-                                  </h3>
-                                  {versionNum && (
-                                    <span className="bg-gray-800 text-gray-300 text-xs font-mono px-2.5 py-1 rounded-md border border-gray-700">
-                                      {versionNum}
-                                    </span>
-                                  )}
-                                  <motion.span 
-                                    className="bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs px-3 py-1 rounded-full font-medium shadow-lg whitespace-nowrap flex items-center gap-1"
-                                    animate={{ scale: [1, 1.05, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                                  >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                    Latest
-                                  </motion.span>
-                                </div>
-                                <div className="flex flex-col sm:flex-row sm:gap-6 gap-2 text-sm text-gray-400">
-                                  <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                    {formatFileSize(version.size)}
-                                  </span>
-                                  <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    {formatDate(version.lastModified)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex gap-3 w-full sm:w-auto pt-2 sm:pt-0">
-                                <motion.button
-                                  onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
-                                  className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white px-6 py-2.5 rounded-xl transition-all whitespace-nowrap shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 flex items-center justify-center gap-2 flex-1 sm:flex-initial font-medium"
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                  </svg>
-                                  <span className="hidden sm:inline">Download</span>
-                                  <span className="sm:hidden">Download</span>
-                                </motion.button>
-                                <motion.a
-                                  href={version.htmlUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center border border-gray-700 hover:border-gray-600"
-                                  title="View on GitHub"
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                                  </svg>
-                                </motion.a>
-                              </div>
-                            </div>
-                          </motion.div>
-                          );
-                        })}
-                      </motion.div>
-                    )}
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
+            >
+              Optimized completion settings for transformative AI roleplay.
+              <span className="block mt-2 text-gray-500">Download. Import. Experience.</span>
+            </motion.p>
 
-                    {/* Prolix Preferred - Latest */}
-                    {prolixLatest.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.15 }}
-                      >
-                        <div className="flex items-center gap-2 mb-4">
-                          <motion.div 
-                            className="p-2 bg-yellow-500/20 rounded-lg"
-                            animate={{ rotate: [0, 10, -10, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                          >
-                            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          </motion.div>
-                          <h2 className="text-xl font-bold text-white">Prolix Preferred - Latest</h2>
-                        </div>
-                        {prolixLatest.map((version) => {
-                          const versionNum = extractVersion(version.name);
-                          const displayName = getNameWithoutVersion(version.name);
-                          return (
-                          <motion.div
-                            key={version.path}
-                            className="bg-gradient-to-br from-yellow-900/30 to-gray-900/50 backdrop-blur-xl border-2 border-yellow-500/50 rounded-2xl p-6 hover:border-yellow-400 transition-all shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/30 relative overflow-hidden group"
-                            whileHover={{ scale: 1.01, y: -2 }}
-                          >
-                            {/* Shimmer effect */}
-                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0">
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-500/5 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            </div>
-
-                            <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 sm:gap-3 mb-3 flex-wrap">
-                                  <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 wrap-break-word" title={formatVersionName(version.name)}>
-                                    {displayName}
-                                  </h3>
-                                  {versionNum && (
-                                    <span className="bg-gray-800 text-gray-300 text-xs font-mono px-2.5 py-1 rounded-md border border-gray-700">
-                                      {versionNum}
-                                    </span>
-                                  )}
-                                  <motion.span 
-                                    className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-xs px-3 py-1 rounded-full font-medium shadow-lg whitespace-nowrap flex items-center gap-1"
-                                    animate={{ scale: [1, 1.05, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                                  >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                    Latest
-                                  </motion.span>
-                                </div>
-                                <div className="flex flex-col sm:flex-row sm:gap-6 gap-2 text-sm text-gray-400">
-                                  <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                    {formatFileSize(version.size)}
-                                  </span>
-                                  <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    {formatDate(version.lastModified)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex gap-3 w-full sm:w-auto pt-2 sm:pt-0">
-                                <motion.button
-                                  onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
-                                  className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 text-white px-6 py-2.5 rounded-xl transition-all whitespace-nowrap shadow-lg shadow-yellow-500/30 hover:shadow-yellow-500/50 flex items-center justify-center gap-2 flex-1 sm:flex-initial font-medium"
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                  </svg>
-                                  <span className="hidden sm:inline">Download</span>
-                                  <span className="sm:hidden">Download</span>
-                                </motion.button>
-                                <motion.a
-                                  href={version.htmlUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center border border-gray-700 hover:border-gray-600"
-                                  title="View on GitHub"
-                                  whileHover={{ scale: 1.02 }}
-                                  whileTap={{ scale: 0.98 }}
-                                >
-                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                                  </svg>
-                                </motion.a>
-                              </div>
-                            </div>
-                          </motion.div>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-
-                    {/* Standard Versions - Historical */}
-                    {standardHistorical.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.2 }}
-                      >
-                        <div className="flex items-center gap-2 mb-3">
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <h2 className="text-xl font-bold text-white">Historical Versions</h2>
-                          <span className="text-sm text-gray-500 ml-auto">({standardHistorical.length})</span>
-                        </div>
-                        <div className="space-y-3">
-                          {standardHistorical.map((version, index) => {
-                            const versionNum = extractVersion(version.name);
-                            const displayName = getNameWithoutVersion(version.name);
-                            return (
-                            <motion.div
-                              key={version.path}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: index * 0.05 }}
-                              className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-all hover:shadow-lg hover:shadow-gray-700/30"
-                              whileHover={{ scale: 1.005, x: 4 }}
-                            >
-                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    <h3 className="text-base sm:text-lg font-semibold text-white wrap-break-word" title={formatVersionName(version.name)}>
-                                      {displayName}
-                                    </h3>
-                                    {versionNum && (
-                                      <span className="bg-gray-700/70 text-gray-300 text-xs px-2 py-1 rounded font-mono">
-                                        {versionNum}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col sm:flex-row sm:gap-4 gap-2 text-xs sm:text-sm text-gray-400">
-                                    <span className="flex items-center gap-1">
-                                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                      </svg>
-                                      {formatFileSize(version.size)}
-                                    </span>
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="flex items-center gap-1">
-                                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      {formatDate(version.lastModified)}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2 w-full sm:w-auto">
-                                  <motion.button
-                                    onClick={() => downloadFile(version.downloadUrl, version.name)}
-                                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center justify-center gap-2 flex-1 sm:flex-initial"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    <span className="hidden sm:inline">Download</span>
-                                  </motion.button>
-                                  <motion.a
-                                    href={version.htmlUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
-                                    title="View on GitHub"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                                    </svg>
-                                  </motion.a>
-                                </div>
-                              </div>
-                            </motion.div>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Prolix Preferred - Historical */}
-                    {prolixHistorical.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.25 }}
-                      >
-                        <div className="flex items-center gap-2 mb-3">
-                          <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <h2 className="text-xl font-bold text-white">Prolix Preferred - Historical</h2>
-                          <span className="text-sm text-gray-500 ml-auto">({prolixHistorical.length})</span>
-                        </div>
-                        <div className="space-y-3">
-                          {prolixHistorical.map((version, index) => {
-                            const versionNum = extractVersion(version.name);
-                            const displayName = getNameWithoutVersion(version.name);
-                            return (
-                            <motion.div
-                              key={version.path}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: index * 0.05 }}
-                              className="bg-gray-800/50 backdrop-blur-sm border border-purple-700/50 rounded-xl p-6 hover:border-purple-600 transition-all hover:shadow-lg hover:shadow-purple-700/30"
-                              whileHover={{ scale: 1.005, x: 4 }}
-                            >
-                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    <h3 className="text-base sm:text-lg font-semibold text-white wrap-break-word" title={formatVersionName(version.name)}>
-                                      {displayName}
-                                    </h3>
-                                    {versionNum && (
-                                      <span className="bg-purple-700/70 text-gray-300 text-xs px-2 py-1 rounded font-mono">
-                                        {versionNum}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col sm:flex-row sm:gap-4 gap-2 text-xs sm:text-sm text-gray-400">
-                                    <span className="flex items-center gap-1">
-                                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                      </svg>
-                                      {formatFileSize(version.size)}
-                                    </span>
-                                    <span className="hidden sm:inline">•</span>
-                                    <span className="flex items-center gap-1">
-                                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      {formatDate(version.lastModified)}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2 w-full sm:w-auto">
-                                  <motion.button
-                                    onClick={() => downloadFile(version.downloadUrl, version.name)}
-                                    className="bg-purple-700 hover:bg-purple-600 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors whitespace-nowrap flex items-center justify-center gap-2 flex-1 sm:flex-initial"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    <span className="hidden sm:inline">Download</span>
-                                  </motion.button>
-                                  <motion.a
-                                    href={version.htmlUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
-                                    title="View on GitHub"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                                    </svg>
-                                  </motion.a>
-                                </div>
-                              </div>
-                            </motion.div>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            {/* Stats row */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="flex items-center justify-center gap-8 mt-10"
+            >
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{allPresets.length}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">Presets</div>
+              </div>
+              <div className="w-px h-8 bg-gray-700" />
+              <div className="text-center">
+                <div className="text-2xl font-bold text-cyan-400">{versions.standard.length + versions.prolix.length}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">Versions</div>
+              </div>
+              <div className="w-px h-8 bg-gray-700" />
+              <div className="text-center">
+                <div className="flex items-center gap-1 text-2xl font-bold text-purple-400">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">Optimized</div>
+              </div>
+            </motion.div>
           </div>
-        )}
-      </div>
+        </div>
+
+        {/* Decorative gradient line */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+      </motion.section>
+
+      {/* Main Content */}
+      <section className="relative py-12">
+        <div className="container mx-auto px-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <LoadingSpinner message="Loading presets..." />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Sidebar - Preset Selection */}
+              <RevealSection className="lg:col-span-3">
+                <div className="lg:sticky lg:top-24">
+                  <FloatingCard delay={0.2}>
+                    <div className="relative bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-3xl p-6 overflow-hidden">
+                      {/* Sidebar glow */}
+                      <div className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
+
+                      <div className="relative">
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/20 to-cyan-500/10 border border-purple-500/20">
+                            <Layers className="w-5 h-5 text-purple-400" />
+                          </div>
+                          <h2 className="text-lg font-bold text-white">Select Preset</h2>
+                        </div>
+
+                        <div className="space-y-2">
+                          {allPresets.map((preset, index) => (
+                            <motion.button
+                              key={preset.name}
+                              onClick={() => handlePresetChange(preset.name)}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.3, delay: index * 0.05 }}
+                              className={`w-full group text-left px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${
+                                selectedPreset === preset.name
+                                  ? 'bg-gradient-to-r from-purple-500/20 to-cyan-500/10 border border-purple-500/30'
+                                  : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.05]'
+                              }`}
+                            >
+                              {/* Active glow */}
+                              {selectedPreset === preset.name && (
+                                <motion.div
+                                  layoutId="activePresetGlow"
+                                  className="absolute inset-0 bg-purple-500/5 blur-xl"
+                                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                />
+                              )}
+
+                              <span className="relative z-10 flex items-center justify-between">
+                                <span className={`font-medium transition-colors ${
+                                  selectedPreset === preset.name ? 'text-white' : 'text-gray-400 group-hover:text-white'
+                                }`}>
+                                  {preset.name}
+                                </span>
+                                <ChevronRight className={`w-4 h-4 transition-all ${
+                                  selectedPreset === preset.name
+                                    ? 'text-purple-400 translate-x-0'
+                                    : 'text-gray-600 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                                }`} />
+                              </span>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </FloatingCard>
+                </div>
+              </RevealSection>
+
+              {/* Main Content - Versions */}
+              <div className="lg:col-span-9">
+                <AnimatePresence mode="wait">
+                  {!selectedPreset ? (
+                    <motion.div
+                      key="empty-state"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col items-center justify-center py-24 text-center"
+                    >
+                      <motion.div
+                        animate={{ x: [-5, 5, -5] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 mb-6"
+                      >
+                        <Package className="w-12 h-12 text-purple-400" />
+                      </motion.div>
+                      <p className="text-xl text-gray-400">Select a preset to view versions</p>
+                    </motion.div>
+                  ) : isTransitioning || versionsLoading ? (
+                    <motion.div
+                      key="loading-state"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex items-center justify-center py-24"
+                    >
+                      <LoadingSpinner message="Loading versions..." />
+                    </motion.div>
+                  ) : !hasVersions ? (
+                    <motion.div
+                      key="no-versions"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex flex-col items-center justify-center py-24 text-center"
+                    >
+                      <div className="p-4 rounded-2xl bg-gray-500/10 border border-gray-500/20 mb-6">
+                        <Archive className="w-12 h-12 text-gray-400" />
+                      </div>
+                      <p className="text-xl text-gray-400">No versions found for this preset</p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={`versions-${selectedPreset}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.4 }}
+                      className="space-y-8"
+                    >
+                      {/* Standard Latest */}
+                      {standardLatest.length > 0 && (
+                        <RevealSection>
+                          <div className="flex items-center gap-3 mb-5">
+                            <motion.div
+                              className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20"
+                              animate={{ rotate: [0, 5, -5, 0] }}
+                              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
+                            >
+                              <Zap className="w-5 h-5 text-cyan-400" />
+                            </motion.div>
+                            <h2 className="text-xl font-bold text-white">Latest Version</h2>
+                          </div>
+
+                          {standardLatest.map((version) => {
+                            const versionNum = extractVersion(version.name);
+                            const displayName = getNameWithoutVersion(version.name);
+                            return (
+                              <motion.div
+                                key={version.path}
+                                className="group relative bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-purple-500/10 backdrop-blur-xl border-2 border-cyan-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
+                                whileHover={{ scale: 1.01, y: -4 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                {/* Animated shimmer */}
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+                                  <motion.div
+                                    animate={{ x: ['-200%', '200%'] }}
+                                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12"
+                                  />
+                                </div>
+
+                                {/* Glow effect */}
+                                <div className="absolute -top-20 -right-20 w-60 h-60 bg-cyan-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                                      <h3 className="text-2xl font-bold text-white">
+                                        {displayName}
+                                      </h3>
+                                      {versionNum && (
+                                        <span className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-sm font-mono text-gray-300">
+                                          {versionNum}
+                                        </span>
+                                      )}
+                                      <motion.span
+                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/25"
+                                        animate={{ scale: [1, 1.05, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                      >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                        Latest
+                                      </motion.span>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                                      <span className="flex items-center gap-2">
+                                        <FileJson className="w-4 h-4 text-gray-500" />
+                                        {formatFileSize(version.size)}
+                                      </span>
+                                      <span className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-gray-500" />
+                                        {formatDate(version.lastModified)}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-3">
+                                    <motion.button
+                                      onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
+                                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      <Download className="w-5 h-5" />
+                                      Download
+                                    </motion.button>
+                                    <motion.a
+                                      href={version.htmlUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      title="View on GitHub"
+                                    >
+                                      <Github className="w-5 h-5" />
+                                    </motion.a>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </RevealSection>
+                      )}
+
+                      {/* Prolix Latest */}
+                      {prolixLatest.length > 0 && (
+                        <RevealSection delay={0.1}>
+                          <div className="flex items-center gap-3 mb-5">
+                            <motion.div
+                              className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-500/20"
+                              animate={{ rotate: [0, 5, -5, 0] }}
+                              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
+                            >
+                              <Crown className="w-5 h-5 text-amber-400" />
+                            </motion.div>
+                            <h2 className="text-xl font-bold text-white">Prolix Preferred</h2>
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">Premium</span>
+                          </div>
+
+                          {prolixLatest.map((version) => {
+                            const versionNum = extractVersion(version.name);
+                            const displayName = getNameWithoutVersion(version.name);
+                            return (
+                              <motion.div
+                                key={version.path}
+                                className="group relative bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-orange-500/10 backdrop-blur-xl border-2 border-amber-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
+                                whileHover={{ scale: 1.01, y: -4 }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                {/* Shimmer */}
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+                                  <motion.div
+                                    animate={{ x: ['-200%', '200%'] }}
+                                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12"
+                                  />
+                                </div>
+
+                                {/* Glow */}
+                                <div className="absolute -top-20 -right-20 w-60 h-60 bg-amber-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3 mb-4 flex-wrap">
+                                      <h3 className="text-2xl font-bold text-white">
+                                        {displayName}
+                                      </h3>
+                                      {versionNum && (
+                                        <span className="px-3 py-1 rounded-lg bg-white/10 border border-white/10 text-sm font-mono text-gray-300">
+                                          {versionNum}
+                                        </span>
+                                      )}
+                                      <motion.span
+                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-semibold shadow-lg shadow-amber-500/25"
+                                        animate={{ scale: [1, 1.05, 1] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                      >
+                                        <Star className="w-3 h-3" />
+                                        Latest
+                                      </motion.span>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                                      <span className="flex items-center gap-2">
+                                        <FileJson className="w-4 h-4 text-gray-500" />
+                                        {formatFileSize(version.size)}
+                                      </span>
+                                      <span className="flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-gray-500" />
+                                        {formatDate(version.lastModified)}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex gap-3">
+                                    <motion.button
+                                      onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
+                                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-white font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all"
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
+                                    >
+                                      <Download className="w-5 h-5" />
+                                      Download
+                                    </motion.button>
+                                    <motion.a
+                                      href={version.htmlUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      title="View on GitHub"
+                                    >
+                                      <Github className="w-5 h-5" />
+                                    </motion.a>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </RevealSection>
+                      )}
+
+                      {/* Standard Historical */}
+                      {standardHistorical.length > 0 && (
+                        <RevealSection delay={0.2}>
+                          <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-xl bg-gray-500/10 border border-gray-500/20">
+                                <History className="w-5 h-5 text-gray-400" />
+                              </div>
+                              <h2 className="text-xl font-bold text-white">Historical Versions</h2>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-gray-500/10 text-sm text-gray-500">
+                              {standardHistorical.length} version{standardHistorical.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+
+                          <div className="space-y-3">
+                            {standardHistorical.map((version, index) => {
+                              const versionNum = extractVersion(version.name);
+                              const displayName = getNameWithoutVersion(version.name);
+                              return (
+                                <motion.div
+                                  key={version.path}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ duration: 0.3, delay: index * 0.03 }}
+                                  className="group relative bg-white/[0.02] backdrop-blur-sm border border-white/[0.05] rounded-2xl p-5 hover:bg-white/[0.04] hover:border-white/[0.08] transition-all duration-300"
+                                  whileHover={{ x: 4 }}
+                                >
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <h3 className="text-lg font-semibold text-white">
+                                          {displayName}
+                                        </h3>
+                                        {versionNum && (
+                                          <span className="px-2 py-0.5 rounded bg-white/5 text-xs font-mono text-gray-400">
+                                            {versionNum}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                                        <span className="flex items-center gap-1.5">
+                                          <FileJson className="w-4 h-4" />
+                                          {formatFileSize(version.size)}
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
+                                          <Clock className="w-4 h-4" />
+                                          {formatDate(version.lastModified)}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                      <motion.button
+                                        onClick={() => downloadFile(version.downloadUrl, version.name)}
+                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                      >
+                                        <Download className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Download</span>
+                                      </motion.button>
+                                      <motion.a
+                                        href={version.htmlUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                      >
+                                        <ExternalLink className="w-4 h-4" />
+                                      </motion.a>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </RevealSection>
+                      )}
+
+                      {/* Prolix Historical */}
+                      {prolixHistorical.length > 0 && (
+                        <RevealSection delay={0.3}>
+                          <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                                <History className="w-5 h-5 text-purple-400" />
+                              </div>
+                              <h2 className="text-xl font-bold text-white">Prolix Historical</h2>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-purple-500/10 text-sm text-purple-400">
+                              {prolixHistorical.length} version{prolixHistorical.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+
+                          <div className="space-y-3">
+                            {prolixHistorical.map((version, index) => {
+                              const versionNum = extractVersion(version.name);
+                              const displayName = getNameWithoutVersion(version.name);
+                              return (
+                                <motion.div
+                                  key={version.path}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ duration: 0.3, delay: index * 0.03 }}
+                                  className="group relative bg-purple-500/[0.03] backdrop-blur-sm border border-purple-500/10 rounded-2xl p-5 hover:bg-purple-500/[0.06] hover:border-purple-500/20 transition-all duration-300"
+                                  whileHover={{ x: 4 }}
+                                >
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <h3 className="text-lg font-semibold text-white">
+                                          {displayName}
+                                        </h3>
+                                        {versionNum && (
+                                          <span className="px-2 py-0.5 rounded bg-purple-500/10 text-xs font-mono text-purple-300">
+                                            {versionNum}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                                        <span className="flex items-center gap-1.5">
+                                          <FileJson className="w-4 h-4" />
+                                          {formatFileSize(version.size)}
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
+                                          <Clock className="w-4 h-4" />
+                                          {formatDate(version.lastModified)}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                      <motion.button
+                                        onClick={() => downloadFile(version.downloadUrl, version.name)}
+                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 hover:text-white transition-all"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                      >
+                                        <Download className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Download</span>
+                                      </motion.button>
+                                      <motion.a
+                                        href={version.htmlUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-white hover:bg-purple-500/20 transition-all"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                      >
+                                        <ExternalLink className="w-4 h-4" />
+                                      </motion.a>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </RevealSection>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Download Modal */}
       <PresetDownloadModal
@@ -734,10 +863,8 @@ function ChatPresetsContent() {
 export default function ChatPresetsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen relative">
-        <div className="relative container mx-auto px-4 py-16">
-          <div className="text-center text-gray-400 py-12">Loading...</div>
-        </div>
+      <div className="min-h-screen relative flex items-center justify-center">
+        <LoadingSpinner message="Loading..." />
       </div>
     }>
       <ChatPresetsContent />
