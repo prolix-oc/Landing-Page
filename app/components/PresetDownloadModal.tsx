@@ -10,7 +10,8 @@ interface TogglePre {
   hardOff?: string[];
 }
 
-interface SamplerConfig {
+// Legacy format (tested_samplers.json) - inline sampler settings
+interface LegacySamplerConfig {
   prettyName: string;
   slugName?: string;
   togglePre?: TogglePre;
@@ -25,9 +26,77 @@ interface SamplerConfig {
   [key: string]: string | number | boolean | string[] | TogglePre | undefined;
 }
 
-interface TestedSamplers {
-  [key: string]: SamplerConfig;
+// New format (optimized_options.json) - references state files
+interface OptimizedOption {
+  prettyName: string;
+  slugName?: string;
+  stateFile?: string;  // Reference to state file in statefiles/ directory
+  // Legacy fields for backwards compatibility (when no stateFile)
+  togglePre?: TogglePre;
+  temperature?: number;
+  top_p?: number;
+  min_p?: number;
+  top_k?: number;
+  reasoning_effort?: string;
+  enable_web_search?: boolean;
+  show_thoughts?: boolean;
+  stream_openai?: boolean;
+  [key: string]: string | number | boolean | string[] | TogglePre | undefined;
 }
+
+// State file structure (v2.0 format)
+interface StateFileSettings {
+  enabledStates: Record<string, boolean>;
+  samplers: {
+    temperature?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+    topP?: number;
+    topK?: number;
+    topA?: number;
+    minP?: number;
+    repetitionPenalty?: number;
+    maxContext?: number;
+    maxTokens?: number;
+  };
+  systemPrompts?: Record<string, string>;
+  templateFormats?: Record<string, string>;
+  behavior?: Record<string, any>;
+  apiOptions?: Record<string, any>;
+  media?: Record<string, any>;
+  generation?: Record<string, any>;
+  regexScripts?: any[];
+}
+
+interface StateFile {
+  $schema?: string;
+  version: string;
+  name: string;
+  stateType: string;
+  capturedAt?: string;
+  sourceVersion?: string;
+  settings: StateFileSettings;
+}
+
+// Combined type that supports both formats
+type SamplerConfig = LegacySamplerConfig | OptimizedOption;
+
+// Response metadata from the API
+interface TestedSamplersMeta {
+  format: 'optimized_options' | 'tested_samplers';
+  hasStateFiles: boolean;
+}
+
+// The actual response from the API - models + optional metadata
+interface TestedSamplersResponse {
+  [key: string]: SamplerConfig | TestedSamplersMeta;
+}
+
+// Helper to check if a value is metadata (not a sampler config)
+const isMetadata = (key: string): boolean => key === '_meta';
+
+// Alias for backwards compatibility in the component
+type TestedSamplers = TestedSamplersResponse;
 
 interface PresetDownloadModalProps {
   isOpen: boolean;
@@ -486,13 +555,176 @@ export default function PresetDownloadModal({
   // Create a display name without the file extension
   const displayName = presetName.replace(/\.json$/i, '');
 
+  /**
+   * Applies a state file's settings to a preset
+   * Maps camelCase state file keys to snake_case preset keys
+   * Only applies enabledStates when not updating user's preset (preserves user preferences)
+   */
+  const applyStateFile = (preset: any, stateFile: StateFile, skipEnabledStates: boolean): any => {
+    const modified = { ...preset };
+
+    // 1. Apply enabled states to prompt_order (only for fresh downloads)
+    if (!skipEnabledStates && stateFile.settings.enabledStates && modified.prompt_order) {
+      modified.prompt_order = modified.prompt_order.map((orderItem: any) => {
+        if (orderItem.order && Array.isArray(orderItem.order)) {
+          return {
+            ...orderItem,
+            order: orderItem.order.map((toggle: any) => {
+              const stateValue = stateFile.settings.enabledStates[toggle.identifier];
+              return {
+                ...toggle,
+                // Use state file value if defined, otherwise keep original
+                enabled: stateValue !== undefined ? stateValue : toggle.enabled
+              };
+            })
+          };
+        }
+        return orderItem;
+      });
+
+      // Also update prompts array to match
+      if (modified.prompts && Array.isArray(modified.prompts)) {
+        modified.prompts = modified.prompts.map((prompt: any) => {
+          const stateValue = stateFile.settings.enabledStates[prompt.identifier];
+          if (stateValue !== undefined) {
+            return { ...prompt, enabled: stateValue };
+          }
+          return prompt;
+        });
+      }
+    }
+
+    // 2. Apply samplers (handle naming differences: camelCase -> snake_case)
+    if (stateFile.settings.samplers) {
+      const samplerMapping: Record<string, string> = {
+        temperature: 'temperature',
+        frequencyPenalty: 'frequency_penalty',
+        presencePenalty: 'presence_penalty',
+        topP: 'top_p',
+        topK: 'top_k',
+        topA: 'top_a',
+        minP: 'min_p',
+        repetitionPenalty: 'repetition_penalty',
+        maxContext: 'max_context',
+        maxTokens: 'max_tokens'
+      };
+
+      Object.entries(stateFile.settings.samplers).forEach(([key, value]) => {
+        if (value === undefined) return;
+        const presetKey = samplerMapping[key] || key;
+        modified[presetKey] = value;
+      });
+    }
+
+    // 3. Apply system prompts (direct mapping - keys match)
+    if (stateFile.settings.systemPrompts) {
+      Object.entries(stateFile.settings.systemPrompts).forEach(([key, value]) => {
+        // Map camelCase to snake_case for system prompts
+        const keyMapping: Record<string, string> = {
+          impersonationPrompt: 'impersonation_prompt',
+          newChatPrompt: 'new_chat_prompt',
+          newGroupChatPrompt: 'new_group_chat_prompt',
+          newExampleChatPrompt: 'new_example_chat_prompt',
+          continueNudgePrompt: 'continue_nudge_prompt',
+          groupNudgePrompt: 'group_nudge_prompt',
+          assistantPrefill: 'assistant_prefill',
+          assistantImpersonation: 'assistant_impersonation'
+        };
+        const presetKey = keyMapping[key] || key;
+        modified[presetKey] = value;
+      });
+    }
+
+    // 4. Apply API options
+    if (stateFile.settings.apiOptions) {
+      const apiMapping: Record<string, string> = {
+        streamOpenai: 'stream_openai',
+        claudeUseSysprompt: 'claude_use_sysprompt',
+        useMakersuiteSysprompt: 'use_makersuite_sysprompt',
+        squashSystemMessages: 'squash_system_messages',
+        functionCalling: 'function_calling',
+        showThoughts: 'show_thoughts',
+        reasoningEffort: 'reasoning_effort',
+        enableWebSearch: 'enable_web_search',
+        requestImages: 'request_images'
+      };
+      Object.entries(stateFile.settings.apiOptions).forEach(([key, value]) => {
+        if (value === undefined) return;
+        const presetKey = apiMapping[key] || key;
+        modified[presetKey] = value;
+      });
+    }
+
+    // 5. Apply behavior settings
+    if (stateFile.settings.behavior) {
+      const behaviorMapping: Record<string, string> = {
+        wrapInQuotes: 'wrap_in_quotes',
+        namesBehavior: 'names_behavior',
+        sendIfEmpty: 'send_if_empty',
+        continuePrefill: 'continue_prefill',
+        continuePostfix: 'continue_postfix'
+      };
+      Object.entries(stateFile.settings.behavior).forEach(([key, value]) => {
+        if (value === undefined) return;
+        const presetKey = behaviorMapping[key] || key;
+        modified[presetKey] = value;
+      });
+    }
+
+    // 6. Apply media settings
+    if (stateFile.settings.media) {
+      const mediaMapping: Record<string, string> = {
+        imageInlining: 'image_inlining',
+        inlineImageQuality: 'inline_image_quality',
+        videoInlining: 'video_inlining'
+      };
+      Object.entries(stateFile.settings.media).forEach(([key, value]) => {
+        if (value === undefined) return;
+        const presetKey = mediaMapping[key] || key;
+        modified[presetKey] = value;
+      });
+    }
+
+    // 7. Apply generation settings
+    if (stateFile.settings.generation) {
+      const genMapping: Record<string, string> = {
+        maxContextUnlocked: 'max_context_unlocked',
+        biasPresetSelected: 'bias_preset_selected'
+      };
+      Object.entries(stateFile.settings.generation).forEach(([key, value]) => {
+        if (value === undefined) return;
+        const presetKey = genMapping[key] || key;
+        modified[presetKey] = value;
+      });
+    }
+
+    // 8. Apply regex scripts if present
+    if (stateFile.settings.regexScripts && Array.isArray(stateFile.settings.regexScripts)) {
+      modified.regex_scripts = stateFile.settings.regexScripts;
+    }
+
+    return modified;
+  };
+
+  /**
+   * Extracts the preset directory name from the preset URL
+   * e.g., ".../Chat%20Completion/Lucid%20Loom/preset.json" -> "Lucid%20Loom"
+   */
+  const getPresetDirFromUrl = (url: string): string | null => {
+    const urlParts = url.split('/');
+    const presetDirIndex = urlParts.findIndex(
+      part => part === 'Chat Completion' || part === 'Chat%20Completion'
+    );
+    return presetDirIndex !== -1 ? urlParts[presetDirIndex + 1] : null;
+  };
+
   const handleModelSelect = async (modelKey: string) => {
     setLoading(true);
     try {
       // Use the updated preset if available, otherwise fetch the latest
       let presetData;
       const isUpdatingUserPreset = !!updatedPreset;
-      
+
       if (updatedPreset) {
         presetData = updatedPreset;
       } else {
@@ -503,45 +735,67 @@ export default function PresetDownloadModal({
         presetData = await presetResponse.json();
       }
 
-      const samplerConfig = testedSamplers[modelKey];
+      const samplerConfig = testedSamplers[modelKey] as OptimizedOption;
+      let customizedPreset = { ...presetData };
 
-      // Merge sampler settings into preset
-      const customizedPreset = { ...presetData };
-      
-      // Apply matching keys from sampler config to preset
-      Object.keys(samplerConfig).forEach(key => {
-        if (key !== 'prettyName' && key !== 'togglePre' && key in customizedPreset) {
-          customizedPreset[key] = samplerConfig[key];
+      // Check if this model uses a state file (new format)
+      if (samplerConfig.stateFile) {
+        // Fetch the state file
+        const presetDir = getPresetDirFromUrl(presetUrl);
+        if (!presetDir) {
+          throw new Error('Could not determine preset directory from URL');
         }
-      });
 
-      // Handle prompt toggle modifications if togglePre is provided
-      // IMPORTANT: Only apply toggle overrides when NOT updating user's preset
-      // When updating, we must preserve the user's preferred enabled/disabled states
-      if (samplerConfig.togglePre && customizedPreset.prompt_order && !isUpdatingUserPreset) {
-        const promptOrder = customizedPreset.prompt_order;
-        
-        // Find the prompt order object with character_id === 100001
-        const targetPromptOrder = promptOrder.find(
-          (item: any) => item.character_id === 100001
-        );
+        const stateFileUrl = `/api/chat-presets/${presetDir}/state/${encodeURIComponent(samplerConfig.stateFile)}`;
+        const stateResponse = await fetch(stateFileUrl);
 
-        if (targetPromptOrder && Array.isArray(targetPromptOrder.order)) {
-          const { hardOn, hardOff } = samplerConfig.togglePre;
-          
-          targetPromptOrder.order.forEach((toggle: any) => {
-            if (!toggle.identifier) return;
-            
-            // Enable prompts that MUST be turned on
-            if (hardOn && hardOn.includes(toggle.identifier)) {
-              toggle.enabled = true;
-            }
-            
-            // Disable prompts that MUST be turned off
-            if (hardOff && hardOff.includes(toggle.identifier)) {
-              toggle.enabled = false;
-            }
-          });
+        if (!stateResponse.ok) {
+          throw new Error(`Failed to fetch state file: ${stateResponse.statusText}`);
+        }
+
+        const stateFile: StateFile = await stateResponse.json();
+
+        // Apply state file settings to preset
+        // Skip enabledStates when updating user's preset (preserve their preferences)
+        customizedPreset = applyStateFile(customizedPreset, stateFile, isUpdatingUserPreset);
+      } else {
+        // Legacy format: use inline sampler config
+
+        // Apply matching keys from sampler config to preset
+        Object.keys(samplerConfig).forEach(key => {
+          if (key !== 'prettyName' && key !== 'togglePre' && key !== 'stateFile' && key in customizedPreset) {
+            customizedPreset[key] = samplerConfig[key];
+          }
+        });
+
+        // Handle prompt toggle modifications if togglePre is provided
+        // IMPORTANT: Only apply toggle overrides when NOT updating user's preset
+        // When updating, we must preserve the user's preferred enabled/disabled states
+        if (samplerConfig.togglePre && customizedPreset.prompt_order && !isUpdatingUserPreset) {
+          const promptOrder = customizedPreset.prompt_order;
+
+          // Find the prompt order object with character_id === 100001
+          const targetPromptOrder = promptOrder.find(
+            (item: any) => item.character_id === 100001
+          );
+
+          if (targetPromptOrder && Array.isArray(targetPromptOrder.order)) {
+            const { hardOn, hardOff } = samplerConfig.togglePre;
+
+            targetPromptOrder.order.forEach((toggle: any) => {
+              if (!toggle.identifier) return;
+
+              // Enable prompts that MUST be turned on
+              if (hardOn && hardOn.includes(toggle.identifier)) {
+                toggle.enabled = true;
+              }
+
+              // Disable prompts that MUST be turned off
+              if (hardOff && hardOff.includes(toggle.identifier)) {
+                toggle.enabled = false;
+              }
+            });
+          }
         }
       }
 
@@ -890,7 +1144,10 @@ export default function PresetDownloadModal({
                   </p>
 
                   <div className="space-y-3 min-h-[200px]">
-                    {Object.entries(testedSamplers).map(([key, config]) => {
+                    {Object.entries(testedSamplers)
+                      .filter(([key]) => key !== '_meta')  // Filter out metadata
+                      .map(([key, value]) => {
+                      const config = value as SamplerConfig;  // Type assertion after filtering
                       const iconPath = getProviderIcon(key);
                       return (
                         <motion.button
