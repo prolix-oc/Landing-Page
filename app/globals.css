@@ -46,8 +46,16 @@ body {
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
-  /* Reserve scrollbar space to prevent layout shift when content loads */
-  scrollbar-gutter: stable;
+}
+
+/* Hide all native scrollbars globally */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 /* Apple-style focus rings */
@@ -56,25 +64,6 @@ a:focus-visible {
   outline: 2px solid #007AFF;
   outline-offset: 2px;
   border-radius: 8px;
-}
-
-/* Custom scrollbar (webkit browsers) */
-::-webkit-scrollbar {
-  width: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
-  border-radius: 6px;
-  border: 2px solid #1a1a1a;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
 }
 
 /* Smooth transitions for interactive elements */
@@ -808,38 +797,3 @@ button:active:not(.no-click-feedback) {
 }
 
 /* ==================== */
-/* Sidebar Scroll Styling */
-/* ==================== */
-
-/* Subtle scrollbar for filter sidebar */
-.sidebar-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-.sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* Hide scrollbar utility */
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
