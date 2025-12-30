@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import WorldBookSkeleton from '@/app/components/WorldBookSkeleton';
@@ -61,30 +61,18 @@ function WorldBooksContent() {
   // Pagination & Sorting
   const [sortBy, setSortBy] = useState<SortOption>('a-z');
 
-  // Animation variants
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.1
-      }
-    }
-  };
+  // Track if initial page load is complete (to skip animations during View Transition)
+  const hasMounted = useRef(false);
+  const [animationsEnabled, setAnimationsEnabled] = useState(false);
 
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 80,
-        damping: 20
-      }
-    }
-  };
+  useEffect(() => {
+    // Enable animations after initial render completes
+    const timer = setTimeout(() => {
+      hasMounted.current = true;
+      setAnimationsEnabled(true);
+    }, 300); // Wait for View Transition to complete
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check URL parameters on mount
   useEffect(() => {
@@ -221,12 +209,7 @@ function WorldBooksContent() {
 
 
       {/* Back Link - Fixed Pill Button */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        className="fixed top-6 left-6 z-50"
-      >
+      <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
           href="/"
           className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-gray-800/90 hover:border-cyan-500/30 transition-all"
@@ -235,48 +218,31 @@ function WorldBooksContent() {
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm font-medium">Back to Home</span>
         </AnimatedLink>
-      </motion.div>
+      </div>
 
       <div className="relative container mx-auto px-4 py-8 sm:py-12">
         {/* Compact Hero Section */}
-        <motion.header
-          className="text-center mb-8 sm:mb-10"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
+        <header className="text-center mb-8 sm:mb-10">
           {/* Floating Badge */}
-          <motion.div
-            variants={itemVariants}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4"
-          >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4">
             <BookOpen className="w-4 h-4 text-cyan-400" />
             <span className="text-sm font-medium text-cyan-300">World Information & Lore</span>
-          </motion.div>
+          </div>
 
           {/* Title */}
-          <motion.h1
-            variants={itemVariants}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3"
-          >
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient bg-[length:200%_auto]">
               World Books
             </span>
-          </motion.h1>
+          </h1>
 
           {/* Subtitle */}
-          <motion.p
-            variants={itemVariants}
-            className="text-gray-400 text-lg max-w-2xl mx-auto mb-5"
-          >
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-5">
             Browse and download world books to enhance your roleplay experience
-          </motion.p>
+          </p>
 
           {/* Stats Row */}
-          <motion.div
-            variants={itemVariants}
-            className="flex items-center justify-center gap-6 text-sm"
-          >
+          <div className="flex items-center justify-center gap-6 text-sm">
             <div className="flex items-center gap-2 text-gray-400">
               <BookOpen className="w-4 h-4 text-cyan-400" />
               <span><strong className="text-white">{totalCategories}</strong> categories</span>
@@ -286,8 +252,8 @@ function WorldBooksContent() {
               <Sparkles className="w-4 h-4 text-purple-400" />
               <span><strong className="text-white">{lumiverseCategories.length}</strong> DLCs</span>
             </div>
-          </motion.div>
-        </motion.header>
+          </div>
+        </header>
 
         {loading ? (
           <div className="text-center text-gray-400 py-12">
@@ -295,12 +261,7 @@ function WorldBooksContent() {
           </div>
         ) : (
           /* Single Glass Container */
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
+          <div className="relative">
             {/* Single backdrop-blur layer (md = 12px, optimized for Safari) */}
             <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
@@ -321,16 +282,14 @@ function WorldBooksContent() {
                           <motion.button
                             key={category.name}
                             onClick={() => handleCategoryChange(category.name)}
-                            className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between ${
+                            className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
                               selectedCategory === category.name
                                 ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-white border border-cyan-500/30'
                                 : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
                             }`}
-                            whileHover={{ x: 4 }}
-                            whileTap={{ scale: 0.98 }}
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={animationsEnabled ? { opacity: 0, x: -20 } : false}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
+                            transition={animationsEnabled ? { delay: index * 0.05 } : { duration: 0 }}
                           >
                             <span className="font-medium">{category.displayName}</span>
                             <ChevronRight className={`w-4 h-4 transition-all ${
@@ -356,16 +315,14 @@ function WorldBooksContent() {
                           <motion.button
                             key={category.name}
                             onClick={() => handleCategoryChange(category.name)}
-                            className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between ${
+                            className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
                               selectedCategory === category.name
                                 ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/10 text-white border border-purple-500/30'
                                 : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
                             } ${!category.exists ? 'opacity-60' : ''}`}
-                            whileHover={{ x: 4 }}
-                            whileTap={{ scale: 0.98 }}
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={animationsEnabled ? { opacity: 0, x: -20 } : false}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: (categories.length + index) * 0.05 }}
+                            transition={animationsEnabled ? { delay: (categories.length + index) * 0.05 } : { duration: 0 }}
                           >
                             <span className="font-medium flex items-center gap-2">
                               {category.displayName}
@@ -387,12 +344,7 @@ function WorldBooksContent() {
                 <div className="lg:col-span-3">
                   {/* Sort Dropdown */}
                   {selectedCategory && hasFiles && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="mb-6"
-                    >
+                    <div className="mb-6">
                       <SortDropdown
                         value={sortBy}
                         onChange={setSortBy}
@@ -401,35 +353,32 @@ function WorldBooksContent() {
                           { value: 'z-a', label: 'Z to A' }
                         ]}
                       />
-                    </motion.div>
+                    </div>
                   )}
 
                   <AnimatePresence mode="wait">
                     {!selectedCategory ? (
                       <motion.div
                         key="empty-state"
-                        initial={{ opacity: 0 }}
+                        initial={animationsEnabled ? { opacity: 0 } : false}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        transition={animationsEnabled ? { duration: 0.3 } : { duration: 0 }}
                         className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-12 text-center"
                       >
-                        <motion.div
-                          className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 mb-4"
-                          animate={{ x: [-5, 5, -5] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 mb-4">
                           <ArrowLeft className="w-8 h-8 text-cyan-400" />
-                        </motion.div>
+                        </div>
                         <p className="text-xl text-gray-400 mb-2">Select a category</p>
                         <p className="text-gray-500">Choose from the sidebar to view world books</p>
                       </motion.div>
                     ) : isTransitioning || filesLoading ? (
                       <motion.div
                         key="loading-state"
-                        initial={{ opacity: 0 }}
+                        initial={animationsEnabled ? { opacity: 0 } : false}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        transition={animationsEnabled ? { duration: 0.3 } : { duration: 0 }}
                         className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
                       >
                         {Array.from({ length: 6 }).map((_, index) => (
@@ -439,33 +388,25 @@ function WorldBooksContent() {
                     ) : !hasFiles ? (
                       <motion.div
                         key="no-files"
-                        initial={{ opacity: 0 }}
+                        initial={animationsEnabled ? { opacity: 0 } : false}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        transition={animationsEnabled ? { duration: 0.3 } : { duration: 0 }}
                         className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-12 text-center"
                       >
                         {!selectedCategoryExists ? (
                           <>
-                            <motion.div
-                              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 mb-4"
-                              animate={{ rotate: [0, 10, -10, 0] }}
-                              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                            >
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 mb-4">
                               <Clock className="w-8 h-8 text-purple-400" />
-                            </motion.div>
+                            </div>
                             <h3 className="text-xl font-semibold text-white mb-2">Coming Soon</h3>
                             <p className="text-gray-400">This Lumiverse DLC category is being prepared.<br />Check back later for new content!</p>
                           </>
                         ) : (
                           <>
-                            <motion.div
-                              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-500/10 border border-gray-500/20 mb-4"
-                              animate={{ rotate: [0, 10, -10, 0] }}
-                              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                            >
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-500/10 border border-gray-500/20 mb-4">
                               <BookOpen className="w-8 h-8 text-gray-400" />
-                            </motion.div>
+                            </div>
                             <p className="text-xl text-gray-400">No world books found in this category</p>
                           </>
                         )}
@@ -473,29 +414,30 @@ function WorldBooksContent() {
                     ) : (
                       <motion.div
                         key={`files-${selectedCategory}`}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        variants={containerVariants}
+                        initial={animationsEnabled ? { opacity: 0 } : false}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={animationsEnabled ? { duration: 0.3 } : { duration: 0 }}
                         className="space-y-10"
                       >
                         {/* Standard Files */}
                         {sortedStandard.length > 0 && (
-                          <motion.div variants={itemVariants}>
+                          <div>
                             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 px-1">
                               <Scale className="w-5 h-5 text-green-400" />
                               Standard Edition
                               <span className="text-sm font-normal text-gray-500">({sortedStandard.length})</span>
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                              {sortedStandard.map((file) => {
+                              {sortedStandard.map((file, index) => {
                                 const displayName = stripProlixPrefix(file.name);
                                 return (
                                   <motion.div
                                     key={file.path}
-                                    variants={itemVariants}
-                                    className="group relative bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-green-500/40 hover:shadow-lg hover:shadow-green-500/10"
-                                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                    initial={animationsEnabled ? { opacity: 0, y: 15 } : false}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={animationsEnabled ? { duration: 0.3, delay: index * 0.03 } : { duration: 0 }}
+                                    className="group relative bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-green-500/40 hover:shadow-lg hover:shadow-green-500/10 hover:-translate-y-1"
                                   >
                                     {/* Gradient overlay on hover */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -525,23 +467,17 @@ function WorldBooksContent() {
                                           href={`/world-books/${encodeURIComponent(selectedCategory as string)}/${encodeURIComponent(file.name)}`}
                                           className="flex-1"
                                         >
-                                          <motion.div
-                                            className="w-full bg-white/[0.05] hover:bg-white/[0.08] text-white px-4 py-2.5 rounded-xl transition-colors text-center text-sm font-medium border border-white/[0.08] hover:border-white/[0.15]"
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                          >
+                                          <div className="w-full bg-white/[0.05] hover:bg-white/[0.08] text-white px-4 py-2.5 rounded-xl transition-all text-center text-sm font-medium border border-white/[0.08] hover:border-white/[0.15] hover:scale-[1.02] active:scale-[0.98]">
                                             View Details
-                                          </motion.div>
+                                          </div>
                                         </Link>
-                                        <motion.button
+                                        <button
                                           onClick={() => downloadFile(file.downloadUrl, file.name)}
-                                          className="bg-green-500/10 hover:bg-green-500/20 text-green-400 px-3 py-2.5 rounded-xl transition-colors border border-green-500/20 hover:border-green-500/40"
+                                          className="bg-green-500/10 hover:bg-green-500/20 text-green-400 px-3 py-2.5 rounded-xl transition-all border border-green-500/20 hover:border-green-500/40 hover:scale-105 active:scale-95"
                                           title="Download"
-                                          whileHover={{ scale: 1.05 }}
-                                          whileTap={{ scale: 0.95 }}
                                         >
                                           <Download className="w-5 h-5" />
-                                        </motion.button>
+                                        </button>
                                       </div>
                                     </div>
 
@@ -553,26 +489,27 @@ function WorldBooksContent() {
                                 );
                               })}
                             </div>
-                          </motion.div>
+                          </div>
                         )}
 
                         {/* Prolix Preferred Files */}
                         {sortedProlix.length > 0 && (
-                          <motion.div variants={itemVariants}>
+                          <div>
                             <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 px-1">
                               <Star className="w-5 h-5 text-purple-400" />
                               Prolix Preferred
                               <span className="text-sm font-normal text-gray-500">({sortedProlix.length})</span>
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                              {sortedProlix.map((file) => {
+                              {sortedProlix.map((file, index) => {
                                 const displayName = stripProlixPrefix(file.name);
                                 return (
                                   <motion.div
                                     key={file.path}
-                                    variants={itemVariants}
-                                    className="group relative bg-gradient-to-br from-white/[0.04] to-transparent border border-purple-900/30 rounded-2xl overflow-hidden transition-all duration-300 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10"
-                                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                                    initial={animationsEnabled ? { opacity: 0, y: 15 } : false}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={animationsEnabled ? { duration: 0.3, delay: index * 0.03 } : { duration: 0 }}
+                                    className="group relative bg-gradient-to-br from-white/[0.04] to-transparent border border-purple-900/30 rounded-2xl overflow-hidden transition-all duration-300 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-1"
                                   >
                                     {/* Gradient overlay on hover */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -602,23 +539,17 @@ function WorldBooksContent() {
                                           href={`/world-books/${encodeURIComponent(selectedCategory as string)}/${encodeURIComponent(file.name)}`}
                                           className="flex-1"
                                         >
-                                          <motion.div
-                                            className="w-full bg-white/[0.05] hover:bg-white/[0.08] text-white px-4 py-2.5 rounded-xl transition-colors text-center text-sm font-medium border border-white/[0.08] hover:border-white/[0.15]"
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                          >
+                                          <div className="w-full bg-white/[0.05] hover:bg-white/[0.08] text-white px-4 py-2.5 rounded-xl transition-all text-center text-sm font-medium border border-white/[0.08] hover:border-white/[0.15] hover:scale-[1.02] active:scale-[0.98]">
                                             View Details
-                                          </motion.div>
+                                          </div>
                                         </Link>
-                                        <motion.button
+                                        <button
                                           onClick={() => downloadFile(file.downloadUrl, file.name)}
-                                          className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 px-3 py-2.5 rounded-xl transition-colors border border-purple-500/20 hover:border-purple-500/40"
+                                          className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 px-3 py-2.5 rounded-xl transition-all border border-purple-500/20 hover:border-purple-500/40 hover:scale-105 active:scale-95"
                                           title="Download"
-                                          whileHover={{ scale: 1.05 }}
-                                          whileTap={{ scale: 0.95 }}
                                         >
                                           <Download className="w-5 h-5" />
-                                        </motion.button>
+                                        </button>
                                       </div>
                                     </div>
 
@@ -630,7 +561,7 @@ function WorldBooksContent() {
                                 );
                               })}
                             </div>
-                          </motion.div>
+                          </div>
                         )}
                       </motion.div>
                     )}
@@ -638,7 +569,7 @@ function WorldBooksContent() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, Variants, useInView } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import { slugify } from '@/lib/slugify';
 import LazyImage from '@/app/components/LazyImage';
@@ -307,30 +307,6 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     return text.replace(/"([^"]+)"/g, `<span style="color: ${accentColor}; opacity: 0.9; transition: color 0.5s ease;">"$1"</span>`);
   };
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0
-      }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { y: 15, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 20
-      }
-    }
-  };
-
   // Content sections configuration
   const contentSections = [
     { id: 'firstMessage', title: 'First Message', icon: MessageSquare, content: charData.first_mes },
@@ -349,12 +325,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
       </div>
 
       {/* Back Link - Fixed Pill Button */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        className="fixed top-6 left-6 z-50"
-      >
+      <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
           href={`/character-cards?category=${encodeURIComponent(character.category)}`}
           className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:bg-gray-800/90 hover:text-white transition-all"
@@ -364,7 +335,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm font-medium">Back to {character.category}</span>
         </AnimatedLink>
-      </motion.div>
+      </div>
 
       {/* Scroll to Top Button */}
       <AnimatePresence>
@@ -389,15 +360,10 @@ export default function CharacterDetailsClient({ character }: { character: Chara
         )}
       </AnimatePresence>
 
-      <motion.div
-        className="relative container mx-auto px-4 py-8 sm:py-12 pt-20 sm:pt-24"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="relative container mx-auto px-4 py-8 sm:py-12 pt-20 sm:pt-24">
         {/* Alternate Scenarios Tabs */}
         {character.alternates && character.alternates.length > 1 && (
-          <motion.div className="mb-6" variants={itemVariants}>
+          <div className="mb-6">
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10">
               {selectedAlternate > 0 && (
                 <button
@@ -437,11 +403,11 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                 </button>
               )}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Main Content - Two Column Layout */}
-        <motion.div variants={itemVariants}>
+        <div>
           {/* Single glass container */}
           <div className="relative">
             <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
@@ -452,11 +418,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                 <div className="lg:col-span-4 xl:col-span-3">
                   <div className="lg:sticky lg:top-6 space-y-4">
                     {/* Character Portrait */}
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.4, delay: 0.1 }}
-                    >
+                    <div>
                       <button
                         onClick={() => setShowFullScreenImage(true)}
                         className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden cursor-pointer border border-white/[0.08] transition-all duration-300 hover:border-white/[0.15] group"
@@ -526,15 +488,10 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                           )}
                         </div>
                       </button>
-                    </motion.div>
+                    </div>
 
                     {/* Action Buttons */}
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.15 }}
-                      className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 space-y-3"
-                    >
+                    <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 space-y-3">
                       <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Downloads</h3>
 
                       {currentScenario.pngUrl && (
@@ -564,7 +521,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                         url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
                         title={charData.name}
                       />
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
 
@@ -617,8 +574,8 @@ export default function CharacterDetailsClient({ character }: { character: Chara
               </div>
             </div>
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* Full-Screen Image Modal */}
       <AnimatePresence>

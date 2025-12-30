@@ -93,7 +93,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl relative z-10">
 
         {/* Compact Hero */}
-        <header className="text-center mb-4 sm:mb-6 flex-shrink-0 animate-header">
+        <header className="text-center mb-4 sm:mb-6 flex-shrink-0">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 mb-3">
             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
@@ -115,7 +115,7 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative animate-glass">
+        <div className="flex-1 min-h-0 relative">
           {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
@@ -123,7 +123,7 @@ export default function Home() {
           <div className="relative h-full p-3 sm:p-4 grid grid-cols-6 grid-rows-4 gap-3 sm:gap-4">
 
             {/* Featured Card - Lucid Loom (spans more area) */}
-            <div className="bento-card col-span-6 sm:col-span-3 lg:col-span-2 row-span-4 sm:row-span-4">
+            <div className="col-span-6 sm:col-span-3 lg:col-span-2 row-span-4 sm:row-span-4">
               <TransitionLink href="/lucid-loom" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-2xl ${glowColors.purple} ${borderColors.purple} hover:bg-white/[0.03]`}>
                   {/* Decorative gradient orb */}
@@ -159,7 +159,7 @@ export default function Home() {
             </div>
 
             {/* Character Cards */}
-            <div className="bento-card col-span-3 sm:col-span-3 lg:col-span-2 row-span-2">
+            <div className="col-span-3 sm:col-span-3 lg:col-span-2 row-span-2">
               <TransitionLink href="/character-cards" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.cyan} ${borderColors.cyan} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
@@ -180,7 +180,7 @@ export default function Home() {
             </div>
 
             {/* Chat Presets */}
-            <div className="bento-card col-span-3 sm:col-span-3 lg:col-span-2 row-span-2">
+            <div className="col-span-3 sm:col-span-3 lg:col-span-2 row-span-2">
               <TransitionLink href="/chat-presets" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.violet} ${borderColors.violet} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
@@ -201,7 +201,7 @@ export default function Home() {
             </div>
 
             {/* World Books */}
-            <div className="bento-card col-span-3 lg:col-span-2 row-span-2">
+            <div className="col-span-3 lg:col-span-2 row-span-2">
               <TransitionLink href="/world-books" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.emerald} ${borderColors.emerald} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
@@ -222,7 +222,7 @@ export default function Home() {
             </div>
 
             {/* Extensions */}
-            <div className="bento-card col-span-3 lg:col-span-2 row-span-2">
+            <div className="col-span-3 lg:col-span-2 row-span-2">
               <TransitionLink href="/extensions" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.amber} ${borderColors.amber} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">

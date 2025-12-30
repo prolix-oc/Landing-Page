@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 
 export default function WorldBookSkeleton() {
   return (
-    <div className="group bg-gray-900/70 border border-gray-800 rounded-2xl overflow-hidden p-6">
-      <div className="space-y-4">
+    <div className="group relative bg-gray-900/70 border border-gray-800 rounded-2xl overflow-hidden p-6">
+      <div className="space-y-4 relative z-10">
         {/* Icon and Title Row */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gray-800 animate-pulse flex-shrink-0" />

@@ -37,6 +37,9 @@ import {
   Globe
 } from 'lucide-react';
 
+// Base delay for hero animations - wait for View Transition to complete
+const VIEW_TRANSITION_DELAY = 0.25;
+
 // Floating orbs component for atmospheric depth - CSS animated for GPU optimization (reduced blur for Safari perf)
 const FloatingOrbs = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -46,12 +49,12 @@ const FloatingOrbs = () => (
   </div>
 );
 
-// Decorative floating cards for hero
+// Decorative floating cards for hero - delay accounts for View Transition
 const FloatingCard = ({ delay, className }: { delay: number; className: string }) => (
   <motion.div
     initial={{ opacity: 0, y: 50, rotate: -10 }}
     animate={{ opacity: 1, y: 0, rotate: 0 }}
-    transition={{ delay, duration: 1, ease: "easeOut" }}
+    transition={{ delay: delay + VIEW_TRANSITION_DELAY, duration: 1, ease: "easeOut" }}
     className={className}
   >
     <motion.div
@@ -167,12 +170,7 @@ export default function LucidLoomPage() {
       <FloatingOrbs />
 
       {/* Back Link - Top Left */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        className="fixed top-6 left-6 z-50"
-      >
+      <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
           href="/"
           className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-purple-400 hover:bg-gray-800/90 hover:border-purple-500/30 transition-all"
@@ -181,13 +179,13 @@ export default function LucidLoomPage() {
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm font-medium">Back to Home</span>
         </AnimatedLink>
-      </motion.div>
+      </div>
 
       {/* ===== HERO SECTION ===== */}
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-        className="relative min-h-screen flex items-center justify-center px-4"
+        className="relative min-h-screen flex items-center justify-center px-4 vt-exclude"
       >
         {/* Floating decorative cards */}
         <FloatingCard delay={0.5} className="absolute top-20 left-[10%] hidden lg:block" />
@@ -200,7 +198,7 @@ export default function LucidLoomPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
+            transition={{ delay: VIEW_TRANSITION_DELAY + 0.1, duration: 0.6 }}
             className="mb-6"
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/60 border border-white/10 text-sm text-gray-400">
@@ -213,7 +211,7 @@ export default function LucidLoomPage() {
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
+            transition={{ delay: VIEW_TRANSITION_DELAY + 0.2, duration: 0.8 }}
             className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tight mb-8"
           >
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 animate-gradient bg-[length:200%_auto]">
@@ -228,7 +226,7 @@ export default function LucidLoomPage() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
+            transition={{ delay: VIEW_TRANSITION_DELAY + 0.35, duration: 0.6 }}
             className="text-xl sm:text-2xl md:text-3xl text-gray-400 font-light max-w-2xl mx-auto leading-relaxed"
           >
             Where stories <span className="text-purple-400 font-normal">breathe</span>,
@@ -240,7 +238,7 @@ export default function LucidLoomPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
+            transition={{ delay: VIEW_TRANSITION_DELAY + 0.5, duration: 0.6 }}
             className="flex flex-col sm:flex-row gap-4 justify-center mt-12"
           >
             <AnimatedLink
@@ -258,7 +256,7 @@ export default function LucidLoomPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
+          transition={{ delay: VIEW_TRANSITION_DELAY + 0.8 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
           <motion.div
@@ -273,7 +271,7 @@ export default function LucidLoomPage() {
       </motion.section>
 
       {/* ===== LUMIA SHOWCASE ===== */}
-      <section className="relative py-32 px-4">
+      <section className="relative py-32 px-4 vt-exclude">
         <div className="max-w-7xl mx-auto">
           <RevealSection>
             {/* Section header - asymmetric */}
@@ -414,7 +412,7 @@ export default function LucidLoomPage() {
       </section>
 
       {/* ===== PHILOSOPHY SECTION ===== */}
-      <section className="relative py-32 px-4">
+      <section className="relative py-32 px-4 vt-exclude">
         {/* Background accent */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/20 to-transparent" />
 
@@ -486,7 +484,7 @@ export default function LucidLoomPage() {
       </section>
 
       {/* ===== NARRATIVE EXAMPLES ===== */}
-      <section className="relative py-32 px-4 overflow-hidden">
+      <section className="relative py-32 px-4 overflow-hidden vt-exclude">
         {/* Dramatic background */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/30 to-gray-950" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-600/15 rounded-full blur-[80px]" />
@@ -750,7 +748,7 @@ export default function LucidLoomPage() {
       </section>
 
       {/* ===== COMPARISON SECTION ===== */}
-      <section className="relative py-32 px-4">
+      <section className="relative py-32 px-4 vt-exclude">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-900/50 to-transparent" />
 
         <div className="relative max-w-5xl mx-auto">
@@ -809,7 +807,7 @@ export default function LucidLoomPage() {
       </section>
 
       {/* ===== CTA SECTION ===== */}
-      <section className="relative py-32 px-4">
+      <section className="relative py-32 px-4 vt-exclude">
         <div className="max-w-4xl mx-auto">
           <RevealSection>
             <div className="relative p-12 sm:p-16 rounded-[2.5rem] overflow-hidden">

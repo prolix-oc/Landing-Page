@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import {
   ArrowLeft,
@@ -39,29 +39,18 @@ function ExtensionsContent() {
   const [loading, setLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1
-      }
-    }
-  };
+  // Track if initial page load is complete (to skip animations during View Transition)
+  const hasMounted = useRef(false);
+  const [animationsEnabled, setAnimationsEnabled] = useState(false);
 
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 80,
-        damping: 20
-      }
-    }
-  };
+  useEffect(() => {
+    // Enable animations after initial render completes
+    const timer = setTimeout(() => {
+      hasMounted.current = true;
+      setAnimationsEnabled(true);
+    }, 300); // Wait for View Transition to complete
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check URL parameters on mount
   useEffect(() => {
@@ -112,10 +101,7 @@ function ExtensionsContent() {
 
 
       {/* Back Link - Fixed Pill Button */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="fixed top-6 left-6 z-50"
       >
         <AnimatedLink
@@ -126,48 +112,31 @@ function ExtensionsContent() {
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm font-medium">Back to Home</span>
         </AnimatedLink>
-      </motion.div>
+      </div>
 
       <div className="relative container mx-auto px-4 py-8 sm:py-12">
         {/* Compact Hero Section */}
-        <motion.header
-          className="text-center mb-8 sm:mb-10"
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
+        <header className="text-center mb-8 sm:mb-10">
           {/* Floating Badge */}
-          <motion.div
-            variants={itemVariants}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 mb-4"
-          >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 mb-4">
             <Puzzle className="w-4 h-4 text-orange-400" />
             <span className="text-sm font-medium text-orange-300">SillyTavern Extensions</span>
-          </motion.div>
+          </div>
 
           {/* Title */}
-          <motion.h1
-            variants={itemVariants}
-            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3"
-          >
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-500 to-red-500 animate-gradient bg-[length:200%_auto]">
               Extensions
             </span>
-          </motion.h1>
+          </h1>
 
           {/* Subtitle */}
-          <motion.p
-            variants={itemVariants}
-            className="text-gray-400 text-lg max-w-2xl mx-auto mb-5"
-          >
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-5">
             Extend SillyTavern with powerful custom extensions
-          </motion.p>
+          </p>
 
           {/* Stats Row */}
-          <motion.div
-            variants={itemVariants}
-            className="flex items-center justify-center gap-6 text-sm"
-          >
+          <div className="flex items-center justify-center gap-6 text-sm">
             <div className="flex items-center gap-2 text-gray-400">
               <Puzzle className="w-4 h-4 text-orange-400" />
               <span><strong className="text-white">{extensions.length}</strong> extensions</span>
@@ -177,8 +146,8 @@ function ExtensionsContent() {
               <Github className="w-4 h-4 text-amber-400" />
               <span><strong className="text-white">{CATEGORIES.length}</strong> categories</span>
             </div>
-          </motion.div>
-        </motion.header>
+          </div>
+        </header>
 
         {loading ? (
           <div className="text-center text-gray-400 py-12">
@@ -186,12 +155,7 @@ function ExtensionsContent() {
           </div>
         ) : (
           /* Single Glass Container */
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
+          <div className="relative">
             {/* Single backdrop-blur layer (md = 12px, optimized for Safari) */}
             <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
@@ -206,22 +170,17 @@ function ExtensionsContent() {
                       Categories
                     </h2>
 
-                    {CATEGORIES.map((category, index) => {
+                    {CATEGORIES.map((category) => {
                       const IconComponent = category.icon;
                       return (
-                        <motion.button
+                        <button
                           key={category.id}
                           onClick={() => handleCategoryChange(category.id)}
-                          className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between ${
+                          className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
                             selectedCategory === category.id
                               ? 'bg-gradient-to-r from-orange-500/20 to-amber-500/10 text-white border border-orange-500/30'
                               : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
                           }`}
-                          whileHover={{ x: 4 }}
-                          whileTap={{ scale: 0.98 }}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
                         >
                           <span className="flex items-center gap-3 font-medium">
                             <IconComponent className={`w-4 h-4 ${selectedCategory === category.id ? 'text-orange-400' : 'text-gray-500'}`} />
@@ -230,7 +189,7 @@ function ExtensionsContent() {
                           <ChevronRight className={`w-4 h-4 transition-all ${
                             selectedCategory === category.id ? 'text-orange-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
                           }`} />
-                        </motion.button>
+                        </button>
                       );
                     })}
                   </div>
@@ -270,18 +229,22 @@ function ExtensionsContent() {
                     ) : (
                       <motion.div
                         key={`extensions-${selectedCategory}`}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        variants={containerVariants}
+                        initial={animationsEnabled ? { opacity: 0 } : false}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
                         className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
                       >
-                        {filteredExtensions.map((extension) => (
+                        {filteredExtensions.map((extension, index) => (
                           <motion.div
                             key={extension.id}
-                            variants={itemVariants}
-                            className="group relative bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/10"
-                            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                            initial={animationsEnabled ? { opacity: 0, y: 15 } : false}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={animationsEnabled ? {
+                              duration: 0.3,
+                              delay: index * 0.05,
+                              ease: [0.25, 0.1, 0.25, 1]
+                            } : { duration: 0 }}
+                            className="group relative bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden transition-all duration-300 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/10 hover:-translate-y-1"
                           >
                             {/* Gradient overlay on hover */}
                             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -291,11 +254,7 @@ function ExtensionsContent() {
 
                             {/* Thumbnail */}
                             <div className="relative h-44 overflow-hidden">
-                              <motion.div
-                                className="w-full h-full"
-                                whileHover={{ scale: 1.05 }}
-                                transition={{ duration: 0.4 }}
-                              >
+                              <div className="w-full h-full transition-transform duration-400 group-hover:scale-105">
                                 <Image
                                   src={extension.thumbnail}
                                   alt={extension.name}
@@ -303,7 +262,7 @@ function ExtensionsContent() {
                                   className="object-cover"
                                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 />
-                              </motion.div>
+                              </div>
 
                               {/* Overlay gradient */}
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -318,23 +277,21 @@ function ExtensionsContent() {
                                 {extension.description}
                               </p>
 
-                              <motion.a
+                              <a
                                 href={extension.repoUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-white transition-all duration-200 border"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm text-white transition-all duration-200 border hover:scale-[1.03] active:scale-[0.98]"
                                 style={{
                                   background: 'linear-gradient(135deg, #ea580c, #d97706)',
                                   boxShadow: '0 8px 20px rgba(234, 88, 12, 0.25)',
                                   borderColor: 'rgba(234, 88, 12, 0.5)'
                                 }}
-                                whileHover={{ scale: 1.03, boxShadow: '0 12px 25px rgba(234, 88, 12, 0.35)' }}
-                                whileTap={{ scale: 0.98 }}
                               >
                                 <Github className="w-4 h-4" />
                                 View Repository
                                 <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                              </motion.a>
+                              </a>
                             </div>
 
                             {/* Shimmer effect */}
@@ -349,7 +306,7 @@ function ExtensionsContent() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

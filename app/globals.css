@@ -635,11 +635,12 @@ body.page-transitioning > * {
   animation: pageFadeOut 0.15s ease-out forwards;
 }
 
-/* Immediate click feedback - pure CSS, no JS needed */
-a:active {
-  opacity: 0.7 !important;
-  transform: scale(0.98) !important;
-  transition: none !important;
+/* Click feedback for interactive elements - smooth transition */
+a:active:not(.no-click-feedback),
+button:active:not(.no-click-feedback) {
+  opacity: 0.85;
+  transform: scale(0.98);
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
 }
 
 /* ==================== */
@@ -720,5 +721,86 @@ a:active {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==================== */
+/* View Transitions API - Directional Slides */
+/* ==================== */
+
+@supports (view-transition-name: none) {
+  :root {
+    --vt-duration: 0.2s;
+    --vt-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --vt-distance: 30px;
+  }
+
+  /* Exclude backdrop-blur elements from view transition (fixes Safari flicker) */
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl,
+  [class*="backdrop-blur"] {
+    view-transition-name: none !important;
+  }
+
+  /* Exclude flex containers that can cause layout stretching during transitions */
+  .vt-exclude {
+    view-transition-name: none !important;
+  }
+
+  /* Forward navigation (default) - slide left */
+  ::view-transition-old(root) {
+    animation: vt-forward-out var(--vt-duration) var(--vt-ease) forwards;
+  }
+
+  ::view-transition-new(root) {
+    animation: vt-forward-in var(--vt-duration) var(--vt-ease) forwards;
+  }
+
+  @keyframes vt-forward-out {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(calc(var(--vt-distance) * -1)); }
+  }
+
+  @keyframes vt-forward-in {
+    from { opacity: 0; transform: translateX(var(--vt-distance)); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Back navigation - slide right (opposite direction) */
+  html.back-transition::view-transition-old(root) {
+    animation: vt-back-out var(--vt-duration) var(--vt-ease) forwards;
+  }
+
+  html.back-transition::view-transition-new(root) {
+    animation: vt-back-in var(--vt-duration) var(--vt-ease) forwards;
+  }
+
+  @keyframes vt-back-out {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(var(--vt-distance)); }
+  }
+
+  @keyframes vt-back-in {
+    from { opacity: 0; transform: translateX(calc(var(--vt-distance) * -1)); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Ensure smooth compositing */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    mix-blend-mode: normal;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  @supports (view-transition-name: none) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: 0.01ms !important;
+    }
   }
 }

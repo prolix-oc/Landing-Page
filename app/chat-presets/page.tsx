@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, Suspense, useRef } from 'react';
-import Link from 'next/link';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import PresetDownloadModal from '@/app/components/PresetDownloadModal';
@@ -62,43 +61,6 @@ const FloatingOrbs = () => (
   </div>
 );
 
-// Reveal section with scroll animation - optimized for faster appearance
-const RevealSection = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={{ duration: 0.3, ease: "easeOut", delay: delay * 0.5 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-// Floating card wrapper
-const FloatingCard = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => (
-  <motion.div
-    animate={{
-      y: [0, -8, 0],
-      rotate: [0, 0.5, -0.5, 0],
-    }}
-    transition={{
-      duration: 4,
-      repeat: Infinity,
-      ease: "easeInOut",
-      delay,
-    }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
-
 function ChatPresetsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -110,6 +72,19 @@ function ChatPresetsContent() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalPreset, setModalPreset] = useState<{ url: string; name: string } | null>(null);
+
+  // Track if initial page load is complete (to skip animations during View Transition)
+  const hasMounted = useRef(false);
+  const [animationsEnabled, setAnimationsEnabled] = useState(false);
+
+  useEffect(() => {
+    // Enable animations after initial render completes
+    const timer = setTimeout(() => {
+      hasMounted.current = true;
+      setAnimationsEnabled(true);
+    }, 300); // Wait for View Transition to complete
+    return () => clearTimeout(timer);
+  }, []);
 
   // Scroll-linked hero parallax
   const heroRef = useRef(null);
@@ -239,12 +214,7 @@ function ChatPresetsContent() {
       <FloatingOrbs />
 
       {/* Back Link - Fixed Pill Button */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        className="fixed top-6 left-6 z-50"
-      >
+      <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
           href="/"
           className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-gray-800/90 hover:border-cyan-500/30 transition-all"
@@ -253,35 +223,25 @@ function ChatPresetsContent() {
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm font-medium">Back to Home</span>
         </AnimatedLink>
-      </motion.div>
+      </div>
 
-      {/* Hero Section with Parallax */}
+      {/* Hero Section with Parallax - vt-exclude prevents scroll-parallax from being captured */}
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-        className="relative min-h-[50vh] flex items-center justify-center pt-12 pb-8"
+        className="relative min-h-[50vh] flex items-center justify-center pt-12 pb-8 vt-exclude"
       >
         <div className="container mx-auto px-4">
           {/* Hero Content */}
           <div className="text-center max-w-4xl mx-auto">
             {/* Floating badge */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-8"
-            >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-8">
               <Settings className="w-4 h-4 text-cyan-400" />
               <span className="text-sm font-medium text-cyan-400">Chat Completion Configuration</span>
-            </motion.div>
+            </div>
 
             {/* Main Title */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.25 }}
-              className="mb-6"
-            >
+            <div className="mb-6">
               <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight">
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient pb-2">
                   Chat
@@ -290,26 +250,16 @@ function ChatPresetsContent() {
                   Presets
                 </span>
               </h1>
-            </motion.div>
+            </div>
 
             {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: 0.1 }}
-              className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
-            >
+            <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
               Optimized completion settings for transformative AI roleplay.
               <span className="block mt-2 text-gray-500">Download. Import. Experience.</span>
-            </motion.p>
+            </p>
 
             {/* Stats row */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: 0.15 }}
-              className="flex items-center justify-center gap-8 mt-10"
-            >
+            <div className="flex items-center justify-center gap-8 mt-10">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{allPresets.length}</div>
                 <div className="text-xs text-gray-500 uppercase tracking-wider">Presets</div>
@@ -326,7 +276,7 @@ function ChatPresetsContent() {
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wider">Optimized</div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
 
@@ -344,10 +294,9 @@ function ChatPresetsContent() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* Sidebar - Preset Selection */}
-              <RevealSection className="lg:col-span-3">
+              <div className="lg:col-span-3">
                 <div className="lg:sticky lg:top-24">
-                  <FloatingCard delay={0.2}>
-                    <div className="relative bg-gray-900/60 border border-white/[0.05] rounded-3xl p-6 overflow-hidden">
+                  <div className="relative bg-gray-900/60 border border-white/[0.05] rounded-3xl p-6 overflow-hidden">
                       {/* Sidebar glow */}
                       <div className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
 
@@ -360,14 +309,11 @@ function ChatPresetsContent() {
                         </div>
 
                         <div className="space-y-2">
-                          {allPresets.map((preset, index) => (
-                            <motion.button
+                          {allPresets.map((preset) => (
+                            <button
                               key={preset.name}
                               onClick={() => handlePresetChange(preset.name)}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: index * 0.05 }}
-                              className={`w-full group text-left px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden ${
+                              className={`w-full group text-left px-4 py-3.5 rounded-2xl transition-all duration-300 relative overflow-hidden hover:translate-x-1 active:scale-[0.98] ${
                                 selectedPreset === preset.name
                                   ? 'bg-gradient-to-r from-purple-500/20 to-cyan-500/10 border border-purple-500/30'
                                   : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.05]'
@@ -375,11 +321,7 @@ function ChatPresetsContent() {
                             >
                               {/* Active glow */}
                               {selectedPreset === preset.name && (
-                                <motion.div
-                                  layoutId="activePresetGlow"
-                                  className="absolute inset-0 bg-purple-500/5 blur-xl"
-                                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                />
+                                <div className="absolute inset-0 bg-purple-500/5 blur-xl" />
                               )}
 
                               <span className="relative z-10 flex items-center justify-between">
@@ -394,14 +336,13 @@ function ChatPresetsContent() {
                                     : 'text-gray-600 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                                 }`} />
                               </span>
-                            </motion.button>
+                            </button>
                           ))}
                         </div>
                       </div>
                     </div>
-                  </FloatingCard>
                 </div>
-              </RevealSection>
+              </div>
 
               {/* Main Content - Versions */}
               <div className="lg:col-span-9">
@@ -452,23 +393,19 @@ function ChatPresetsContent() {
                   ) : (
                     <motion.div
                       key={`versions-${selectedPreset}`}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={animationsEnabled ? { opacity: 0, y: 20 } : false}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.4 }}
+                      transition={animationsEnabled ? { duration: 0.4 } : { duration: 0 }}
                       className="space-y-8"
                     >
                       {/* Standard Latest */}
                       {standardLatest.length > 0 && (
-                        <RevealSection>
+                        <div>
                           <div className="flex items-center gap-3 mb-5">
-                            <motion.div
-                              className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20"
-                              animate={{ rotate: [0, 5, -5, 0] }}
-                              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
-                            >
+                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20">
                               <Zap className="w-5 h-5 text-cyan-400" />
-                            </motion.div>
+                            </div>
                             <h2 className="text-xl font-bold text-white">Latest Version</h2>
                           </div>
 
@@ -476,11 +413,9 @@ function ChatPresetsContent() {
                             const versionNum = extractVersion(version.name);
                             const displayName = getNameWithoutVersion(version.name);
                             return (
-                              <motion.div
+                              <div
                                 key={version.path}
-                                className="group relative bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-purple-500/10 border-2 border-cyan-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
-                                whileHover={{ scale: 1.01, y: -4 }}
-                                transition={{ duration: 0.3 }}
+                                className="group relative bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-purple-500/10 border-2 border-cyan-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden transition-transform duration-300 hover:scale-[1.01] hover:-translate-y-1"
                               >
                                 {/* Animated shimmer */}
                                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
@@ -505,14 +440,10 @@ function ChatPresetsContent() {
                                           {versionNum}
                                         </span>
                                       )}
-                                      <motion.span
-                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/25"
-                                        animate={{ scale: [1, 1.05, 1] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                      >
+                                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/25">
                                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                                         Latest
-                                      </motion.span>
+                                      </span>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
@@ -528,45 +459,37 @@ function ChatPresetsContent() {
                                   </div>
 
                                   <div className="flex gap-3">
-                                    <motion.button
+                                    <button
                                       onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
-                                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
+                                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                       <Download className="w-5 h-5" />
                                       Download
-                                    </motion.button>
-                                    <motion.a
+                                    </button>
+                                    <a
                                       href={version.htmlUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
+                                      className="inline-flex items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all hover:scale-105 active:scale-95"
                                       title="View on GitHub"
                                     >
                                       <Github className="w-5 h-5" />
-                                    </motion.a>
+                                    </a>
                                   </div>
                                 </div>
-                              </motion.div>
+                              </div>
                             );
                           })}
-                        </RevealSection>
+                        </div>
                       )}
 
                       {/* Prolix Latest */}
                       {prolixLatest.length > 0 && (
-                        <RevealSection delay={0.1}>
+                        <div>
                           <div className="flex items-center gap-3 mb-5">
-                            <motion.div
-                              className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-500/20"
-                              animate={{ rotate: [0, 5, -5, 0] }}
-                              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2 }}
-                            >
+                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-500/20">
                               <Crown className="w-5 h-5 text-amber-400" />
-                            </motion.div>
+                            </div>
                             <h2 className="text-xl font-bold text-white">Prolix Preferred</h2>
                             <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">Premium</span>
                           </div>
@@ -575,11 +498,9 @@ function ChatPresetsContent() {
                             const versionNum = extractVersion(version.name);
                             const displayName = getNameWithoutVersion(version.name);
                             return (
-                              <motion.div
+                              <div
                                 key={version.path}
-                                className="group relative bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-orange-500/10 border-2 border-amber-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden"
-                                whileHover={{ scale: 1.01, y: -4 }}
-                                transition={{ duration: 0.3 }}
+                                className="group relative bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-orange-500/10 border-2 border-amber-500/30 rounded-3xl p-6 lg:p-8 overflow-hidden transition-transform duration-300 hover:scale-[1.01] hover:-translate-y-1"
                               >
                                 {/* Shimmer */}
                                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
@@ -604,14 +525,10 @@ function ChatPresetsContent() {
                                           {versionNum}
                                         </span>
                                       )}
-                                      <motion.span
-                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-semibold shadow-lg shadow-amber-500/25"
-                                        animate={{ scale: [1, 1.05, 1] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                      >
+                                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-semibold shadow-lg shadow-amber-500/25">
                                         <Star className="w-3 h-3" />
                                         Latest
-                                      </motion.span>
+                                      </span>
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
@@ -627,37 +544,33 @@ function ChatPresetsContent() {
                                   </div>
 
                                   <div className="flex gap-3">
-                                    <motion.button
+                                    <button
                                       onClick={() => handleDownloadClick(version.downloadUrl, version.name)}
-                                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-white font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all"
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
+                                      className="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-white font-semibold shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                       <Download className="w-5 h-5" />
                                       Download
-                                    </motion.button>
-                                    <motion.a
+                                    </button>
+                                    <a
                                       href={version.htmlUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
+                                      className="inline-flex items-center justify-center p-3 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all hover:scale-105 active:scale-95"
                                       title="View on GitHub"
                                     >
                                       <Github className="w-5 h-5" />
-                                    </motion.a>
+                                    </a>
                                   </div>
                                 </div>
-                              </motion.div>
+                              </div>
                             );
                           })}
-                        </RevealSection>
+                        </div>
                       )}
 
                       {/* Standard Historical */}
                       {standardHistorical.length > 0 && (
-                        <RevealSection delay={0.2}>
+                        <div>
                           <div className="flex items-center justify-between mb-5">
                             <div className="flex items-center gap-3">
                               <div className="p-2.5 rounded-xl bg-gray-500/10 border border-gray-500/20">
@@ -677,11 +590,10 @@ function ChatPresetsContent() {
                               return (
                                 <motion.div
                                   key={version.path}
-                                  initial={{ opacity: 0, x: -20 }}
+                                  initial={animationsEnabled ? { opacity: 0, x: -20 } : false}
                                   animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.3, delay: index * 0.03 }}
-                                  className="group relative bg-white/[0.03] border border-white/[0.05] rounded-2xl p-5 hover:bg-white/[0.05] hover:border-white/[0.08] transition-all duration-300"
-                                  whileHover={{ x: 4 }}
+                                  transition={animationsEnabled ? { duration: 0.3, delay: index * 0.03 } : { duration: 0 }}
+                                  className="group relative bg-white/[0.03] border border-white/[0.05] rounded-2xl p-5 hover:bg-white/[0.05] hover:border-white/[0.08] transition-all duration-300 hover:translate-x-1"
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div className="flex-1 min-w-0">
@@ -708,37 +620,33 @@ function ChatPresetsContent() {
                                     </div>
 
                                     <div className="flex gap-2">
-                                      <motion.button
+                                      <button
                                         onClick={() => downloadFile(version.downloadUrl, version.name)}
-                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all"
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
                                       >
                                         <Download className="w-4 h-4" />
                                         <span className="hidden sm:inline">Download</span>
-                                      </motion.button>
-                                      <motion.a
+                                      </button>
+                                      <a
                                         href={version.htmlUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all hover:scale-105 active:scale-95"
                                       >
                                         <ExternalLink className="w-4 h-4" />
-                                      </motion.a>
+                                      </a>
                                     </div>
                                   </div>
                                 </motion.div>
                               );
                             })}
                           </div>
-                        </RevealSection>
+                        </div>
                       )}
 
                       {/* Prolix Historical */}
                       {prolixHistorical.length > 0 && (
-                        <RevealSection delay={0.3}>
+                        <div>
                           <div className="flex items-center justify-between mb-5">
                             <div className="flex items-center gap-3">
                               <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
@@ -758,11 +666,10 @@ function ChatPresetsContent() {
                               return (
                                 <motion.div
                                   key={version.path}
-                                  initial={{ opacity: 0, x: -20 }}
+                                  initial={animationsEnabled ? { opacity: 0, x: -20 } : false}
                                   animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.3, delay: index * 0.03 }}
-                                  className="group relative bg-purple-500/[0.05] border border-purple-500/10 rounded-2xl p-5 hover:bg-purple-500/[0.08] hover:border-purple-500/20 transition-all duration-300"
-                                  whileHover={{ x: 4 }}
+                                  transition={animationsEnabled ? { duration: 0.3, delay: index * 0.03 } : { duration: 0 }}
+                                  className="group relative bg-purple-500/[0.05] border border-purple-500/10 rounded-2xl p-5 hover:bg-purple-500/[0.08] hover:border-purple-500/20 transition-all duration-300 hover:translate-x-1"
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div className="flex-1 min-w-0">
@@ -789,32 +696,28 @@ function ChatPresetsContent() {
                                     </div>
 
                                     <div className="flex gap-2">
-                                      <motion.button
+                                      <button
                                         onClick={() => downloadFile(version.downloadUrl, version.name)}
-                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 hover:text-white transition-all"
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
                                       >
                                         <Download className="w-4 h-4" />
                                         <span className="hidden sm:inline">Download</span>
-                                      </motion.button>
-                                      <motion.a
+                                      </button>
+                                      <a
                                         href={version.htmlUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-white hover:bg-purple-500/20 transition-all"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:text-white hover:bg-purple-500/20 transition-all hover:scale-105 active:scale-95"
                                       >
                                         <ExternalLink className="w-4 h-4" />
-                                      </motion.a>
+                                      </a>
                                     </div>
                                   </div>
                                 </motion.div>
                               );
                             })}
                           </div>
-                        </RevealSection>
+                        </div>
                       )}
                     </motion.div>
                   )}

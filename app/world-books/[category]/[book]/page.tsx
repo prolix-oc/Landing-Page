@@ -242,7 +242,7 @@ export default function WorldBookDetailsPage() {
   const accentColor = isProlix ? 'purple' : 'cyan';
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden">
+    <div className="h-screen flex flex-col relative overflow-hidden vt-exclude">
       {/* CSS Animated Orbs - GPU Optimized (reduced blur for Safari perf) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
         <div className="orb-1 absolute top-[10%] left-[5%] w-[500px] h-[500px] bg-cyan-600/25 rounded-full blur-[80px]" />
@@ -251,12 +251,7 @@ export default function WorldBookDetailsPage() {
       </div>
 
       {/* Back Link - Fixed Pill Button */}
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5 }}
-        className="fixed top-6 left-6 z-50"
-      >
+      <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
           href={`/world-books?category=${encodeURIComponent(worldBook.category)}`}
           className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-cyan-400 hover:bg-gray-800/90 hover:border-cyan-500/30 transition-all"
@@ -265,16 +260,11 @@ export default function WorldBookDetailsPage() {
           <ArrowLeft className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" />
           <span className="text-sm font-medium">Back to {worldBook.category}</span>
         </AnimatedLink>
-      </motion.div>
+      </div>
 
-      <div className="flex-1 flex flex-col container mx-auto px-4 py-8 sm:py-12 min-h-0">
+      <div className="flex-1 flex flex-col container mx-auto px-4 py-8 sm:py-12 min-h-0 vt-exclude">
         {/* Single Glass Container */}
-        <motion.div
-          className="relative flex-1 min-h-0 flex flex-col"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
+        <div className="relative flex-1 min-h-0 flex flex-col vt-exclude">
           {/* Single backdrop-blur layer (md = 12px, optimized for Safari) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
@@ -286,10 +276,7 @@ export default function WorldBookDetailsPage() {
                 <div className="space-y-6">
                   {/* Title Section */}
                   <div>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
+                    <div
                       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 ${
                         isProlix
                           ? 'bg-purple-500/10 border border-purple-500/20'
@@ -304,7 +291,7 @@ export default function WorldBookDetailsPage() {
                       <span className={`text-xs font-medium ${isProlix ? 'text-purple-300' : 'text-cyan-300'}`}>
                         {isProlix ? 'Prolix Preferred' : 'Standard Edition'}
                       </span>
-                    </motion.div>
+                    </div>
                     <h1 className={`text-2xl font-bold text-white mb-2 break-words`}>
                       {worldBook.name.replace('.json', '').replace(/\s*Prolix\s+\w+/gi, '').trim()}
                     </h1>
@@ -388,32 +375,28 @@ export default function WorldBookDetailsPage() {
 
                   {/* Download Buttons */}
                   <div className="space-y-3 py-4 border-t border-white/[0.05]">
-                    <motion.button
+                    <button
                       onClick={() => downloadFile(worldBook.jsonUrl, `${worldBook.name}.json`)}
-                      className={`w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2 group ${
+                      className={`w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2 group hover:scale-[1.02] active:scale-[0.98] ${
                         isProlix
                           ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40'
                           : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40'
                       }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
                     >
                       <Download className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
                       Download JSON
-                    </motion.button>
+                    </button>
 
                     {/* Copy Import Link - Only for Lumiverse DLCs */}
                     {isLumiverseDLC(worldBook.category) && (
                       <div className="relative">
-                        <motion.button
+                        <button
                           onClick={copyImportLink}
-                          className="w-full bg-white/[0.05] hover:bg-white/[0.08] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium border border-white/[0.08] hover:border-white/[0.15] flex items-center justify-center gap-2 group"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-white/[0.05] hover:bg-white/[0.08] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium border border-white/[0.08] hover:border-white/[0.15] flex items-center justify-center gap-2 group hover:scale-[1.02] active:scale-[0.98]"
                         >
                           <LinkIcon className="w-5 h-5" />
                           Copy Import Link
-                        </motion.button>
+                        </button>
 
                         <AnimatePresence>
                           {showCopied && (
@@ -647,7 +630,7 @@ export default function WorldBookDetailsPage() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Fixed Pagination at Bottom - Floating above content */}
