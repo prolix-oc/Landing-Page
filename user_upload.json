@@ -1,0 +1,350 @@
+{
+  "temperature": 1,
+  "frequency_penalty": 0,
+  "presence_penalty": 0,
+  "top_p": 1,
+  "top_k": 0,
+  "top_a": 0,
+  "min_p": 0,
+  "repetition_penalty": 1,
+  "openai_max_context": 8000,
+  "openai_max_tokens": 2000,
+  "impersonation_prompt": "",
+  "new_chat_prompt": "",
+  "new_group_chat_prompt": "",
+  "new_example_chat_prompt": "[Example Chat]",
+  "continue_nudge_prompt": "",
+  "group_nudge_prompt": "",
+  "assistant_prefill": "",
+  "assistant_impersonation": "",
+  "wi_format": "[Details of the fictional world the RP is set in:\n{0}]",
+  "scenario_format": "{{scenario}}",
+  "personality_format": "[{{char}}'s personality: {{personality}}]",
+  "wrap_in_quotes": false,
+  "names_behavior": 0,
+  "send_if_empty": "",
+  "continue_prefill": false,
+  "continue_postfix": " ",
+  "stream_openai": true,
+  "claude_use_sysprompt": false,
+  "use_makersuite_sysprompt": false,
+  "squash_system_messages": false,
+  "function_calling": false,
+  "show_thoughts": false,
+  "reasoning_effort": "auto",
+  "enable_web_search": false,
+  "request_images": false,
+  "image_inlining": false,
+  "inline_image_quality": "auto",
+  "video_inlining": false,
+  "seed": -1,
+  "n": 1,
+  "max_context_unlocked": false,
+  "bias_preset_selected": "",
+  "prompts": [
+    {
+      "identifier": "019b6d25-11bd-7479-9146-e45efc58aef0",
+      "name": "━Custom Category",
+      "content": "",
+      "role": "system",
+      "system_prompt": false,
+      "marker": false
+    },
+    {
+      "identifier": "019b6d1d-6d99-7dce-85a9-d0f369c3904f",
+      "name": "% Custom Prompt",
+      "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque imperdiet vestibulum nulla, quis efficitur nibh congue ut. Fusce suscipit accumsan varius. Aenean elit neque, dictum non risus eget, porttitor aliquam felis. Ut condimentum vel mauris quis consequat. Duis imperdiet felis vitae purus convallis laoreet. Fusce a hendrerit ante. Nulla consequat quam eget aliquam viverra. Etiam maximus lorem vel arcu aliquet, quis congue nisi semper. Fusce rhoncus, tortor eget dictum euismod, lorem tortor suscipit nulla, eget hendrerit nisl turpis non ante. Maecenas eget fermentum odio, in tempor lacus. Nullam at tincidunt ipsum. Aenean posuere nunc sit amet erat fermentum auctor.",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": false,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "019b6d23-e0f1-7716-af7a-45a9e2e00d96",
+      "name": "%Custom Prompt 2",
+      "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque imperdiet vestibulum nulla, quis efficitur nibh congue ut. Fusce suscipit accumsan varius. Aenean elit neque, dictum non risus eget, porttitor aliquam felis. Ut condimentum vel mauris quis consequat. Duis imperdiet felis vitae purus convallis laoreet. Fusce a hendrerit ante. Nulla consequat quam eget aliquam viverra. Etiam maximus lorem vel arcu aliquet, quis congue nisi semper. Fusce rhoncus, tortor eget dictum euismod, lorem tortor suscipit nulla, eget hendrerit nisl turpis non ante. Maecenas eget fermentum odio, in tempor lacus.",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": false,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "019b6d1e-8b15-73e7-9f6e-8606ff4a3f44",
+      "name": "Custom Prompt 3",
+      "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque imperdiet vestibulum nulla, quis efficitur nibh congue ut. Fusce suscipit accumsan varius. Aenean elit neque, dictum non risus eget, porttitor aliquam felis. Ut condimentum vel mauris quis consequat. Duis imperdiet felis vitae purus convallis laoreet. Fusce a hendrerit ante. Nulla consequat quam eget aliquam viverra. Etiam maximus lorem vel arcu aliquet, quis congue nisi semper. Fusce rhoncus, tortor eget dictum euismod, lorem tortor suscipit nulla, eget hendrerit nisl turpis non ante. Maecenas eget fermentum odio, in tempor lacus. Nullam at tincidunt ipsum. Aenean posuere nunc sit amet erat fermentum auctor.",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": false,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "019b6d20-1232-7310-889e-1818d4379f29",
+      "name": "Custom Prompt 4",
+      "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque imperdiet vestibulum nulla, quis efficitur nibh congue ut. Fusce suscipit accumsan varius. Aenean elit neque, dictum non risus eget, porttitor aliquam felis. Ut condimentum vel mauris quis consequat. Duis imperdiet felis vitae purus convallis laoreet. Fusce a hendrerit ante. Nulla consequat quam eget aliquam viverra. Etiam maximus lorem vel arcu aliquet, quis congue nisi semper. Fusce rhoncus, tortor eget dictum euismod, lorem tortor suscipit nulla, eget hendrerit nisl turpis non ante. Maecenas eget fermentum odio, in tempor lacus. Nullam at tincidunt ipsum. Aenean posuere nunc sit amet erat fermentum auctor.",
+      "role": "system",
+      "enabled": false,
+      "system_prompt": false,
+      "marker": false,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "019b6d25-11bd-7b20-8139-4d16dc609d40",
+      "name": "━Category of Stuff",
+      "content": "",
+      "role": "system",
+      "system_prompt": false,
+      "marker": false
+    },
+    {
+      "identifier": "personaDescription",
+      "name": "User Persona",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "scenario",
+      "name": "Scenario",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "charPersonality",
+      "name": "Character Personality",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "charDescription",
+      "name": "Character Definition",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "enhanceDefinitions",
+      "name": "Enhance Definitions",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "worldInfoAfter",
+      "name": "World Info (after)",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "worldInfoBefore",
+      "name": "World Info (before)",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "chatHistory",
+      "name": "Chat History",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 1,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "dialogueExamples",
+      "name": "Chat Examples",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "nsfw",
+      "name": "NSFW Prompt",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "jailbreak",
+      "name": "Card JB",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "main",
+      "name": "Card Prompt",
+      "content": "",
+      "role": "system",
+      "enabled": true,
+      "system_prompt": false,
+      "marker": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "forbid_overrides": false
+    }
+  ],
+  "prompt_order": [
+    {
+      "character_id": 100001,
+      "order": [
+        {
+          "identifier": "019b6d25-11bd-7479-9146-e45efc58aef0",
+          "enabled": true
+        },
+        {
+          "identifier": "019b6d1d-6d99-7dce-85a9-d0f369c3904f",
+          "enabled": true
+        },
+        {
+          "identifier": "019b6d23-e0f1-7716-af7a-45a9e2e00d96",
+          "enabled": true
+        },
+        {
+          "identifier": "019b6d1e-8b15-73e7-9f6e-8606ff4a3f44",
+          "enabled": true
+        },
+        {
+          "identifier": "019b6d20-1232-7310-889e-1818d4379f29",
+          "enabled": false
+        },
+        {
+          "identifier": "019b6d25-11bd-7b20-8139-4d16dc609d40",
+          "enabled": true
+        },
+        {
+          "identifier": "personaDescription",
+          "enabled": true
+        },
+        {
+          "identifier": "scenario",
+          "enabled": true
+        },
+        {
+          "identifier": "charPersonality",
+          "enabled": true
+        },
+        {
+          "identifier": "charDescription",
+          "enabled": true
+        },
+        {
+          "identifier": "enhanceDefinitions",
+          "enabled": true
+        },
+        {
+          "identifier": "worldInfoAfter",
+          "enabled": true
+        },
+        {
+          "identifier": "worldInfoBefore",
+          "enabled": true
+        },
+        {
+          "identifier": "chatHistory",
+          "enabled": true
+        },
+        {
+          "identifier": "dialogueExamples",
+          "enabled": true
+        },
+        {
+          "identifier": "nsfw",
+          "enabled": true
+        },
+        {
+          "identifier": "jailbreak",
+          "enabled": true
+        },
+        {
+          "identifier": "main",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "extensions": {}
+}

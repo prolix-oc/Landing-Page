@@ -42,7 +42,8 @@ export default function PresetDownloadModal({
   presetUrl,
   presetName,
 }: PresetDownloadModalProps) {
-  const [step, setStep] = useState<'initial' | 'customize' | 'update-choice'>('initial');
+  const [step, setStep] = useState<'initial' | 'customize' | 'update-choice' | 'update-error'>('initial');
+  const [updateError, setUpdateError] = useState<string | null>(null);
   const [testedSamplers, setTestedSamplers] = useState<TestedSamplers>({});
   const [loading, setLoading] = useState(false);
   const [loadingSamplers, setLoadingSamplers] = useState(false);
@@ -188,25 +189,38 @@ export default function PresetDownloadModal({
         return !!name && name.charCodeAt(0) === 0x2501;
       };
 
-      // Helper: Check if prompt is protected (name starts with %)
+      // Helper: Check if prompt is protected (% ANYWHERE in name)
       const isProtectedPrompt = (name: string): boolean => {
-        return !!name && name.startsWith('%');
+        return !!name && name.includes('%');
       };
 
-      // Step 1: Build maps of user's prompts and toggle states
-      const userPromptsMap = new Map<string, any>();
-      const userEnabledStates = new Map<string, boolean>();
-      const protectedPrompts = new Map<string, any>();
+      // Helper: Clean prompt name (remove % and trim)
+      const cleanPromptName = (name: string): string => {
+        if (!name) return name;
+        return name.replace(/%/g, '').trim();
+      };
+
+      // Helper: Get base name for matching (cleaned, lowercased for comparison)
+      const getMatchableName = (name: string): string => {
+        return cleanPromptName(name).toLowerCase();
+      };
+
+      // Step 1: Build NAME-based maps for user's prompts
+      const userPromptsByName = new Map<string, any>(); // key: matchable name (cleaned, lowercase)
+      const userEnabledStates = new Map<string, boolean>(); // key: identifier
+      const userPromptOrder: string[] = []; // Track original order by identifier
 
       if (userPreset.prompts && Array.isArray(userPreset.prompts)) {
         userPreset.prompts.forEach((prompt: any) => {
-          if (prompt.identifier) {
-            userPromptsMap.set(prompt.identifier, prompt);
-            userEnabledStates.set(prompt.identifier, prompt.enabled || false);
-
-            if (prompt.name && typeof prompt.name === 'string' && isProtectedPrompt(prompt.name)) {
-              protectedPrompts.set(prompt.identifier, prompt);
-              // Backup protected prompts
+          if (prompt.name && typeof prompt.name === 'string') {
+            const matchName = getMatchableName(prompt.name);
+            userPromptsByName.set(matchName, prompt);
+            if (prompt.identifier) {
+              userEnabledStates.set(prompt.identifier, prompt.enabled || false);
+              userPromptOrder.push(prompt.identifier);
+            }
+            // Backup protected prompts
+            if (isProtectedPrompt(prompt.name)) {
               saveCustomPromptBackup(prompt, presetName);
             }
           }
@@ -226,97 +240,161 @@ export default function PresetDownloadModal({
         });
       }
 
-      // Step 2: Build set of latest prompt identifiers
-      const latestPromptIds = new Set<string>();
+      // Step 2: Build NAME-based map for latest prompts
+      const latestPromptsByName = new Map<string, any>();
       if (latestPreset.prompts && Array.isArray(latestPreset.prompts)) {
-        latestPreset.prompts.forEach((p: any) => {
-          if (p.identifier) latestPromptIds.add(p.identifier);
+        latestPreset.prompts.forEach((prompt: any) => {
+          if (prompt.name && typeof prompt.name === 'string') {
+            const matchName = getMatchableName(prompt.name);
+            latestPromptsByName.set(matchName, prompt);
+          }
         });
       }
 
-      // Step 3: Start with latest preset structure
-      const mergedPreset = { ...latestPreset };
+      // Step 3: Category validation - count new categories
+      const userCategories = new Set<string>();
+      const latestCategories = new Set<string>();
 
-      // Step 4: Process prompts with comprehensive diff
+      userPromptsByName.forEach((prompt, matchName) => {
+        if (isCategory(prompt.name)) {
+          userCategories.add(matchName);
+        }
+      });
+
+      latestPromptsByName.forEach((prompt, matchName) => {
+        if (isCategory(prompt.name)) {
+          latestCategories.add(matchName);
+        }
+      });
+
+      // Find new categories (in latest but not in user)
+      const newCategories: string[] = [];
+      latestCategories.forEach((catName) => {
+        if (!userCategories.has(catName)) {
+          newCategories.push(catName);
+        }
+      });
+
+      // If more than 1 new category, throw special error
+      if (newCategories.length > 1) {
+        throw new Error('CATEGORY_MISMATCH: The latest version has multiple new categories that require a fresh download.');
+      }
+
+      // Step 4: Start with latest preset structure
+      const mergedPreset = { ...latestPreset };
+      const matchedUserPromptNames = new Set<string>(); // Track which user prompts were matched
+
+      // Step 5: Process prompts - match by NAME
       if (mergedPreset.prompts && Array.isArray(mergedPreset.prompts)) {
         mergedPreset.prompts = mergedPreset.prompts.map((latestPrompt: any) => {
-          const userPrompt = userPromptsMap.get(latestPrompt.identifier);
+          const latestMatchName = getMatchableName(latestPrompt.name || '');
+          const userPrompt = userPromptsByName.get(latestMatchName);
           const userHasPrompt = !!userPrompt;
 
           if (userHasPrompt) {
-            // User has this prompt - check if protected
-            if (userPrompt.name && typeof userPrompt.name === 'string' && isProtectedPrompt(userPrompt.name)) {
-              // Protected: preserve EVERYTHING from user (content AND enabled state)
+            matchedUserPromptNames.add(latestMatchName);
+            const userIsProtected = isProtectedPrompt(userPrompt.name);
+            const userEnabledState = userEnabledStates.get(userPrompt.identifier) ?? userPrompt.enabled ?? false;
+
+            if (userIsProtected) {
+              // Protected: keep user's content, clean name, preserve toggle
               return {
                 ...userPrompt,
-                enabled: userEnabledStates.get(latestPrompt.identifier) ?? userPrompt.enabled ?? false,
+                name: cleanPromptName(userPrompt.name),
+                enabled: userEnabledState,
               };
             } else {
-              // Not protected: use latest content, preserve user's enabled state
+              // Not protected: use latest content, preserve user's toggle
               return {
                 ...latestPrompt,
-                enabled: userEnabledStates.get(latestPrompt.identifier) ?? false,
+                enabled: userEnabledState,
               };
             }
           } else {
             // New prompt from latest - user doesn't have it
-            const isNewCategory = latestPrompt.name && typeof latestPrompt.name === 'string' && isCategory(latestPrompt.name);
+            // ALL new prompts insert as DISABLED (global rule)
             return {
               ...latestPrompt,
-              enabled: isNewCategory, // Categories enabled, others disabled
+              enabled: false,
             };
-          }
-        });
-
-        // Add protected prompts that don't exist in latest
-        protectedPrompts.forEach((protectedPrompt, identifier) => {
-          if (!latestPromptIds.has(identifier)) {
-            mergedPreset.prompts.push({
-              ...protectedPrompt,
-              enabled: userEnabledStates.get(identifier) ?? protectedPrompt.enabled ?? false,
-            });
           }
         });
       }
 
-      // Step 5: Update prompt_order
+      // Step 6: Handle user-only prompts (deprecated or protected)
+      // These are prompts in user's version that don't exist in latest
+      const userOnlyPrompts: any[] = [];
+      userPromptsByName.forEach((userPrompt, matchName) => {
+        if (!matchedUserPromptNames.has(matchName)) {
+          const userIsProtected = isProtectedPrompt(userPrompt.name);
+          const userEnabledState = userEnabledStates.get(userPrompt.identifier) ?? userPrompt.enabled ?? false;
+
+          if (userIsProtected) {
+            // Protected: keep as-is with cleaned name, keep toggle state
+            userOnlyPrompts.push({
+              ...userPrompt,
+              name: cleanPromptName(userPrompt.name),
+              enabled: userEnabledState,
+            });
+          } else {
+            // Not protected: mark as deprecated, force disable
+            userOnlyPrompts.push({
+              ...userPrompt,
+              name: `${userPrompt.name} (DEPRECATED)`,
+              enabled: false,
+            });
+          }
+        }
+      });
+
+      // Insert user-only prompts at their original positions
+      // For simplicity, we'll append them to the end but maintain their relative order
+      if (userOnlyPrompts.length > 0 && mergedPreset.prompts) {
+        // Sort user-only prompts by their original order
+        userOnlyPrompts.sort((a, b) => {
+          const aIndex = userPromptOrder.indexOf(a.identifier);
+          const bIndex = userPromptOrder.indexOf(b.identifier);
+          return aIndex - bIndex;
+        });
+        mergedPreset.prompts.push(...userOnlyPrompts);
+      }
+
+      // Step 7: Update prompt_order
       if (mergedPreset.prompt_order && Array.isArray(mergedPreset.prompt_order)) {
         mergedPreset.prompt_order = mergedPreset.prompt_order.map((orderItem: any) => {
           if (orderItem.order && Array.isArray(orderItem.order)) {
-            // Process existing entries in latest's order
+            // Process entries in latest's order
             const newOrder = orderItem.order.map((toggle: any) => {
-              const userPrompt = userPromptsMap.get(toggle.identifier);
-              const userHasPrompt = !!userPrompt;
+              // Find the latest prompt for this toggle
+              const latestPrompt = latestPreset.prompts?.find(
+                (p: any) => p.identifier === toggle.identifier
+              );
+              const latestMatchName = latestPrompt ? getMatchableName(latestPrompt.name || '') : '';
+              const userPrompt = latestMatchName ? userPromptsByName.get(latestMatchName) : null;
 
-              if (userHasPrompt) {
-                // Preserve user's enabled state (works for both protected and non-protected)
+              if (userPrompt) {
+                // User has matching prompt - preserve their toggle state
                 return {
                   ...toggle,
-                  enabled: userEnabledStates.get(toggle.identifier) ?? false,
+                  enabled: userEnabledStates.get(userPrompt.identifier) ?? false,
                 };
               } else {
-                // New prompt - set based on category status
-                const latestPrompt = latestPreset.prompts?.find(
-                  (p: any) => p.identifier === toggle.identifier
-                );
-                const isNewCategory = latestPrompt?.name && typeof latestPrompt.name === 'string' && isCategory(latestPrompt.name);
+                // New prompt - ALL new prompts disabled (global rule)
                 return {
                   ...toggle,
-                  enabled: isNewCategory,
+                  enabled: false,
                 };
               }
             });
 
-            // Add protected prompts not in latest to the end
-            protectedPrompts.forEach((protectedPrompt, identifier) => {
-              if (!latestPromptIds.has(identifier)) {
-                const existsInOrder = newOrder.some((t: any) => t.identifier === identifier);
-                if (!existsInOrder) {
-                  newOrder.push({
-                    identifier,
-                    enabled: userEnabledStates.get(identifier) ?? false,
-                  });
-                }
+            // Add user-only prompts to order (deprecated + protected-only)
+            userOnlyPrompts.forEach((prompt) => {
+              const existsInOrder = newOrder.some((t: any) => t.identifier === prompt.identifier);
+              if (!existsInOrder) {
+                newOrder.push({
+                  identifier: prompt.identifier,
+                  enabled: prompt.enabled,
+                });
               }
             });
 
@@ -326,7 +404,7 @@ export default function PresetDownloadModal({
         });
       }
 
-      // Step 6: Increment version
+      // Step 8: Increment version
       if (mergedPreset.spec_version) {
         const versionMatch = mergedPreset.spec_version.match(/(\d+)\.(\d+)/);
         if (versionMatch) {
@@ -339,6 +417,10 @@ export default function PresetDownloadModal({
       return mergedPreset;
     } catch (error) {
       console.error('Error merging prompts:', error);
+      // Preserve CATEGORY_MISMATCH errors
+      if (error instanceof Error && error.message.includes('CATEGORY_MISMATCH')) {
+        throw error;
+      }
       throw new Error('Failed to merge presets. Please check your file format.');
     }
   };
@@ -387,7 +469,12 @@ export default function PresetDownloadModal({
         setStep('update-choice');
       } catch (error) {
         console.error('Error processing update:', error);
-        alert(error instanceof Error ? error.message : 'Failed to process your preset. Please try again.');
+        if (error instanceof Error && error.message.includes('CATEGORY_MISMATCH')) {
+          setUpdateError(error.message);
+          setStep('update-error');
+        } else {
+          alert(error instanceof Error ? error.message : 'Failed to process your preset. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
@@ -731,6 +818,48 @@ export default function PresetDownloadModal({
                     <svg className="w-5 h-5 text-gray-500 transform group-hover:translate-x-1 group-hover:text-purple-400 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
+                  </motion.button>
+                </motion.div>
+              )}
+
+              {step === 'update-error' && (
+                <motion.div
+                  key="update-error"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-red-500/20 rounded-full">
+                      <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Unable to Update Preset</h3>
+                  </div>
+
+                  <p className="text-gray-300 mb-6">
+                    We're sorry, but your preset cannot be automatically updated. The latest version has significant structural changes (multiple new categories) that require a fresh download.
+                  </p>
+
+                  <p className="text-gray-400 text-sm mb-6">
+                    Please download the latest version and manually transfer any custom prompts you'd like to keep.
+                  </p>
+
+                  <motion.button
+                    onClick={() => {
+                      setStep('initial');
+                      setUpdateError(null);
+                    }}
+                    className="w-full bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-purple-500/50 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Go Back</span>
                   </motion.button>
                 </motion.div>
               )}
