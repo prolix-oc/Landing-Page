@@ -81,14 +81,7 @@ const borderColors: Record<string, string> = {
 
 export default function Home() {
   return (
-    <div className="h-screen flex flex-col overflow-hidden relative">
-      {/* Optimized Background: CSS-animated orbs (reduced blur for Safari perf) */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="orb-1 absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-purple-600/30 rounded-full blur-[80px]" />
-        <div className="orb-2 absolute top-[50%] right-[5%] w-[600px] h-[600px] bg-cyan-600/25 rounded-full blur-[80px]" />
-        <div className="orb-3 absolute bottom-[5%] left-[25%] w-[450px] h-[450px] bg-blue-600/25 rounded-full blur-[70px]" />
-      </div>
-
+    <div className="h-screen flex flex-col overflow-hidden relative vt-exclude">
       {/* Main Container */}
       <div className="flex-1 flex flex-col container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl relative z-10">
 

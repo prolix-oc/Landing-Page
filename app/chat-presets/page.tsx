@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useRef } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import PresetDownloadModal from '@/app/components/PresetDownloadModal';
@@ -52,15 +52,6 @@ interface VersionCategories {
   prolix: Version[];
 }
 
-// Floating atmospheric orbs - CSS animated for GPU optimization (reduced blur for Safari perf)
-const FloatingOrbs = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <div className="orb-1 absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[80px]" />
-    <div className="orb-2 absolute top-1/2 right-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[80px]" />
-    <div className="orb-3 absolute bottom-1/4 left-1/3 w-[450px] h-[450px] bg-blue-600/15 rounded-full blur-[80px]" />
-  </div>
-);
-
 function ChatPresetsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -85,16 +76,6 @@ function ChatPresetsContent() {
     }, 300); // Wait for View Transition to complete
     return () => clearTimeout(timer);
   }, []);
-
-  // Scroll-linked hero parallax
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"]
-  });
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
-  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, 80]);
 
   // Check URL parameters on mount and set default to "Lucid Loom"
   useEffect(() => {
@@ -211,8 +192,6 @@ function ChatPresetsContent() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <FloatingOrbs />
-
       {/* Back Link - Fixed Pill Button */}
       <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
@@ -225,69 +204,44 @@ function ChatPresetsContent() {
         </AnimatedLink>
       </div>
 
-      {/* Hero Section with Parallax - vt-exclude prevents scroll-parallax from being captured */}
-      <motion.section
-        ref={heroRef}
-        style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-        className="relative min-h-[50vh] flex items-center justify-center pt-12 pb-8 vt-exclude"
-      >
-        <div className="container mx-auto px-4">
-          {/* Hero Content */}
-          <div className="text-center max-w-4xl mx-auto">
-            {/* Floating badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-8">
-              <Settings className="w-4 h-4 text-cyan-400" />
-              <span className="text-sm font-medium text-cyan-400">Chat Completion Configuration</span>
+      <div className="relative container mx-auto px-4 py-8 sm:py-12">
+        {/* Compact Hero Section */}
+        <header className="text-center mb-8 sm:mb-10">
+          {/* Floating Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4">
+            <Settings className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-medium text-cyan-300">Chat Completion Configuration</span>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient bg-[length:200%_auto]">
+              Chat
+            </span>
+            <span className="text-white/90 ml-3">Presets</span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto mb-5">
+            Optimized completion settings for transformative AI roleplay
+          </p>
+
+          {/* Stats Row */}
+          <div className="flex items-center justify-center gap-6 text-sm">
+            <div className="flex items-center gap-2 text-gray-400">
+              <FileJson className="w-4 h-4 text-cyan-400" />
+              <span><strong className="text-white">{allPresets.length}</strong> presets</span>
             </div>
-
-            {/* Main Title */}
-            <div className="mb-6">
-              <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight">
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient pb-2">
-                  Chat
-                </span>
-                <span className="block text-white/90 mt-2">
-                  Presets
-                </span>
-              </h1>
-            </div>
-
-            {/* Subtitle */}
-            <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              Optimized completion settings for transformative AI roleplay.
-              <span className="block mt-2 text-gray-500">Download. Import. Experience.</span>
-            </p>
-
-            {/* Stats row */}
-            <div className="flex items-center justify-center gap-8 mt-10">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">{allPresets.length}</div>
-                <div className="text-xs text-gray-500 uppercase tracking-wider">Presets</div>
-              </div>
-              <div className="w-px h-8 bg-gray-700" />
-              <div className="text-center">
-                <div className="text-2xl font-bold text-cyan-400">{versions.standard.length + versions.prolix.length}</div>
-                <div className="text-xs text-gray-500 uppercase tracking-wider">Versions</div>
-              </div>
-              <div className="w-px h-8 bg-gray-700" />
-              <div className="text-center">
-                <div className="flex items-center gap-1 text-2xl font-bold text-purple-400">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div className="text-xs text-gray-500 uppercase tracking-wider">Optimized</div>
-              </div>
+            <div className="w-1 h-1 rounded-full bg-gray-600" />
+            <div className="flex items-center gap-2 text-gray-400">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span><strong className="text-white">{versions.standard.length + versions.prolix.length}</strong> versions</span>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Decorative gradient line */}
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
-      </motion.section>
-
-      {/* Main Content */}
-      <section className="relative py-12">
-        <div className="container mx-auto px-4">
-          {loading ? (
+        {/* Main Content */}
+        {loading ? (
             <div className="flex items-center justify-center py-24">
               <LoadingSpinner message="Loading presets..." />
             </div>
@@ -725,8 +679,7 @@ function ChatPresetsContent() {
               </div>
             </div>
           )}
-        </div>
-      </section>
+      </div>
 
       {/* Download Modal */}
       <PresetDownloadModal

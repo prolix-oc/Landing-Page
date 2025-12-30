@@ -46,6 +46,8 @@ body {
 /* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
+  /* Reserve scrollbar space to prevent layout shift when content loads */
+  scrollbar-gutter: stable;
 }
 
 /* Apple-style focus rings */

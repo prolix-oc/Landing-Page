@@ -40,15 +40,6 @@ import {
 // Base delay for hero animations - wait for View Transition to complete
 const VIEW_TRANSITION_DELAY = 0.25;
 
-// Floating orbs component for atmospheric depth - CSS animated for GPU optimization (reduced blur for Safari perf)
-const FloatingOrbs = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-    <div className="orb-1 absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/25 rounded-full blur-[80px]" />
-    <div className="orb-2 absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[80px]" />
-    <div className="orb-3 absolute top-1/2 right-1/3 w-[400px] h-[400px] bg-pink-500/15 rounded-full blur-[80px]" />
-  </div>
-);
-
 // Decorative floating cards for hero - delay accounts for View Transition
 const FloatingCard = ({ delay, className }: { delay: number; className: string }) => (
   <motion.div
@@ -166,11 +157,9 @@ export default function LucidLoomPage() {
   }, [isAutoPlaying]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
-      <FloatingOrbs />
-
+    <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden vt-exclude">
       {/* Back Link - Top Left */}
-      <div className="fixed top-6 left-6 z-50">
+      <div className="fixed top-6 left-6 z-50 vt-exclude">
         <AnimatedLink
           href="/"
           className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/80 border border-white/10 text-gray-400 hover:text-purple-400 hover:bg-gray-800/90 hover:border-purple-500/30 transition-all"
@@ -182,18 +171,22 @@ export default function LucidLoomPage() {
       </div>
 
       {/* ===== HERO SECTION ===== */}
-      <motion.section
+      <section
         ref={heroRef}
-        style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
         className="relative min-h-screen flex items-center justify-center px-4 vt-exclude"
       >
-        {/* Floating decorative cards */}
-        <FloatingCard delay={0.5} className="absolute top-20 left-[10%] hidden lg:block" />
-        <FloatingCard delay={0.7} className="absolute top-32 right-[15%] hidden lg:block" />
-        <FloatingCard delay={0.9} className="absolute bottom-32 left-[20%] hidden lg:block" />
+        {/* Motion wrapper with scroll effects - content inside */}
+        <motion.div
+          style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
+          {/* Floating decorative cards */}
+          <FloatingCard delay={0.5} className="absolute top-20 left-[10%] hidden lg:block" />
+          <FloatingCard delay={0.7} className="absolute top-32 right-[15%] hidden lg:block" />
+          <FloatingCard delay={0.9} className="absolute bottom-32 left-[20%] hidden lg:block" />
 
-        {/* Main hero content */}
-        <div className="relative z-10 text-center max-w-5xl mx-auto">
+          {/* Main hero content */}
+          <div className="relative z-10 text-center max-w-5xl mx-auto">
           {/* Overline */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -250,25 +243,26 @@ export default function LucidLoomPage() {
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </AnimatedLink>
           </motion.div>
-        </div>
+          </div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: VIEW_TRANSITION_DELAY + 0.8 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        >
+          {/* Scroll indicator */}
           <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="flex flex-col items-center gap-2 text-gray-500"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: VIEW_TRANSITION_DELAY + 0.8 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2"
           >
-            <span className="text-xs uppercase tracking-widest">Scroll</span>
-            <ChevronDown className="w-5 h-5" />
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="flex flex-col items-center gap-2 text-gray-500"
+            >
+              <span className="text-xs uppercase tracking-widest">Scroll</span>
+              <ChevronDown className="w-5 h-5" />
+            </motion.div>
           </motion.div>
         </motion.div>
-      </motion.section>
+      </section>
 
       {/* ===== LUMIA SHOWCASE ===== */}
       <section className="relative py-32 px-4 vt-exclude">
@@ -352,13 +346,13 @@ export default function LucidLoomPage() {
               </div>
 
               {/* Controls */}
-              <div className="flex justify-center items-center gap-4 mt-8">
+              <div className="relative z-20 flex justify-center items-center gap-4 mt-8">
                 <button
                   onClick={() => {
                     setIsAutoPlaying(false);
                     setCurrentAlter((prev) => (prev - 1 + alters.length) % alters.length);
                   }}
-                  className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all hover:scale-110"
+                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   aria-label="Previous alter"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -366,10 +360,10 @@ export default function LucidLoomPage() {
 
                 <button
                   onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-                  className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all hover:scale-110 ${
+                  className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
                     isAutoPlaying
                       ? 'bg-purple-600 border-purple-500 hover:bg-purple-500'
-                      : 'bg-white/5 hover:bg-white/10 border-white/10'
+                      : 'bg-white/10 hover:bg-white/20 border-white/20'
                   }`}
                   aria-label={isAutoPlaying ? "Pause auto-play" : "Resume auto-play"}
                 >
@@ -381,7 +375,7 @@ export default function LucidLoomPage() {
                     setIsAutoPlaying(false);
                     setCurrentAlter((prev) => (prev + 1) % alters.length);
                   }}
-                  className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all hover:scale-110"
+                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                   aria-label="Next alter"
                 >
                   <ChevronRight className="w-5 h-5" />

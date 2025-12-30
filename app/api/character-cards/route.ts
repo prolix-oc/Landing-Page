@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getCachedSlug, ensureWarmup } from '@/lib/github';
+import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getCachedSlug, ensureWarmup, getJsonData } from '@/lib/github';
 
 interface CharacterCard {
   name: string;
@@ -12,6 +12,13 @@ interface CharacterCard {
   lastModified: string | null;
   alternateCount?: number;
   slug: string;
+  tags: string[];
+  creators: string[];
+}
+
+interface FilterOption {
+  name: string;
+  count: number;
 }
 
 export async function GET(request: Request) {
@@ -73,7 +80,17 @@ export async function GET(request: Request) {
                 
                 const thumbnailUrl = pngFile ? await getCharacterThumbnail(primaryDir.path, pngFile) : null;
                 const commit = await getLatestCommit(primaryDir.path);
-                
+
+                // Fetch JSON data to extract tags and creators
+                const cardJsonData = jsonFile ? await getJsonData(jsonFile) : null;
+                const tags: string[] = cardJsonData?.data?.tags || [];
+                const creators: string[] = [];
+                if (cardJsonData?.data?.creators && Array.isArray(cardJsonData.data.creators)) {
+                  creators.push(...cardJsonData.data.creators);
+                } else if (cardJsonData?.data?.creator && typeof cardJsonData.data.creator === 'string') {
+                  creators.push(cardJsonData.data.creator);
+                }
+
                 let totalScenarios = 0;
                 for (const dir of dirs) {
                   const contents = await getDirectoryContents(dir.path);
@@ -81,7 +98,7 @@ export async function GET(request: Request) {
                   totalScenarios += jsonCount;
                 }
                 const alternateCount = totalScenarios > 1 ? totalScenarios - 1 : 0;
-                
+
                 return {
                   name: baseName,
                   path: primaryDir.path,
@@ -92,7 +109,9 @@ export async function GET(request: Request) {
                   size: (pngFile?.size || 0) + (jsonFile?.size || 0),
                   lastModified: commit?.commit.author.date || null,
                   alternateCount,
-                  slug: getCachedSlug(baseName, primaryDir.path)
+                  slug: getCachedSlug(baseName, primaryDir.path),
+                  tags,
+                  creators
                 };
               } catch (error) {
                 console.error(`Error processing character card ${baseName}:`, error);
@@ -106,7 +125,9 @@ export async function GET(request: Request) {
                   size: 0,
                   lastModified: null,
                   alternateCount: dirs.length > 1 ? dirs.length - 1 : 0,
-                  slug: getCachedSlug(baseName, primaryDir.path)
+                  slug: getCachedSlug(baseName, primaryDir.path),
+                  tags: [],
+                  creators: []
                 };
               }
             })
@@ -124,11 +145,40 @@ export async function GET(request: Request) {
         return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
       });
 
+      // Aggregate tags and creators with counts
+      const tagCounts = new Map<string, number>();
+      const creatorCounts = new Map<string, number>();
+
+      allCards.forEach(card => {
+        card.tags.forEach(tag => {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        });
+        card.creators.forEach(creator => {
+          creatorCounts.set(creator, (creatorCounts.get(creator) || 0) + 1);
+        });
+      });
+
+      // Sort by count descending, then alphabetically
+      const sortedTags: FilterOption[] = Array.from(tagCounts.entries())
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([name, count]) => ({ name, count }));
+
+      const sortedCreators: FilterOption[] = Array.from(creatorCounts.entries())
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([name, count]) => ({ name, count }));
+
       return NextResponse.json(
         {
           success: true,
           categories: categoryList,
-          cards: allCards
+          cards: allCards,
+          tags: sortedTags,
+          creators: sortedCreators,
+          stats: {
+            totalCards: allCards.length,
+            totalCategories: categoryList.length,
+            totalCreators: sortedCreators.length
+          }
         },
         {
           headers: {

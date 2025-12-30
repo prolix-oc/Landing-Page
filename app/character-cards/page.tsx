@@ -11,9 +11,12 @@ import SmartPagination from '@/app/components/SmartPagination';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import CardSkeleton from '@/app/components/CardSkeleton';
 import SortDropdown, { SortOption } from '@/app/components/SortDropdown';
+import SearchInput from '@/app/components/SearchInput';
+import FilterAccordion from '@/app/components/FilterAccordion';
 import {
   ArrowLeft,
   Users,
+  User,
   ChevronRight,
   Download,
   ChevronDown,
@@ -22,7 +25,9 @@ import {
   Layers,
   Calendar,
   HardDrive,
-  Sparkles
+  Sparkles,
+  Tag,
+  X
 } from 'lucide-react';
 
 interface Category {
@@ -42,6 +47,13 @@ interface CharacterCard {
   lastModified: string | null;
   alternateCount?: number;
   slug: string;
+  tags: string[];
+  creators: string[];
+}
+
+interface FilterOption {
+  name: string;
+  count: number;
 }
 
 function CharacterCardsContent() {
@@ -59,6 +71,14 @@ function CharacterCardsContent() {
   const [sortBy, setSortBy] = useState<SortOption>('a-z');
   const [isContentLoaded, setIsContentLoaded] = useState(false);
 
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [selectedCreators, setSelectedCreators] = useState<Set<string>>(new Set());
+  const [allTags, setAllTags] = useState<FilterOption[]>([]);
+  const [allCreators, setAllCreators] = useState<FilterOption[]>([]);
+
   // Track if initial page load is complete (to skip animations during View Transition)
   const hasMounted = useRef(false);
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
@@ -71,6 +91,14 @@ function CharacterCardsContent() {
     }, 300);
     return () => clearTimeout(timer);
   }, []);
+
+  // Debounce search input (300ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Calculate cards per page based on screen size
   useEffect(() => {
@@ -98,8 +126,21 @@ function CharacterCardsContent() {
   // Check URL parameters on mount
   useEffect(() => {
     const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+    const tagsParam = searchParams.get('tags');
+    const creatorsParam = searchParams.get('creators');
+
     if (categoryParam) {
       setSelectedCategory(decodeURIComponent(categoryParam));
+    }
+    if (searchParam) {
+      setSearchQuery(decodeURIComponent(searchParam));
+    }
+    if (tagsParam) {
+      setSelectedTags(new Set(tagsParam.split(',').map(decodeURIComponent)));
+    }
+    if (creatorsParam) {
+      setSelectedCreators(new Set(creatorsParam.split(',').map(decodeURIComponent)));
     }
   }, [searchParams]);
 
@@ -113,6 +154,8 @@ function CharacterCardsContent() {
           setCategories(data.categories);
           setAllCards(data.cards || []);
           setFilteredCards(data.cards || []);
+          setAllTags(data.tags || []);
+          setAllCreators(data.creators || []);
           setTimeout(() => setIsContentLoaded(true), 100);
         }
       } catch (error) {
@@ -125,12 +168,38 @@ function CharacterCardsContent() {
     fetchAllCards();
   }, []);
 
-  // Filter and sort cards when category or sort changes
+  // Filter and sort cards when any filter changes
   useEffect(() => {
-    let filtered = selectedCategory
-      ? allCards.filter(card => card.category === selectedCategory)
-      : allCards;
+    let filtered = allCards;
 
+    // Category filter
+    if (selectedCategory) {
+      filtered = filtered.filter(card => card.category === selectedCategory);
+    }
+
+    // Search filter (case-insensitive name match)
+    if (debouncedSearch.trim()) {
+      const searchLower = debouncedSearch.toLowerCase();
+      filtered = filtered.filter(card =>
+        card.name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Tags filter (OR logic within tags)
+    if (selectedTags.size > 0) {
+      filtered = filtered.filter(card =>
+        card.tags.some(tag => selectedTags.has(tag))
+      );
+    }
+
+    // Creators filter (OR logic within creators)
+    if (selectedCreators.size > 0) {
+      filtered = filtered.filter(card =>
+        card.creators.some(creator => selectedCreators.has(creator))
+      );
+    }
+
+    // Sort
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'a-z':
@@ -149,7 +218,7 @@ function CharacterCardsContent() {
 
     setFilteredCards(sorted);
     setCurrentPage(0);
-  }, [selectedCategory, allCards, sortBy]);
+  }, [selectedCategory, allCards, sortBy, debouncedSearch, selectedTags, selectedCreators]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -157,16 +226,44 @@ function CharacterCardsContent() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  // Build URL with current filters
+  const buildFilterUrl = (overrides: {
+    category?: string | null;
+    search?: string;
+    tags?: Set<string>;
+    creators?: Set<string>;
+  } = {}) => {
+    const params = new URLSearchParams();
+    const category = overrides.category !== undefined ? overrides.category : selectedCategory;
+    const search = overrides.search !== undefined ? overrides.search : searchQuery;
+    const tags = overrides.tags !== undefined ? overrides.tags : selectedTags;
+    const creators = overrides.creators !== undefined ? overrides.creators : selectedCreators;
+
+    if (category) params.set('category', category);
+    if (search) params.set('search', search);
+    if (tags.size > 0) params.set('tags', Array.from(tags).join(','));
+    if (creators.size > 0) params.set('creators', Array.from(creators).join(','));
+
+    const queryString = params.toString();
+    return queryString ? `/character-cards?${queryString}` : '/character-cards';
+  };
+
   const handleCategoryChange = (categoryName: string | null) => {
     if (categoryName !== selectedCategory) {
       setSelectedCategory(categoryName);
-      if (categoryName) {
-        router.push(`/character-cards?category=${encodeURIComponent(categoryName)}`, { scroll: false });
-      } else {
-        router.push('/character-cards', { scroll: false });
-      }
+      router.push(buildFilterUrl({ category: categoryName }), { scroll: false });
     }
   };
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory(null);
+    setSelectedTags(new Set());
+    setSelectedCreators(new Set());
+    router.push('/character-cards', { scroll: false });
+  };
+
+  const hasActiveFilters = searchQuery || selectedCategory || selectedTags.size > 0 || selectedCreators.size > 0;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -181,18 +278,9 @@ function CharacterCardsContent() {
   // Calculate stats
   const totalCards = allCards.length;
   const totalCategories = categories.length;
-  const totalAlts = allCards.reduce((sum, card) => sum + (card.alternateCount || 0), 0);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* CSS Animated Orbs - GPU Optimized (reduced blur for Safari perf) */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="orb-1 absolute top-[10%] left-[5%] w-[500px] h-[500px] bg-cyan-600/25 rounded-full blur-[80px]" />
-        <div className="orb-2 absolute top-[50%] right-[0%] w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[80px]" />
-        <div className="orb-3 absolute bottom-[5%] left-[30%] w-[450px] h-[450px] bg-blue-600/20 rounded-full blur-[70px]" />
-      </div>
-
-
       {/* Back Link - Fixed Pill Button */}
       <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
@@ -240,8 +328,8 @@ function CharacterCardsContent() {
             </div>
             <div className="w-1 h-1 rounded-full bg-gray-600 hidden sm:block" />
             <div className="hidden sm:flex items-center gap-2 text-gray-400">
-              <FileJson2 className="w-4 h-4 text-blue-400" />
-              <span><strong className="text-white">{totalAlts}</strong> alt scenarios</span>
+              <User className="w-4 h-4 text-blue-400" />
+              <span><strong className="text-white">{allCreators.length}</strong> creators</span>
             </div>
           </div>
         </header>
@@ -259,53 +347,98 @@ function CharacterCardsContent() {
             {/* Content grid inside */}
             <div className="relative p-4 sm:p-6">
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Categories Sidebar */}
+                {/* Filters Sidebar */}
                 <div className="lg:col-span-1">
-                  <div className="lg:sticky lg:top-24 space-y-3">
-                    <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-4 px-1">
-                      <Layers className="w-5 h-5 text-purple-400" />
-                      Categories
-                    </h2>
+                  <div className="lg:sticky lg:top-24 space-y-4">
+                    {/* Search Input */}
+                    <SearchInput
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="Search characters..."
+                    />
 
-                    {/* All Cards button */}
-                    <button
-                      onClick={() => handleCategoryChange(null)}
-                      className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
-                        selectedCategory === null
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/10 text-white border border-cyan-500/30'
-                          : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
-                      }`}
-                    >
-                      <span className="font-medium">All Cards</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{allCards.length}</span>
-                        <ChevronRight className={`w-4 h-4 transition-all ${
-                          selectedCategory === null ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
-                        }`} />
-                      </div>
-                    </button>
+                    {/* Categories Section */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-purple-400" />
+                        Categories
+                      </h3>
 
-                    {categories.map((category) => (
+                      {/* All Cards button */}
                       <button
-                        key={category.name}
-                        onClick={() => handleCategoryChange(category.name)}
-                        className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
-                          selectedCategory === category.name
+                        onClick={() => handleCategoryChange(null)}
+                        className={`group w-full text-left px-4 py-2.5 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
+                          selectedCategory === null
                             ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/10 text-white border border-cyan-500/30'
                             : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
                         }`}
                       >
-                        <span className="font-medium">{category.displayName}</span>
+                        <span className="font-medium text-sm">All Cards</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">
-                            {allCards.filter(c => c.category === category.name).length}
-                          </span>
+                          <span className="text-xs text-gray-500">{allCards.length}</span>
                           <ChevronRight className={`w-4 h-4 transition-all ${
-                            selectedCategory === category.name ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
+                            selectedCategory === null ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
                           }`} />
                         </div>
                       </button>
-                    ))}
+
+                      {categories.map((category) => (
+                        <button
+                          key={category.name}
+                          onClick={() => handleCategoryChange(category.name)}
+                          className={`group w-full text-left px-4 py-2.5 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
+                            selectedCategory === category.name
+                              ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/10 text-white border border-cyan-500/30'
+                              : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
+                          }`}
+                        >
+                          <span className="font-medium text-sm">{category.displayName}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              {allCards.filter(c => c.category === category.name).length}
+                            </span>
+                            <ChevronRight className={`w-4 h-4 transition-all ${
+                              selectedCategory === category.name ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
+                            }`} />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Tags Filter */}
+                    {allTags.length > 0 && (
+                      <FilterAccordion
+                        title="Tags"
+                        icon={Tag}
+                        options={allTags}
+                        selectedOptions={selectedTags}
+                        onSelectionChange={setSelectedTags}
+                        accentColor="purple"
+                      />
+                    )}
+
+                    {/* Creators Filter */}
+                    {allCreators.length > 0 && (
+                      <FilterAccordion
+                        title="Creators"
+                        icon={User}
+                        options={allCreators}
+                        selectedOptions={selectedCreators}
+                        onSelectionChange={setSelectedCreators}
+                        accentColor="blue"
+                      />
+                    )}
+
+                    {/* Clear All Filters */}
+                    {hasActiveFilters && (
+                      <button
+                        onClick={clearAllFilters}
+                        className="w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-cyan-400 transition-colors py-2.5 border border-dashed border-white/10 hover:border-cyan-500/30 rounded-xl"
+                      >
+                        <X className="w-4 h-4" />
+                        Clear all filters
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -323,7 +456,20 @@ function CharacterCardsContent() {
                     <div className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-12 text-center">
                       <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                       <p className="text-xl text-gray-400">No character cards found</p>
-                      <p className="text-sm text-gray-500 mt-2">Try selecting a different category</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        {hasActiveFilters
+                          ? 'Try adjusting your filters or search terms'
+                          : 'Try selecting a different category'}
+                      </p>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors border border-cyan-500/30 hover:border-cyan-500/50 rounded-lg"
+                        >
+                          <X className="w-4 h-4" />
+                          Clear all filters
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <>

@@ -200,14 +200,6 @@ function WorldBooksContent() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* CSS Animated Orbs - GPU Optimized (reduced blur for Safari perf) */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="orb-1 absolute top-[10%] left-[5%] w-[500px] h-[500px] bg-cyan-600/25 rounded-full blur-[80px]" />
-        <div className="orb-2 absolute top-[50%] right-[0%] w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[80px]" />
-        <div className="orb-3 absolute bottom-[5%] left-[30%] w-[450px] h-[450px] bg-blue-600/20 rounded-full blur-[70px]" />
-      </div>
-
-
       {/* Back Link - Fixed Pill Button */}
       <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
