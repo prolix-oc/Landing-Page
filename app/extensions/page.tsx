@@ -106,15 +106,9 @@ function ExtensionsContent() {
         </AnimatedLink>
       </div>
 
-      <div className="relative container mx-auto px-4 py-8 sm:py-12">
+      <div className="relative container mx-auto px-4 pt-20 sm:pt-24 pb-8 sm:pb-12">
         {/* Compact Hero Section */}
         <header className="text-center mb-8 sm:mb-10">
-          {/* Floating Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 mb-4">
-            <Puzzle className="w-4 h-4 text-orange-400" />
-            <span className="text-sm font-medium text-orange-300">SillyTavern Extensions</span>
-          </div>
-
           {/* Title */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-500 to-red-500 animate-gradient bg-[length:200%_auto]">

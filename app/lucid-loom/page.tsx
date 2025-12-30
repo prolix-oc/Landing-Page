@@ -336,7 +336,7 @@ export default function LucidLoomPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: VIEW_TRANSITION_DELAY + 0.5, duration: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center mt-12"
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12 px-4"
           >
             <AnimatedLink
               href="/chat-presets"
@@ -645,7 +645,7 @@ export default function LucidLoomPage() {
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.1 }}
+                      transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                       className="ml-auto max-w-2xl"
                     >
                       <div className="flex items-center gap-2 justify-end mb-2">
@@ -666,7 +666,7 @@ export default function LucidLoomPage() {
                       initial={{ opacity: 0, x: -20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.2 }}
+                      transition={{ delay: 0.2, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                       className="max-w-2xl"
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -723,7 +723,7 @@ export default function LucidLoomPage() {
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.1 }}
+                      transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                       className="ml-auto max-w-2xl"
                     >
                       <div className="flex items-center gap-2 justify-end mb-2">
@@ -744,7 +744,7 @@ export default function LucidLoomPage() {
                       initial={{ opacity: 0, x: -20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.2 }}
+                      transition={{ delay: 0.2, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                       className="max-w-2xl"
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -801,7 +801,7 @@ export default function LucidLoomPage() {
                       initial={{ opacity: 0, x: 20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.1 }}
+                      transition={{ delay: 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                       className="ml-auto max-w-2xl"
                     >
                       <div className="flex items-center gap-2 justify-end mb-2">
@@ -822,7 +822,7 @@ export default function LucidLoomPage() {
                       initial={{ opacity: 0, x: -20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: 0.2 }}
+                      transition={{ delay: 0.2, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                       className="max-w-2xl"
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -926,7 +926,7 @@ export default function LucidLoomPage() {
                   Discover what happens when narrative craft meets creative exploration. Free, open-source, and ready for SillyTavern.
                 </p>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
                   <AnimatedLink
                     href="/chat-presets"
                     className="group inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-white text-gray-900 font-semibold text-lg hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"

@@ -212,15 +212,9 @@ function WorldBooksContent() {
         </AnimatedLink>
       </div>
 
-      <div className="relative container mx-auto px-4 py-8 sm:py-12">
+      <div className="relative container mx-auto px-4 pt-20 sm:pt-24 pb-8 sm:pb-12">
         {/* Compact Hero Section */}
         <header className="text-center mb-8 sm:mb-10">
-          {/* Floating Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4">
-            <BookOpen className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-medium text-cyan-300">World Information & Lore</span>
-          </div>
-
           {/* Title */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-3">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient bg-[length:200%_auto]">
