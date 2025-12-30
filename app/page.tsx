@@ -1,7 +1,4 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import AnimatedLink from '@/app/components/AnimatedLink';
+import TransitionLink from '@/app/components/TransitionLink';
 import {
   Sparkles,
   Users,
@@ -85,79 +82,49 @@ const borderColors: Record<string, string> = {
 export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden relative">
-      {/* Optimized Background: CSS-animated orbs (GPU optimized) */}
+      {/* Optimized Background: CSS-animated orbs (reduced blur for Safari perf) */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="orb-1 absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-purple-600/25 rounded-full blur-[120px]" />
-        <div className="orb-2 absolute top-[50%] right-[5%] w-[600px] h-[600px] bg-cyan-600/20 rounded-full blur-[140px]" />
-        <div className="orb-3 absolute bottom-[5%] left-[25%] w-[450px] h-[450px] bg-blue-600/20 rounded-full blur-[100px]" />
+        <div className="orb-1 absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-purple-600/30 rounded-full blur-[80px]" />
+        <div className="orb-2 absolute top-[50%] right-[5%] w-[600px] h-[600px] bg-cyan-600/25 rounded-full blur-[80px]" />
+        <div className="orb-3 absolute bottom-[5%] left-[25%] w-[450px] h-[450px] bg-blue-600/25 rounded-full blur-[70px]" />
       </div>
 
       {/* Main Container */}
       <div className="flex-1 flex flex-col container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl relative z-10">
 
         {/* Compact Hero */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-4 sm:mb-6 flex-shrink-0"
-        >
+        <header className="text-center mb-4 sm:mb-6 flex-shrink-0 animate-header">
           {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 mb-3"
-          >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 mb-3">
             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
             <span className="text-xs sm:text-sm font-medium text-purple-300">SillyTavern Resources</span>
-          </motion.div>
+          </div>
 
           {/* Title */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2"
-          >
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-2">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">
               Lucid.cards
             </span>
-          </motion.h1>
+          </h1>
 
           {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-sm sm:text-base text-gray-400 max-w-lg mx-auto"
-          >
+          <p className="text-sm sm:text-base text-gray-400 max-w-lg mx-auto">
             Character cards, presets, world books & extensions
             <span className="hidden sm:inline"> — crafted for immersive roleplay</span>
-          </motion.p>
-        </motion.header>
+          </p>
+        </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex-1 min-h-0 relative"
-        >
-          {/* The single backdrop-blur layer */}
-          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
+        <div className="flex-1 min-h-0 relative animate-glass">
+          {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
+          <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
           {/* Bento Grid inside the glass container */}
           <div className="relative h-full p-3 sm:p-4 grid grid-cols-6 grid-rows-4 gap-3 sm:gap-4">
 
             {/* Featured Card - Lucid Loom (spans more area) */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="col-span-6 sm:col-span-3 lg:col-span-2 row-span-4 sm:row-span-4"
-            >
-              <AnimatedLink href="/lucid-loom" className="block h-full group">
+            <div className="bento-card col-span-6 sm:col-span-3 lg:col-span-2 row-span-4 sm:row-span-4">
+              <TransitionLink href="/lucid-loom" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-2xl ${glowColors.purple} ${borderColors.purple} hover:bg-white/[0.03]`}>
                   {/* Decorative gradient orb */}
                   <div className="absolute -top-16 -right-16 w-32 h-32 bg-purple-500/30 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
@@ -188,17 +155,12 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-              </AnimatedLink>
-            </motion.div>
+              </TransitionLink>
+            </div>
 
             {/* Character Cards */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="col-span-3 sm:col-span-3 lg:col-span-2 row-span-2"
-            >
-              <AnimatedLink href="/character-cards" className="block h-full group">
+            <div className="bento-card col-span-3 sm:col-span-3 lg:col-span-2 row-span-2">
+              <TransitionLink href="/character-cards" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.cyan} ${borderColors.cyan} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
                     <div className="mb-3">
@@ -214,17 +176,12 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-              </AnimatedLink>
-            </motion.div>
+              </TransitionLink>
+            </div>
 
             {/* Chat Presets */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.55 }}
-              className="col-span-3 sm:col-span-3 lg:col-span-2 row-span-2"
-            >
-              <AnimatedLink href="/chat-presets" className="block h-full group">
+            <div className="bento-card col-span-3 sm:col-span-3 lg:col-span-2 row-span-2">
+              <TransitionLink href="/chat-presets" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.violet} ${borderColors.violet} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
                     <div className="mb-3">
@@ -240,17 +197,12 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-              </AnimatedLink>
-            </motion.div>
+              </TransitionLink>
+            </div>
 
             {/* World Books */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="col-span-3 lg:col-span-2 row-span-2"
-            >
-              <AnimatedLink href="/world-books" className="block h-full group">
+            <div className="bento-card col-span-3 lg:col-span-2 row-span-2">
+              <TransitionLink href="/world-books" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.emerald} ${borderColors.emerald} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
                     <div className="mb-3">
@@ -266,17 +218,12 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-              </AnimatedLink>
-            </motion.div>
+              </TransitionLink>
+            </div>
 
             {/* Extensions */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.65 }}
-              className="col-span-3 lg:col-span-2 row-span-2"
-            >
-              <AnimatedLink href="/extensions" className="block h-full group">
+            <div className="bento-card col-span-3 lg:col-span-2 row-span-2">
+              <TransitionLink href="/extensions" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.amber} ${borderColors.amber} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
                     <div className="mb-3">
@@ -292,19 +239,14 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-              </AnimatedLink>
-            </motion.div>
+              </TransitionLink>
+            </div>
 
           </div>
-        </motion.div>
+        </div>
 
         {/* Compact Footer */}
-        <motion.footer
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="flex-shrink-0 pt-3 sm:pt-4 flex items-center justify-center"
-        >
+        <footer className="flex-shrink-0 pt-3 sm:pt-4 flex items-center justify-center">
           <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500">
             <span>Data from</span>
             <a
@@ -318,7 +260,7 @@ export default function Home() {
               <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             </a>
           </div>
-        </motion.footer>
+        </footer>
       </div>
 
     </div>

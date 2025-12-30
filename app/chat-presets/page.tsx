@@ -62,17 +62,17 @@ const FloatingOrbs = () => (
   </div>
 );
 
-// Reveal section with scroll animation
+// Reveal section with scroll animation - optimized for faster appearance
 const RevealSection = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-      transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1], delay }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.3, ease: "easeOut", delay: delay * 0.5 }}
       className={className}
     >
       {children}
@@ -266,9 +266,9 @@ function ChatPresetsContent() {
           <div className="text-center max-w-4xl mx-auto">
             {/* Floating badge */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-8"
             >
               <Settings className="w-4 h-4 text-cyan-400" />
@@ -277,9 +277,9 @@ function ChatPresetsContent() {
 
             {/* Main Title */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}
               className="mb-6"
             >
               <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-tight">
@@ -294,9 +294,9 @@ function ChatPresetsContent() {
 
             {/* Subtitle */}
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
               className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed"
             >
               Optimized completion settings for transformative AI roleplay.
@@ -305,9 +305,9 @@ function ChatPresetsContent() {
 
             {/* Stats row */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.15 }}
               className="flex items-center justify-center gap-8 mt-10"
             >
               <div className="text-center">

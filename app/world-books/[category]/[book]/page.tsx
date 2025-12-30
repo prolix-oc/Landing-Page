@@ -96,6 +96,7 @@ export default function WorldBookDetailsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [showCopied, setShowCopied] = useState(false);
+  const entriesContainerRef = useRef<HTMLDivElement>(null);
 
   const toggleEntry = (uid: number) => {
     setExpandedEntries(prev => ({
@@ -237,16 +238,11 @@ export default function WorldBookDetailsPage() {
   const endIndex = startIndex + ENTRIES_PER_PAGE;
   const currentEntries = entriesArray.slice(startIndex, endIndex);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const isProlix = worldBook.name.match(/Prolix\s+(?:Preferred|Edition)/i);
   const accentColor = isProlix ? 'purple' : 'cyan';
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="h-screen flex flex-col relative overflow-hidden">
       {/* CSS Animated Orbs - GPU Optimized */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
         <div className="orb-1 absolute top-[10%] left-[5%] w-[500px] h-[500px] bg-cyan-600/20 rounded-full blur-[120px]" />
@@ -271,10 +267,10 @@ export default function WorldBookDetailsPage() {
         </AnimatedLink>
       </motion.div>
 
-      <div className="relative container mx-auto px-4 py-8 sm:py-12">
+      <div className="flex-1 flex flex-col container mx-auto px-4 py-8 sm:py-12 min-h-0">
         {/* Single Glass Container */}
         <motion.div
-          className="relative"
+          className="relative flex-1 min-h-0 flex flex-col"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
@@ -283,11 +279,11 @@ export default function WorldBookDetailsPage() {
           <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
           {/* Content grid inside */}
-          <div className="relative p-4 sm:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="relative flex-1 min-h-0 p-4 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
               {/* World Book Info Sidebar */}
-              <div className="lg:col-span-1">
-                <div className="lg:sticky lg:top-24 space-y-6">
+              <div className="lg:col-span-1 lg:overflow-y-auto">
+                <div className="space-y-6">
                   {/* Title Section */}
                   <div>
                     <motion.div
@@ -438,8 +434,8 @@ export default function WorldBookDetailsPage() {
                 </div>
               </div>
 
-              {/* Entries Section */}
-              <div className="lg:col-span-3">
+              {/* Entries Section - Scrollable on desktop */}
+              <div className="lg:col-span-3 flex flex-col min-h-0">
                 {entriesArray.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -457,7 +453,10 @@ export default function WorldBookDetailsPage() {
                     <p className="text-gray-400">Try adjusting your search terms</p>
                   </motion.div>
                 ) : (
-                  <div className="space-y-4">
+                  <div
+                    ref={entriesContainerRef}
+                    className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4 pb-20 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                  >
                     <AnimatePresence mode="wait">
                       {currentEntries.map((entry, index) => (
                         <RevealSection key={`${currentPage}-${entry.uid}`} delay={index * 0.05}>
@@ -645,26 +644,24 @@ export default function WorldBookDetailsPage() {
                     </AnimatePresence>
                   </div>
                 )}
-
-                {/* Bottom padding for sticky pagination */}
-                {totalPages > 1 && (
-                  <div className="h-24" />
-                )}
               </div>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Sticky Pagination at Bottom */}
+      {/* Fixed Pagination at Bottom - Floating above content */}
       {!loading && !error && totalPages > 1 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-          <div className="pt-6 pb-6">
-            <div className="container mx-auto px-4">
+        <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+          <div className="container mx-auto px-4 pb-6 pt-4">
+            <div className="pointer-events-auto">
               <SmartPagination
                 currentPage={currentPage}
                 totalPages={totalPages}
-                onPageChange={handlePageChange}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  entriesContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             </div>
           </div>

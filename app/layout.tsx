@@ -1,8 +1,9 @@
-
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { NavigationProvider } from "./contexts/NavigationContext";
+import NavigationProgress from "./components/NavigationProgress";
+import TransitionCleanup from "./components/TransitionCleanup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,12 +49,29 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
+      <head>
+        {/* Inline script for immediate click feedback - runs before React hydration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.addEventListener('click', function(e) {
+                var link = e.target.closest('a[href^="/"]');
+                if (link && !link.target && !link.download) {
+                  document.body.classList.add('page-transitioning');
+                }
+              }, true);
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NavigationProvider>
-          {children}
-        </NavigationProvider>
+        <Suspense fallback={null}>
+          <NavigationProgress />
+          <TransitionCleanup />
+        </Suspense>
+        {children}
       </body>
     </html>
   );

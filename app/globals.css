@@ -75,7 +75,7 @@ a:focus-visible {
   background: #4a4a4a;
 }
 
-/* Smooth transitions for interactive elements - exclude elements with data-framer-motion and breathing gradients */
+/* Smooth transitions for interactive elements */
 *:not([data-framer-motion]):not([data-breathing-gradient]) {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -532,4 +532,127 @@ a:active {
 .orb-3 {
   animation: orb-float-3 22s ease-in-out infinite;
   will-change: transform;
+}
+
+/* Simple fade in animation for page transitions */
+@keyframes simpleFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: simpleFadeIn 0.15s ease-out;
+}
+
+/* Bento card entrance animation */
+@keyframes bentoSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bento-card {
+  animation: bentoSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.bento-card:nth-child(1) { animation-delay: 0.05s; }
+.bento-card:nth-child(2) { animation-delay: 0.1s; }
+.bento-card:nth-child(3) { animation-delay: 0.15s; }
+.bento-card:nth-child(4) { animation-delay: 0.2s; }
+.bento-card:nth-child(5) { animation-delay: 0.25s; }
+
+/* Header entrance animation */
+@keyframes headerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-header {
+  animation: headerFadeIn 0.4s ease-out;
+}
+
+/* Glass container entrance */
+@keyframes glassReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-glass {
+  animation: glassReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+}
+
+/* Page transition - fade out when navigating */
+@keyframes pageFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0.3;
+    transform: scale(0.99);
+    filter: blur(2px);
+  }
+}
+
+body.page-transitioning {
+  pointer-events: none;
+}
+
+body.page-transitioning > * {
+  animation: pageFadeOut 0.15s ease-out forwards;
+}
+
+/* Immediate click feedback - pure CSS, no JS needed */
+a:active {
+  opacity: 0.7 !important;
+  transform: scale(0.98) !important;
+  transition: none !important;
+}
+
+/* Safari performance optimizations */
+/* Safari struggles with large blur radii - reduce them */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    /* This targets Safari specifically */
+    .orb-1, .orb-2, .orb-3 {
+      filter: blur(60px) !important;
+      -webkit-filter: blur(60px) !important;
+      opacity: 0.5;
+    }
+
+    .backdrop-blur-xl {
+      -webkit-backdrop-filter: blur(12px) !important;
+      backdrop-filter: blur(12px) !important;
+    }
+  }
+}
+
+/* Alternative: Use CSS custom property to control blur (easier to tune) */
+:root {
+  --orb-blur: 120px;
+}
+
+/* Reduce blur for Safari via feature detection */
+@supports (-webkit-hyphens: none) {
+  :root {
+    --orb-blur: 50px;
+  }
 }

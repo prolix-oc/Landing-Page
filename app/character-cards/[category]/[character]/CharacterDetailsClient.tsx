@@ -21,6 +21,7 @@ import {
   FileText,
   Brain,
   ChevronDown,
+  ChevronUp,
   Download,
   Image as ImageIcon,
   FileJson2,
@@ -29,7 +30,9 @@ import {
   Calendar,
   Sparkles,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 interface CharacterCardData {
@@ -103,20 +106,12 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
   const selectedAlternate = getScenarioIndex();
   const [accentColor, setAccentColor] = useState<string>('#60a5fa');
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    firstMessage: true,
-    scenario: true,
-    description: true,
-    personality: true
-  });
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showFullScreenImage, setShowFullScreenImage] = useState(false);
 
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+  const toggleCardExpansion = (cardId: string) => {
+    setExpandedCard(prev => prev === cardId ? null : cardId);
   };
 
   // Extract average color from image
@@ -251,13 +246,13 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     }
   };
 
-  // Section icons mapping
-  const sectionIcons = {
-    firstMessage: MessageSquare,
-    scenario: Map,
-    description: FileText,
-    personality: Brain
-  };
+  // Section configuration for Bento layout
+  const bentoSections = [
+    { id: 'firstMessage', title: 'First Message', icon: MessageSquare, content: charData.first_mes, gridClass: 'col-span-2 row-span-2' },
+    { id: 'scenario', title: 'Scenario', icon: Map, content: charData.scenario, gridClass: 'col-span-1 row-span-1' },
+    { id: 'description', title: 'Description', icon: FileText, content: charData.description, gridClass: 'col-span-1 row-span-2' },
+    { id: 'personality', title: 'Personality', icon: Brain, content: charData.personality, gridClass: 'col-span-2 row-span-1' },
+  ].filter(section => section.content);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -397,7 +392,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           </motion.div>
         )}
 
-        {/* Main Content - Single Glass Container */}
+        {/* Main Content - Bento Grid Layout */}
         <motion.div
           className="relative"
           variants={itemVariants}
@@ -405,16 +400,22 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           {/* Single backdrop-blur layer */}
           <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
-          {/* Content grid inside */}
-          <div className="relative p-4 sm:p-6 lg:p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-              {/* Character Image and Download */}
-              <div className="lg:col-span-1">
-                <div className="lg:sticky lg:top-8 space-y-4">
+          {/* Bento Grid Content */}
+          <div className="relative p-4 sm:p-6">
+            {/* Top Row: Character Card + Name/Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
+              {/* Character Portrait Card */}
+              <motion.div
+                className="lg:col-span-4 xl:col-span-3"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
+                <div className="relative group">
                   {/* Image */}
                   <motion.button
                     onClick={() => setShowFullScreenImage(true)}
-                    className="relative aspect-square w-full rounded-2xl overflow-hidden cursor-pointer group border border-white/[0.08]"
+                    className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden cursor-pointer border border-white/[0.08] transition-all duration-300 hover:border-white/[0.15]"
                     aria-label="View full-size image"
                     whileHover="hover"
                     initial="initial"
@@ -447,208 +448,235 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                       )}
                     </AnimatePresence>
 
-                    {/* Hover overlay */}
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                    {/* View Full Size overlay */}
                     <motion.div
-                      className="absolute inset-0 flex items-center justify-center"
+                      className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-colors"
                       variants={{
-                        initial: { backgroundColor: 'rgba(0, 0, 0, 0)' },
-                        hover: { backgroundColor: 'rgba(0, 0, 0, 0.4)' }
+                        initial: { opacity: 0 },
+                        hover: { opacity: 1 }
                       }}
-                      transition={{ duration: 0.3 }}
                     >
-                      <motion.div
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20"
-                        variants={{
-                          initial: { opacity: 0, scale: 0.9 },
-                          hover: { opacity: 1, scale: 1 }
-                        }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <ImageIcon className="w-5 h-5 text-white" />
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                        <Maximize2 className="w-4 h-4 text-white" />
                         <span className="text-white text-sm font-medium">View Full Size</span>
-                      </motion.div>
+                      </div>
                     </motion.div>
-                  </motion.button>
 
-                  {/* Character Name */}
-                  <div>
-                    <motion.h1
-                      className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text mb-2"
-                      initial={false}
-                      animate={{
-                        backgroundImage: `linear-gradient(to right, ${accentColor}, #fff, ${accentColor})`,
-                        backgroundSize: '200% auto',
-                      }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      {charData.name}
-                    </motion.h1>
-
-                    {currentScenario.lastModified && (
-                      <p className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="w-3.5 h-3.5" />
-                        Updated {new Date(currentScenario.lastModified).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Download and Share Buttons */}
-                  <div className="space-y-2 pt-2">
-                    {currentScenario.pngUrl && (
-                      <motion.button
-                        onClick={() => downloadFile(currentScenario.pngUrl!, `${charData.name}.png`)}
-                        className="w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium shadow-lg flex items-center justify-center gap-2 text-white border"
-                        style={{
-                          background: `linear-gradient(135deg, ${accentColor}, #a855f7)`,
-                          boxShadow: `0 8px 20px ${accentColor}30`,
-                          borderColor: `${accentColor}50`
-                        }}
-                        whileHover={{ scale: 1.02, boxShadow: `0 12px 25px ${accentColor}40` }}
-                        whileTap={{ scale: 0.98 }}
+                    {/* Character Name overlaid at bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <motion.h1
+                        className="text-2xl sm:text-3xl font-bold text-white mb-1"
+                        style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
                       >
-                        <ImageIcon className="w-5 h-5" />
-                        Download PNG
-                      </motion.button>
-                    )}
+                        {charData.name}
+                      </motion.h1>
+                      {currentScenario.lastModified && (
+                        <p className="flex items-center gap-2 text-sm text-gray-300">
+                          <Calendar className="w-3.5 h-3.5" />
+                          Updated {new Date(currentScenario.lastModified).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </motion.button>
+                </div>
+              </motion.div>
 
+              {/* Action Buttons Card */}
+              <motion.div
+                className="lg:col-span-3 xl:col-span-2"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+              >
+                <div className="h-full bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 flex flex-col gap-3">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Downloads</h3>
+
+                  {currentScenario.pngUrl && (
                     <motion.button
-                      onClick={() => downloadFile(currentScenario.jsonUrl, `${charData.name}.json`)}
-                      className="w-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2"
-                      whileHover={{ scale: 1.02 }}
+                      onClick={() => downloadFile(currentScenario.pngUrl!, `${charData.name}.png`)}
+                      className="flex-1 min-h-[48px] px-4 py-3 rounded-xl transition-all duration-200 font-medium shadow-lg flex items-center justify-center gap-2 text-white border"
+                      style={{
+                        background: `linear-gradient(135deg, ${accentColor}, #a855f7)`,
+                        boxShadow: `0 8px 20px ${accentColor}30`,
+                        borderColor: `${accentColor}50`
+                      }}
+                      whileHover={{ scale: 1.02, boxShadow: `0 12px 25px ${accentColor}40` }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <FileJson2 className="w-5 h-5 text-green-400" />
-                      Download JSON
+                      <ImageIcon className="w-5 h-5" />
+                      PNG
                     </motion.button>
+                  )}
 
-                    <ShareButton
-                      url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
-                      title={charData.name}
-                    />
-                  </div>
+                  <motion.button
+                    onClick={() => downloadFile(currentScenario.jsonUrl, `${charData.name}.json`)}
+                    className="flex-1 min-h-[48px] bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] hover:border-white/[0.2] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium flex items-center justify-center gap-2"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <FileJson2 className="w-5 h-5 text-green-400" />
+                    JSON
+                  </motion.button>
+
+                  <ShareButton
+                    url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
+                    title={charData.name}
+                  />
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Character Details */}
-              <div className="lg:col-span-2 space-y-4">
-                {/* First Message */}
-                {charData.first_mes && (
-                  <RevealSection delay={0}>
-                    <ExpandableSection
-                      title="First Message"
-                      icon={MessageSquare}
-                      isExpanded={expandedSections.firstMessage}
-                      onToggle={() => toggleSection('firstMessage')}
-                      accentColor={accentColor}
-                    >
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={currentScenario.id + '-firstmes'}
-                          initial={{ opacity: 0, filter: "blur(4px)" }}
-                          animate={{ opacity: 1, filter: "blur(0px)" }}
-                          exit={{ opacity: 0, filter: "blur(4px)" }}
-                          transition={{ duration: 0.4 }}
-                          className="text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_p]:my-2"
+              {/* First Message - Featured Large Card */}
+              {charData.first_mes && (
+                <motion.div
+                  className={`lg:col-span-5 xl:col-span-7 ${expandedCard === 'firstMessage' ? 'lg:col-span-12 xl:col-span-12' : ''}`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: 0.2 }}
+                  layout
+                >
+                  <BentoCard
+                    id="firstMessage"
+                    title="First Message"
+                    icon={MessageSquare}
+                    accentColor={accentColor}
+                    isExpanded={expandedCard === 'firstMessage'}
+                    onToggle={() => toggleCardExpansion('firstMessage')}
+                    featured
+                  >
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentScenario.id + '-firstmes'}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-gray-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_p]:my-2"
+                      >
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm, remarkBreaks]}
+                          rehypePlugins={[rehypeRaw]}
+                          components={{
+                            p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
+                            em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
+                            code: ({node, inline, className, children, ...props}: any) => (
+                              <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
+                                {children}
+                              </code>
+                            ),
+                          }}
                         >
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkBreaks]}
-                            rehypePlugins={[rehypeRaw]}
-                            components={{
-                              p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
-                              em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
-                              code: ({node, inline, className, children, ...props}: any) => (
-                                <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
-                                  {children}
-                                </code>
-                              ),
-                            }}
-                          >
-                            {formatCharacterText(charData.first_mes)}
-                          </ReactMarkdown>
-                        </motion.div>
-                      </AnimatePresence>
-                    </ExpandableSection>
-                  </RevealSection>
-                )}
+                          {formatCharacterText(charData.first_mes)}
+                        </ReactMarkdown>
+                      </motion.div>
+                    </AnimatePresence>
+                  </BentoCard>
+                </motion.div>
+              )}
+            </div>
 
-                {/* Scenario */}
-                {charData.scenario && (
-                  <RevealSection delay={0.1}>
-                    <ExpandableSection
-                      title="Scenario"
-                      icon={Map}
-                      isExpanded={expandedSections.scenario}
-                      onToggle={() => toggleSection('scenario')}
-                      accentColor={accentColor}
-                    >
-                      <AnimatePresence mode="wait">
-                        <motion.p
-                          key={currentScenario.id + '-scenario'}
-                          initial={{ opacity: 0, filter: "blur(4px)" }}
-                          animate={{ opacity: 1, filter: "blur(0px)" }}
-                          exit={{ opacity: 0, filter: "blur(4px)" }}
-                          transition={{ duration: 0.4 }}
-                          className="text-gray-300 whitespace-pre-wrap leading-relaxed"
-                        >
-                          {charData.scenario}
-                        </motion.p>
-                      </AnimatePresence>
-                    </ExpandableSection>
-                  </RevealSection>
-                )}
+            {/* Bottom Row: Smaller Detail Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Scenario Card */}
+              {charData.scenario && (
+                <motion.div
+                  className={expandedCard === 'scenario' ? 'md:col-span-2 lg:col-span-3' : ''}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.25 }}
+                  layout
+                >
+                  <BentoCard
+                    id="scenario"
+                    title="Scenario"
+                    icon={Map}
+                    accentColor={accentColor}
+                    isExpanded={expandedCard === 'scenario'}
+                    onToggle={() => toggleCardExpansion('scenario')}
+                  >
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={currentScenario.id + '-scenario'}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm"
+                      >
+                        {charData.scenario}
+                      </motion.p>
+                    </AnimatePresence>
+                  </BentoCard>
+                </motion.div>
+              )}
 
-                {/* Description */}
-                {charData.description && (
-                  <RevealSection delay={0.2}>
-                    <ExpandableSection
-                      title="Description"
-                      icon={FileText}
-                      isExpanded={expandedSections.description}
-                      onToggle={() => toggleSection('description')}
-                      accentColor={accentColor}
-                    >
-                      <AnimatePresence mode="wait">
-                        <motion.p
-                          key={currentScenario.id + '-description'}
-                          initial={{ opacity: 0, filter: "blur(4px)" }}
-                          animate={{ opacity: 1, filter: "blur(0px)" }}
-                          exit={{ opacity: 0, filter: "blur(4px)" }}
-                          transition={{ duration: 0.4 }}
-                          className="text-gray-300 whitespace-pre-wrap leading-relaxed"
-                        >
-                          {charData.description}
-                        </motion.p>
-                      </AnimatePresence>
-                    </ExpandableSection>
-                  </RevealSection>
-                )}
+              {/* Description Card */}
+              {charData.description && (
+                <motion.div
+                  className={expandedCard === 'description' ? 'md:col-span-2 lg:col-span-3' : ''}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.3 }}
+                  layout
+                >
+                  <BentoCard
+                    id="description"
+                    title="Description"
+                    icon={FileText}
+                    accentColor={accentColor}
+                    isExpanded={expandedCard === 'description'}
+                    onToggle={() => toggleCardExpansion('description')}
+                  >
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={currentScenario.id + '-description'}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm"
+                      >
+                        {charData.description}
+                      </motion.p>
+                    </AnimatePresence>
+                  </BentoCard>
+                </motion.div>
+              )}
 
-                {/* Personality */}
-                {charData.personality && (
-                  <RevealSection delay={0.3}>
-                    <ExpandableSection
-                      title="Personality"
-                      icon={Brain}
-                      isExpanded={expandedSections.personality}
-                      onToggle={() => toggleSection('personality')}
-                      accentColor={accentColor}
-                    >
-                      <AnimatePresence mode="wait">
-                        <motion.p
-                          key={currentScenario.id + '-personality'}
-                          initial={{ opacity: 0, filter: "blur(4px)" }}
-                          animate={{ opacity: 1, filter: "blur(0px)" }}
-                          exit={{ opacity: 0, filter: "blur(4px)" }}
-                          transition={{ duration: 0.4 }}
-                          className="text-gray-300 whitespace-pre-wrap leading-relaxed"
-                        >
-                          {charData.personality}
-                        </motion.p>
-                      </AnimatePresence>
-                    </ExpandableSection>
-                  </RevealSection>
-                )}
-              </div>
+              {/* Personality Card */}
+              {charData.personality && (
+                <motion.div
+                  className={expandedCard === 'personality' ? 'md:col-span-2 lg:col-span-3' : ''}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.35 }}
+                  layout
+                >
+                  <BentoCard
+                    id="personality"
+                    title="Personality"
+                    icon={Brain}
+                    accentColor={accentColor}
+                    isExpanded={expandedCard === 'personality'}
+                    onToggle={() => toggleCardExpansion('personality')}
+                  >
+                    <AnimatePresence mode="wait">
+                      <motion.p
+                        key={currentScenario.id + '-personality'}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-gray-300 whitespace-pre-wrap leading-relaxed text-sm"
+                      >
+                        {charData.personality}
+                      </motion.p>
+                    </AnimatePresence>
+                  </BentoCard>
+                </motion.div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -712,80 +740,87 @@ export default function CharacterDetailsClient({ character }: { character: Chara
   );
 }
 
-// Expandable Section Component
-function ExpandableSection({
+// Bento Card Component - Expandable cards for character details
+function BentoCard({
+  id,
   title,
   icon: Icon,
+  accentColor,
   isExpanded,
   onToggle,
-  accentColor,
+  featured = false,
   children
 }: {
+  id: string;
   title: string;
   icon: React.ElementType;
+  accentColor: string;
   isExpanded: boolean;
   onToggle: () => void;
-  accentColor: string;
+  featured?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <motion.div
       layout
-      className="relative bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden"
+      className={`relative h-full bg-gradient-to-br from-white/[0.04] to-transparent border rounded-2xl overflow-hidden transition-all duration-300 ${
+        isExpanded
+          ? 'border-white/[0.2] shadow-xl'
+          : 'border-white/[0.08] hover:border-white/[0.15]'
+      } ${featured ? 'min-h-[300px]' : 'min-h-[200px]'}`}
       transition={{ layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } }}
     >
-      {/* Gradient left border when expanded */}
+      {/* Accent gradient bar at top */}
       <motion.div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+        className="absolute top-0 left-0 right-0 h-1"
         initial={false}
         animate={{
           background: isExpanded
-            ? `linear-gradient(to bottom, ${accentColor}, #a855f7)`
-            : 'transparent',
-          opacity: isExpanded ? 1 : 0
+            ? `linear-gradient(to right, ${accentColor}, #a855f7)`
+            : `linear-gradient(to right, ${accentColor}40, transparent)`,
+          opacity: 1
         }}
         transition={{ duration: 0.3 }}
       />
 
-      <button
-        onClick={onToggle}
-        className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-white/[0.03] transition-colors"
-      >
-        <h2 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-3">
-          <Icon
-            className="w-5 h-5 transition-colors duration-300"
-            style={{ color: isExpanded ? accentColor : '#9ca3af' }}
-          />
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-white/[0.05]">
+        <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2.5">
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors duration-300"
+            style={{ backgroundColor: `${accentColor}20` }}
+          >
+            <Icon
+              className="w-4 h-4 transition-colors duration-300"
+              style={{ color: accentColor }}
+            />
+          </div>
           {title}
         </h2>
-        <motion.div
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+        <motion.button
+          onClick={onToggle}
+          className="p-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] transition-colors"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          aria-label={isExpanded ? 'Collapse' : 'Expand'}
         >
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        </motion.div>
-      </button>
+          {isExpanded ? (
+            <Minimize2 className="w-4 h-4 text-gray-400" />
+          ) : (
+            <Maximize2 className="w-4 h-4 text-gray-400" />
+          )}
+        </motion.button>
+      </div>
 
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            layout
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{
-              height: { duration: 0.25 },
-              opacity: { duration: 0.2 },
-              layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
-            }}
-            className="overflow-hidden"
-          >
-            <motion.div layout className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
-              {children}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Content */}
+      <div className={`p-4 ${isExpanded ? 'max-h-none' : featured ? 'max-h-[220px]' : 'max-h-[140px]'} overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent`}>
+        {children}
+      </div>
+
+      {/* Fade out gradient when collapsed */}
+      {!isExpanded && (
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+      )}
     </motion.div>
   );
 }

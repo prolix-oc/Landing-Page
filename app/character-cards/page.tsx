@@ -48,27 +48,26 @@ function CharacterCardsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Animation variants
+  // Animation variants - optimized for fast initial load
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.1
+        staggerChildren: 0.03,
+        delayChildren: 0
       }
     }
   };
 
   const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: { y: 10, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
       transition: {
-        type: "spring",
-        stiffness: 80,
-        damping: 20
+        type: "tween",
+        duration: 0.2
       }
     }
   };
@@ -288,9 +287,9 @@ function CharacterCardsContent() {
           /* Single Glass Container */
           <motion.div
             className="relative"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
           >
             {/* Single backdrop-blur layer */}
             <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
