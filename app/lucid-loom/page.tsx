@@ -40,24 +40,128 @@ import {
 // Base delay for hero animations - wait for View Transition to complete
 const VIEW_TRANSITION_DELAY = 0.25;
 
+// Animation variants for each floating card - unique personality for each
+const floatingCardVariants = {
+  // Card 1: Swooping arc from left with rotation flourish
+  swoopArc: {
+    initial: { opacity: 0, y: 120, x: -80, rotate: -25, scale: 0.6 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      x: 0,
+      rotate: 8,
+      scale: 1,
+    },
+    transition: {
+      type: "spring" as const,
+      stiffness: 60,
+      damping: 12,
+      mass: 1.2,
+    },
+    float: {
+      y: [-8, 12, -8],
+      x: [-5, 8, -5],
+      rotate: [8, -5, 8],
+      scale: [1, 1.03, 1],
+    },
+    floatTransition: { duration: 6, repeat: Infinity, ease: "easeInOut" as const },
+  },
+  // Card 2: Spiraling descent with playful bounce
+  spiralBounce: {
+    initial: { opacity: 0, y: -100, x: 60, rotate: 45, scale: 0.4 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      x: 0,
+      rotate: -12,
+      scale: 1,
+    },
+    transition: {
+      type: "spring" as const,
+      stiffness: 80,
+      damping: 8,
+      mass: 0.8,
+    },
+    float: {
+      y: [0, -15, 5, -15, 0],
+      x: [0, 12, 0, -12, 0],
+      rotate: [-12, 5, -12, 5, -12],
+    },
+    floatTransition: { duration: 8, repeat: Infinity, ease: [0.45, 0.05, 0.55, 0.95] as [number, number, number, number] },
+  },
+  // Card 3: Rising wave with gentle sway
+  waveRise: {
+    initial: { opacity: 0, y: 150, x: 40, rotate: 35, scale: 0.5 },
+    animate: {
+      opacity: 1,
+      y: 0,
+      x: 0,
+      rotate: -6,
+      scale: 1,
+    },
+    transition: {
+      type: "spring" as const,
+      stiffness: 50,
+      damping: 15,
+      mass: 1.5,
+    },
+    float: {
+      y: [-12, 8, -5, 15, -12],
+      x: [0, -10, 5, -8, 0],
+      rotate: [-6, 12, -8, 10, -6],
+      scale: [1, 0.98, 1.02, 0.99, 1],
+    },
+    floatTransition: { duration: 10, repeat: Infinity, ease: "easeInOut" as const },
+  },
+};
+
+type FloatingCardVariant = keyof typeof floatingCardVariants;
+
 // Decorative floating cards for hero - delay accounts for View Transition
-const FloatingCard = ({ delay, className }: { delay: number; className: string }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 50, rotate: -10 }}
-    animate={{ opacity: 1, y: 0, rotate: 0 }}
-    transition={{ delay: delay + VIEW_TRANSITION_DELAY, duration: 1, ease: "easeOut" }}
-    className={className}
-  >
+const FloatingCard = ({
+  delay,
+  className,
+  variant = 'swoopArc'
+}: {
+  delay: number;
+  className: string;
+  variant?: FloatingCardVariant;
+}) => {
+  const v = floatingCardVariants[variant];
+
+  return (
     <motion.div
-      animate={{ y: [-5, 5, -5], rotate: [-2, 2, -2] }}
-      transition={{ duration: 4 + delay, repeat: Infinity, ease: "easeInOut" }}
-      className="w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-purple-500/40 to-pink-500/30 rounded-lg border border-white/10 shadow-2xl"
+      initial={v.initial}
+      animate={v.animate}
+      transition={{
+        delay: delay + VIEW_TRANSITION_DELAY,
+        ...v.transition
+      }}
+      className={className}
     >
-      <div className="absolute inset-2 border border-white/20 rounded" />
-      <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-amber-400/60" />
+      <motion.div
+        animate={v.float}
+        transition={v.floatTransition}
+        className="relative w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-br from-purple-500/40 to-pink-500/30 rounded-lg border border-white/10 shadow-2xl backdrop-blur-sm"
+      >
+        <div className="absolute inset-2 border border-white/20 rounded" />
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center"
+          animate={{
+            rotate: [0, 360],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{
+            rotate: { duration: 20, repeat: Infinity, ease: "linear" },
+            scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+          }}
+        >
+          <Sparkles className="w-6 h-6 text-amber-400/60" />
+        </motion.div>
+      </motion.div>
     </motion.div>
-  </motion.div>
-);
+  );
+};
 
 // Section reveal animation wrapper
 const RevealSection = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
@@ -180,10 +284,10 @@ export default function LucidLoomPage() {
           style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
           className="absolute inset-0 flex items-center justify-center"
         >
-          {/* Floating decorative cards */}
-          <FloatingCard delay={0.5} className="absolute top-20 left-[10%] hidden lg:block" />
-          <FloatingCard delay={0.7} className="absolute top-32 right-[15%] hidden lg:block" />
-          <FloatingCard delay={0.9} className="absolute bottom-32 left-[20%] hidden lg:block" />
+          {/* Floating decorative cards - each with unique animation */}
+          <FloatingCard delay={0.3} className="absolute top-20 left-[10%] hidden lg:block" variant="swoopArc" />
+          <FloatingCard delay={0.5} className="absolute top-32 right-[15%] hidden lg:block" variant="spiralBounce" />
+          <FloatingCard delay={0.7} className="absolute bottom-32 left-[20%] hidden lg:block" variant="waveRise" />
 
           {/* Main hero content */}
           <div className="relative z-10 text-center max-w-5xl mx-auto">
