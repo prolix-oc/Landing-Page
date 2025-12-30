@@ -67,8 +67,29 @@ function getParentDirectory(filePath: string): string | null {
 }
 
 /**
+ * Gets all ancestor directories that need invalidation for a file path
+ * This ensures that when a new folder is created, parent listings are also updated
+ */
+function getAncestorDirectories(filePath: string): string[] {
+  const parts = filePath.split('/');
+  const ancestors: string[] = [];
+
+  // Build up ancestor paths from root to parent
+  // e.g., "Character Cards/Fantasy/NewChar/file.json" produces:
+  // - "Character Cards"
+  // - "Character Cards/Fantasy"
+  // - "Character Cards/Fantasy/NewChar"
+  for (let i = 1; i < parts.length; i++) {
+    ancestors.push(parts.slice(0, i).join('/'));
+  }
+
+  return ancestors;
+}
+
+/**
  * Processes the push payload and invalidates affected cache entries
- * Only invalidates the immediate parent directory and file-specific caches
+ * For added/removed files: invalidates ALL ancestor directories (new folders may have been created)
+ * For modified files: invalidates only the immediate parent directory
  */
 function processPushPayload(payload: GitHubPushPayload): {
   invalidated: number;
@@ -80,69 +101,95 @@ function processPushPayload(payload: GitHubPushPayload): {
   const addedFiles = new Set<string>();
   const modifiedFiles = new Set<string>();
   const removedFiles = new Set<string>();
-  
+
   // Collect all affected files from all commits
   payload.commits.forEach(commit => {
     commit.added.forEach(file => addedFiles.add(file));
     commit.modified.forEach(file => modifiedFiles.add(file));
     commit.removed.forEach(file => removedFiles.add(file));
   });
-  
-  const allAffectedFiles = new Set([
-    ...addedFiles,
-    ...modifiedFiles,
-    ...removedFiles
-  ]);
-  
+
   let invalidatedCount = 0;
   const invalidatedPaths: string[] = [];
-  const parentDirectories = new Set<string>();
-  
-  // For each affected file, invalidate its specific caches
-  allAffectedFiles.forEach(filePath => {
-    // 1. Invalidate the file's commit cache
+  const directoriesToInvalidate = new Set<string>();
+
+  // Process added files - invalidate ALL ancestor directories
+  // (A new file in a new folder means parent directory listings changed)
+  addedFiles.forEach(filePath => {
+    // Invalidate commit cache
     if (invalidateCachePath(filePath, 'commit')) {
       invalidatedCount++;
       invalidatedPaths.push(`commit:${filePath}`);
     }
-    
-    // 2. Invalidate JSON data cache if it's a JSON file
+
+    // Invalidate JSON data cache
     if (filePath.toLowerCase().endsWith('.json')) {
       if (invalidateJsonDataCache(filePath)) {
         invalidatedCount++;
         invalidatedPaths.push(`jsonData:${filePath}`);
       }
     }
-    
-    // 3. Track the immediate parent directory
+
+    // Track ALL ancestor directories for added files
+    getAncestorDirectories(filePath).forEach(dir => directoriesToInvalidate.add(dir));
+  });
+
+  // Process removed files - invalidate ALL ancestor directories
+  removedFiles.forEach(filePath => {
+    // Invalidate commit cache
+    if (invalidateCachePath(filePath, 'commit')) {
+      invalidatedCount++;
+      invalidatedPaths.push(`commit:${filePath}`);
+    }
+
+    // Invalidate JSON data cache
+    if (filePath.toLowerCase().endsWith('.json')) {
+      if (invalidateJsonDataCache(filePath)) {
+        invalidatedCount++;
+        invalidatedPaths.push(`jsonData:${filePath}`);
+      }
+    }
+
+    // Track ALL ancestor directories for removed files
+    getAncestorDirectories(filePath).forEach(dir => directoriesToInvalidate.add(dir));
+  });
+
+  // Process modified files - only immediate parent needs invalidation
+  modifiedFiles.forEach(filePath => {
+    // Skip if already processed as added/removed
+    if (addedFiles.has(filePath) || removedFiles.has(filePath)) {
+      return;
+    }
+
+    // Invalidate commit cache
+    if (invalidateCachePath(filePath, 'commit')) {
+      invalidatedCount++;
+      invalidatedPaths.push(`commit:${filePath}`);
+    }
+
+    // Invalidate JSON data cache
+    if (filePath.toLowerCase().endsWith('.json')) {
+      if (invalidateJsonDataCache(filePath)) {
+        invalidatedCount++;
+        invalidatedPaths.push(`jsonData:${filePath}`);
+      }
+    }
+
+    // Only immediate parent for modified files (directory structure unchanged)
     const parentDir = getParentDirectory(filePath);
     if (parentDir) {
-      parentDirectories.add(parentDir);
+      directoriesToInvalidate.add(parentDir);
     }
   });
-  
-  // Only invalidate parent directories if files were added or removed
-  // (Modified files don't change directory contents, just file SHAs)
-  const shouldInvalidateDirectories = addedFiles.size > 0 || removedFiles.size > 0;
-  
-  if (shouldInvalidateDirectories) {
-    parentDirectories.forEach(dirPath => {
-      if (invalidateCachePath(dirPath)) {
-        invalidatedCount++;
-        invalidatedPaths.push(`github:${dirPath}`);
-      }
-    });
-  } else {
-    // For modified files only, we still need to invalidate parent directories
-    // because the directory listing contains file SHAs that have changed
-    parentDirectories.forEach(dirPath => {
-      if (invalidateCachePath(dirPath)) {
-        invalidatedCount++;
-        invalidatedPaths.push(`github:${dirPath}`);
-      }
-    });
-  }
-  
+
+  // Invalidate all collected directories
+  directoriesToInvalidate.forEach(dirPath => {
+    if (invalidateCachePath(dirPath)) {
+      invalidatedCount++;
+      invalidatedPaths.push(`github:${dirPath}`);
+    }
+  });
+
   return {
     invalidated: invalidatedCount,
     paths: invalidatedPaths,

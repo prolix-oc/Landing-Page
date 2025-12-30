@@ -124,7 +124,7 @@ const INTERVAL_MULTIPLIERS = {
  */
 export async function fetchFromGitHub(path: string): Promise<any> {
   // Check if local cache should be used
-  if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+  if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
     try {
       const localData = await getLocalDirectoryContents(path);
       if (localData && localData.length > 0) {
@@ -223,16 +223,16 @@ function calculateAdaptiveInterval(): number {
 /**
  * Updates the periodic refresh interval if rate limits require adjustment
  */
-function updatePeriodicRefreshInterval(): void {
+async function updatePeriodicRefreshInterval(): Promise<void> {
   const newInterval = calculateAdaptiveInterval();
-  
+
   if (newInterval !== currentPeriodicRefreshInterval) {
     currentPeriodicRefreshInterval = newInterval;
-    
+
     // Restart the interval with the new timing
     if (periodicRefreshInterval) {
       stopPeriodicRefresh();
-      startPeriodicRefresh();
+      await startPeriodicRefresh();
     }
   }
 }
@@ -257,7 +257,7 @@ async function fetchAndCache(path: string, cacheKey: string): Promise<any> {
   const newRateLimitInfo = extractRateLimitInfo(response.headers);
   if (newRateLimitInfo) {
     rateLimitInfo = newRateLimitInfo;
-    updatePeriodicRefreshInterval();
+    await updatePeriodicRefreshInterval();
   }
 
   if (!response.ok) {
@@ -294,7 +294,7 @@ function refreshInBackground(path: string, cacheKey: string): void {
 export async function getLatestCommit(filePath: string): Promise<GitHubCommit | null> {
   try {
     // Check if local cache should be used
-    if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+    if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
       try {
         const localCommit = await getLocalFileCommit(filePath);
         if (localCommit) {
@@ -349,7 +349,7 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string): Promise<
   const newRateLimitInfo = extractRateLimitInfo(response.headers);
   if (newRateLimitInfo) {
     rateLimitInfo = newRateLimitInfo;
-    updatePeriodicRefreshInterval();
+    await updatePeriodicRefreshInterval();
   }
 
   if (!response.ok) {
@@ -627,10 +627,10 @@ export async function warmupCache(): Promise<void> {
   }
 
   // Log local cache status
-  logLocalCacheStatus();
+  await logLocalCacheStatus();
 
   // If local cache is enabled and available, skip GitHub warmup
-  if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+  if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
     console.log('[Cache Warmup] Skipping GitHub warmup - using local cache');
     warmupCompleted = true;
     return;
@@ -785,9 +785,9 @@ export async function warmupCache(): Promise<void> {
     warmupCompleted = true;
     const duration = Date.now() - startTime;
     console.log(`[Cache Warmup] Completed in ${duration}ms`);
-    
+
     // Start periodic refresh after warmup completes
-    startPeriodicRefresh();
+    await startPeriodicRefresh();
   } catch (error) {
     console.error('[Cache Warmup] Error during cache warm-up:', error);
   } finally {
@@ -878,14 +878,14 @@ async function refreshAllCachedEntries(): Promise<void> {
  * Ensures cache is refreshed every 45 seconds to keep data fresh
  * Does not start if local cache is enabled (data is always fresh from disk)
  */
-export function startPeriodicRefresh(): void {
+export async function startPeriodicRefresh(): Promise<void> {
   // Don't start if already running
   if (periodicRefreshInterval) {
     return;
   }
-  
+
   // Don't start periodic refresh if using local cache
-  if (USE_LOCAL_CACHE && isLocalCacheAvailable()) {
+  if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
     console.log('[Periodic Refresh] Disabled - using local cache (data is always fresh from disk)');
     return;
   }
