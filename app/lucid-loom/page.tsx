@@ -578,14 +578,16 @@ export default function LucidLoomPage() {
               </blockquote>
             </div>
           </RevealSection>
+
+          {/* Glow spanning quote and Stories in Motion header */}
+          <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-purple-600/20 rounded-full blur-[150px] pointer-events-none" />
         </div>
       </section>
 
       {/* ===== NARRATIVE EXAMPLES ===== */}
       <section className="relative py-32 px-4 overflow-x-hidden vt-exclude">
-        {/* Dramatic background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/30 to-gray-950" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-purple-600/15 rounded-full blur-[80px]" />
+        {/* Dramatic background - transparent at top to allow glow from above */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/30 to-gray-950" />
 
         <div className="relative max-w-6xl mx-auto">
           <RevealSection>
