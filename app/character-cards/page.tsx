@@ -13,6 +13,7 @@ import CardSkeleton from '@/app/components/CardSkeleton';
 import SortDropdown, { SortOption } from '@/app/components/SortDropdown';
 import SearchInput from '@/app/components/SearchInput';
 import FilterAccordion from '@/app/components/FilterAccordion';
+import FilterModal from '@/app/components/FilterModal';
 import {
   ArrowLeft,
   Users,
@@ -27,7 +28,8 @@ import {
   HardDrive,
   Sparkles,
   Tag,
-  X
+  X,
+  Check
 } from 'lucide-react';
 
 interface Category {
@@ -56,6 +58,133 @@ interface FilterOption {
   count: number;
 }
 
+// Categories Accordion Component
+function CategoriesAccordion({
+  categories,
+  allCards,
+  selectedCategory,
+  onCategoryChange,
+  onViewAll
+}: {
+  categories: Category[];
+  allCards: CharacterCard[];
+  selectedCategory: string | null;
+  onCategoryChange: (category: string | null) => void;
+  onViewAll: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(true);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  const MAX_VISIBLE = 4;
+  const visibleCategories = categories.slice(0, MAX_VISIBLE);
+  const hasMore = categories.length > MAX_VISIBLE;
+
+  // Measure content height
+  useEffect(() => {
+    if (contentRef.current) {
+      setContentHeight(contentRef.current.scrollHeight);
+    }
+  }, [categories, selectedCategory]);
+
+  return (
+    <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
+      {/* Header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-3 text-left group hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-purple-400" />
+          <span className="text-sm font-medium text-white">Categories</span>
+          {selectedCategory && (
+            <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-400">
+              1
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedCategory && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCategoryChange(null);
+              }}
+              className="text-xs text-gray-500 hover:text-white transition-colors px-2 py-0.5 rounded hover:bg-white/10"
+            >
+              Clear
+            </button>
+          )}
+          <ChevronDown
+            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </button>
+
+      {/* Content */}
+      <div
+        className="overflow-hidden transition-all duration-300 ease-out"
+        style={{ height: isOpen ? `${contentHeight}px` : '0px' }}
+      >
+        <div ref={contentRef} className="px-3 pb-3 space-y-1">
+          {/* All Cards option */}
+          <button
+            onClick={() => onCategoryChange(null)}
+            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all ${
+              selectedCategory === null
+                ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
+                : 'text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 border border-transparent'
+            }`}
+          >
+            <span className="truncate text-left flex-1 mr-2">All Cards</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs text-gray-500">{allCards.length}</span>
+              {selectedCategory === null && (
+                <Check className="w-3.5 h-3.5 text-purple-400" />
+              )}
+            </div>
+          </button>
+
+          {visibleCategories.map((category) => {
+            const count = allCards.filter(c => c.category === category.name).length;
+            return (
+              <button
+                key={category.name}
+                onClick={() => onCategoryChange(category.name)}
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all ${
+                  selectedCategory === category.name
+                    ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
+                    : 'text-gray-400 hover:bg-white/[0.03] hover:text-gray-200 border border-transparent'
+                }`}
+              >
+                <span className="truncate text-left flex-1 mr-2">{category.displayName}</span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs text-gray-500">{count}</span>
+                  {selectedCategory === category.name && (
+                    <Check className="w-3.5 h-3.5 text-purple-400" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+
+          {hasMore && (
+            <button
+              onClick={onViewAll}
+              className="w-full text-xs text-purple-400 hover:text-white transition-colors py-2 mt-1 flex items-center justify-center gap-1.5 rounded-lg hover:bg-white/[0.03]"
+            >
+              <span>View all {categories.length}</span>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CharacterCardsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -78,6 +207,11 @@ function CharacterCardsContent() {
   const [selectedCreators, setSelectedCreators] = useState<Set<string>>(new Set());
   const [allTags, setAllTags] = useState<FilterOption[]>([]);
   const [allCreators, setAllCreators] = useState<FilterOption[]>([]);
+
+  // Modal states
+  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
+  const [tagsModalOpen, setTagsModalOpen] = useState(false);
+  const [creatorsModalOpen, setCreatorsModalOpen] = useState(false);
 
   // Track if initial page load is complete (to skip animations during View Transition)
   const hasMounted = useRef(false);
@@ -349,7 +483,7 @@ function CharacterCardsContent() {
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Filters Sidebar */}
                 <div className="lg:col-span-1">
-                  <div className="lg:sticky lg:top-24 space-y-4">
+                  <div className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pb-20 space-y-4 sidebar-scroll">
                     {/* Search Input */}
                     <SearchInput
                       value={searchQuery}
@@ -357,53 +491,14 @@ function CharacterCardsContent() {
                       placeholder="Search characters..."
                     />
 
-                    {/* Categories Section */}
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider px-1 flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-purple-400" />
-                        Categories
-                      </h3>
-
-                      {/* All Cards button */}
-                      <button
-                        onClick={() => handleCategoryChange(null)}
-                        className={`group w-full text-left px-4 py-2.5 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
-                          selectedCategory === null
-                            ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/10 text-white border border-cyan-500/30'
-                            : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
-                        }`}
-                      >
-                        <span className="font-medium text-sm">All Cards</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">{allCards.length}</span>
-                          <ChevronRight className={`w-4 h-4 transition-all ${
-                            selectedCategory === null ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
-                          }`} />
-                        </div>
-                      </button>
-
-                      {categories.map((category) => (
-                        <button
-                          key={category.name}
-                          onClick={() => handleCategoryChange(category.name)}
-                          className={`group w-full text-left px-4 py-2.5 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
-                            selectedCategory === category.name
-                              ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/10 text-white border border-cyan-500/30'
-                              : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
-                          }`}
-                        >
-                          <span className="font-medium text-sm">{category.displayName}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">
-                              {allCards.filter(c => c.category === category.name).length}
-                            </span>
-                            <ChevronRight className={`w-4 h-4 transition-all ${
-                              selectedCategory === category.name ? 'text-cyan-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
-                            }`} />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                    {/* Categories Section - Collapsible Accordion */}
+                    <CategoriesAccordion
+                      categories={categories}
+                      allCards={allCards}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={handleCategoryChange}
+                      onViewAll={() => setCategoriesModalOpen(true)}
+                    />
 
                     {/* Tags Filter */}
                     {allTags.length > 0 && (
@@ -414,6 +509,8 @@ function CharacterCardsContent() {
                         selectedOptions={selectedTags}
                         onSelectionChange={setSelectedTags}
                         accentColor="purple"
+                        onViewAll={() => setTagsModalOpen(true)}
+                        viewAllThreshold={8}
                       />
                     )}
 
@@ -426,6 +523,8 @@ function CharacterCardsContent() {
                         selectedOptions={selectedCreators}
                         onSelectionChange={setSelectedCreators}
                         accentColor="blue"
+                        onViewAll={() => setCreatorsModalOpen(true)}
+                        viewAllThreshold={8}
                       />
                     )}
 
@@ -655,6 +754,54 @@ function CharacterCardsContent() {
           </div>
         </div>
       )}
+
+      {/* Categories Modal */}
+      <FilterModal
+        isOpen={categoriesModalOpen}
+        onClose={() => setCategoriesModalOpen(false)}
+        title="Categories"
+        icon={Layers}
+        options={categories.map(cat => ({
+          name: cat.name,
+          count: allCards.filter(c => c.category === cat.name).length
+        }))}
+        selectedOptions={selectedCategory ? new Set([selectedCategory]) : new Set()}
+        onSelectionChange={(newSelection) => {
+          const selected = Array.from(newSelection)[0] || null;
+          handleCategoryChange(selected);
+        }}
+        variant="cells"
+        accentColor="purple"
+        singleSelect
+        showAllOption
+        allOptionLabel="All Cards"
+      />
+
+      {/* Tags Modal */}
+      <FilterModal
+        isOpen={tagsModalOpen}
+        onClose={() => setTagsModalOpen(false)}
+        title="Tags"
+        icon={Tag}
+        options={allTags}
+        selectedOptions={selectedTags}
+        onSelectionChange={setSelectedTags}
+        variant="pills"
+        accentColor="purple"
+      />
+
+      {/* Creators Modal */}
+      <FilterModal
+        isOpen={creatorsModalOpen}
+        onClose={() => setCreatorsModalOpen(false)}
+        title="Creators"
+        icon={User}
+        options={allCreators}
+        selectedOptions={selectedCreators}
+        onSelectionChange={setSelectedCreators}
+        variant="cells"
+        accentColor="blue"
+      />
     </div>
   );
 }

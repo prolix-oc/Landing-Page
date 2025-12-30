@@ -106,12 +106,12 @@ export default function SmartPagination({
 
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 max-w-full px-4">
         {/* Previous Button */}
         <motion.button
           onClick={() => currentPage > 0 && onPageChange(currentPage - 1)}
           disabled={currentPage === 0}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border flex-shrink-0 ${
             currentPage === 0
               ? 'bg-white/[0.02] border-white/[0.05] text-gray-600 cursor-not-allowed'
               : 'bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] hover:border-cyan-500/30 text-white shadow-lg hover:shadow-cyan-500/10'
@@ -123,7 +123,7 @@ export default function SmartPagination({
         </motion.button>
 
         {/* Page Carousel */}
-        <div className="relative bg-gray-900/80 border border-white/[0.08] rounded-full p-1">
+        <div className="relative bg-gray-900/80 border border-white/[0.08] rounded-full p-1 overflow-hidden flex-shrink min-w-0">
           {/* Highlight Pill */}
           <motion.div
             className="absolute top-1 bottom-1 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-full z-10 shadow-[0_0_15px_rgba(6,182,212,0.4)]"
@@ -134,7 +134,7 @@ export default function SmartPagination({
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
 
-          <div className="relative flex items-center">
+          <div className="relative flex items-center overflow-x-auto scrollbar-none">
             <AnimatePresence mode="popLayout">
               {pageNumbers.map((page) => {
                 const isDots = typeof page === 'string';
@@ -176,7 +176,7 @@ export default function SmartPagination({
         <motion.button
           onClick={() => currentPage < totalPages - 1 && onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages - 1}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border ${
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all border flex-shrink-0 ${
             currentPage === totalPages - 1
               ? 'bg-white/[0.02] border-white/[0.05] text-gray-600 cursor-not-allowed'
               : 'bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] hover:border-cyan-500/30 text-white shadow-lg hover:shadow-cyan-500/10'

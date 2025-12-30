@@ -17,6 +17,10 @@ interface FilterAccordionProps {
   defaultOpen?: boolean;
   maxVisible?: number;
   accentColor?: 'cyan' | 'purple' | 'blue';
+  /** Callback to open "View All" modal - if provided, shows View All button instead of "Show more" */
+  onViewAll?: () => void;
+  /** Threshold for showing View All button (default: same as maxVisible) */
+  viewAllThreshold?: number;
 }
 
 const accentColors = {
@@ -48,7 +52,9 @@ export default function FilterAccordion({
   onSelectionChange,
   defaultOpen = false,
   maxVisible = 8,
-  accentColor = 'cyan'
+  accentColor = 'cyan',
+  onViewAll,
+  viewAllThreshold
 }: FilterAccordionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [showAll, setShowAll] = useState(false);
@@ -79,8 +85,10 @@ export default function FilterAccordion({
     onSelectionChange(new Set());
   };
 
-  const visibleOptions = showAll ? options : options.slice(0, maxVisible);
-  const hasMore = options.length > maxVisible;
+  const effectiveThreshold = viewAllThreshold ?? maxVisible;
+  const shouldShowViewAll = onViewAll && options.length > effectiveThreshold;
+  const visibleOptions = showAll && !shouldShowViewAll ? options : options.slice(0, maxVisible);
+  const hasMore = options.length > maxVisible && !shouldShowViewAll;
 
   if (options.length === 0) {
     return null;
@@ -149,6 +157,18 @@ export default function FilterAccordion({
               className="w-full text-xs text-gray-500 hover:text-cyan-400 transition-colors py-2 mt-1"
             >
               {showAll ? 'Show less' : `Show ${options.length - maxVisible} more`}
+            </button>
+          )}
+
+          {shouldShowViewAll && (
+            <button
+              onClick={onViewAll}
+              className={`w-full text-xs ${colors.icon} hover:text-white transition-colors py-2 mt-1 flex items-center justify-center gap-1.5 rounded-lg hover:bg-white/[0.03]`}
+            >
+              <span>View all {options.length}</span>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
             </button>
           )}
         </div>
