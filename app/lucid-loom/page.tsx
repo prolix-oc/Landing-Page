@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
-import Image from 'next/image';
-import { motion, useScroll, useTransform, useSpring, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -16,26 +15,16 @@ import {
   Settings,
   Drama,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
-  Play,
-  Pause,
   Download,
   ArrowLeft,
   Quote,
   Feather,
   Heart,
   Zap,
-  Moon,
-  Flame,
-  Ghost,
-  Cat,
-  Glasses,
-  Coffee,
-  Skull,
-  Bug,
   Globe
 } from 'lucide-react';
+import LumiaShowcase from './LumiaShowcase';
 
 // Base delay for hero animations - wait for View Transition to complete
 const VIEW_TRANSITION_DELAY = 0.25;
@@ -181,22 +170,6 @@ const RevealSection = ({ children, className = "" }: { children: React.ReactNode
   );
 };
 
-// Alter data with icons
-const alters = [
-  { name: 'Standard', image: '/lumia/standard.webp', description: 'The balanced, versatile default persona', icon: Heart },
-  { name: 'Bubbly', image: '/lumia/bubbly.webp', description: 'Enthusiastic and energetic companion', icon: Zap },
-  { name: 'Sultry', image: '/lumia/sultry.webp', description: 'Seductive and alluring persona', icon: Flame },
-  { name: 'Mommy', image: '/lumia/mommy.webp', description: 'Nurturing and caring presence', icon: Heart },
-  { name: 'Feisty', image: '/lumia/feisty.webp', description: 'Bold and spirited personality', icon: Zap },
-  { name: 'Librarian', image: '/lumia/librarian.webp', description: 'Intellectual and composed demeanor', icon: Glasses },
-  { name: 'Neko', image: '/lumia/neko.webp', description: 'Playful and cat-like behavior', icon: Cat },
-  { name: 'Angsty', image: '/lumia/angsty.webp', description: 'Emotional and introspective mood', icon: Moon },
-  { name: 'Lofi', image: '/lumia/lofi.webp', description: 'Chill and relaxed vibe', icon: Coffee },
-  { name: 'Girlfailure', image: '/lumia/girlfailure.webp', description: 'Lovably messy and chaotic', icon: Ghost },
-  { name: 'Goonette', image: '/lumia/goonette.webp', description: 'Mischievous and playful energy', icon: Sparkles },
-  { name: 'Wicked', image: '/lumia/wicked.webp', description: 'Dark and mysterious presence', icon: Skull },
-  { name: 'Arachne', image: '/lumia/arachne.webp', description: 'Web-weaving, strategic thinker', icon: Bug },
-];
 
 // Philosophy features with Lucide icons
 const philosophyFeatures = [
@@ -239,8 +212,6 @@ const philosophyFeatures = [
 ];
 
 export default function LucidLoomPage() {
-  const [currentAlter, setCurrentAlter] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -250,15 +221,6 @@ export default function LucidLoomPage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
   const heroY = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
-
-  // Auto-cycle through alters
-  useEffect(() => {
-    if (!isAutoPlaying) return;
-    const interval = setInterval(() => {
-      setCurrentAlter((prev) => (prev + 1) % alters.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [isAutoPlaying]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden vt-exclude">
@@ -369,145 +331,7 @@ export default function LucidLoomPage() {
       </section>
 
       {/* ===== LUMIA SHOWCASE ===== */}
-      <section className="relative py-32 px-4 vt-exclude">
-        <div className="max-w-7xl mx-auto">
-          <RevealSection>
-            {/* Section header - asymmetric */}
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-end mb-16">
-              <div>
-                <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.9]">
-                  Meet
-                  <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                    Lumia
-                  </span>
-                </h2>
-              </div>
-              <div className="lg:pb-2">
-                <p className="text-xl text-gray-400 leading-relaxed">
-                  13 unique creative voices, each bringing a distinct perspective to your narrative journey. Not characters in your story—but <span className="text-white">creative lenses</span> for the storytelling process.
-                </p>
-              </div>
-            </div>
-          </RevealSection>
-
-          {/* Carousel - full bleed on mobile */}
-          <RevealSection className="-mx-4 sm:mx-0">
-            <div className="relative">
-              {/* Main carousel display */}
-              <div className="flex justify-center items-center py-8">
-                <div className="relative w-full max-w-lg">
-                  {/* Glow effect behind active card */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 blur-3xl rounded-full scale-150 opacity-50" />
-
-                  {/* Card container */}
-                  <div className="relative aspect-[3/4] max-h-[500px] mx-auto">
-                    {alters.map((alter, index) => {
-                      const isCurrent = index === currentAlter;
-                      const AlterIcon = alter.icon;
-
-                      return (
-                        <motion.div
-                          key={alter.name}
-                          initial={false}
-                          animate={{
-                            opacity: isCurrent ? 1 : 0,
-                            scale: isCurrent ? 1 : 0.9,
-                            rotateY: isCurrent ? 0 : 15,
-                          }}
-                          transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
-                          className={`absolute inset-0 ${isCurrent ? 'z-10' : 'z-0 pointer-events-none'}`}
-                        >
-                          <div className="relative h-full rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl shadow-purple-500/20">
-                            <Image
-                              src={alter.image}
-                              alt={`Lumia - ${alter.name}`}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 100vw, 500px"
-                              priority={index === 0}
-                              loading={index === 0 ? "eager" : "lazy"}
-                            />
-                            {/* Overlay gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent" />
-
-                            {/* Alter info */}
-                            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
-                                  <AlterIcon className="w-5 h-5 text-purple-400" />
-                                </div>
-                                <h3 className="text-2xl sm:text-3xl font-bold">{alter.name}</h3>
-                              </div>
-                              <p className="text-gray-400 text-sm sm:text-base">{alter.description}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="relative z-20 flex justify-center items-center gap-4 mt-8">
-                <button
-                  onClick={() => {
-                    setIsAutoPlaying(false);
-                    setCurrentAlter((prev) => (prev - 1 + alters.length) % alters.length);
-                  }}
-                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
-                  aria-label="Previous alter"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                <button
-                  onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-                  className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
-                    isAutoPlaying
-                      ? 'bg-purple-600 border-purple-500 hover:bg-purple-500'
-                      : 'bg-white/10 hover:bg-white/20 border-white/20'
-                  }`}
-                  aria-label={isAutoPlaying ? "Pause auto-play" : "Resume auto-play"}
-                >
-                  {isAutoPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsAutoPlaying(false);
-                    setCurrentAlter((prev) => (prev + 1) % alters.length);
-                  }}
-                  className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
-                  aria-label="Next alter"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Progress dots */}
-              <div className="flex justify-center gap-1.5 mt-6 flex-wrap max-w-md mx-auto px-4">
-                {alters.map((alter, index) => (
-                  <button
-                    key={alter.name}
-                    onClick={() => {
-                      setIsAutoPlaying(false);
-                      setCurrentAlter(index);
-                    }}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      index === currentAlter
-                        ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500'
-                        : 'w-1.5 bg-white/20 hover:bg-white/40'
-                    }`}
-                    aria-label={`Go to ${alter.name}`}
-                  />
-                ))}
-              </div>
-            </div>
-          </RevealSection>
-        </div>
-      </section>
+      <LumiaShowcase />
 
       {/* ===== PHILOSOPHY SECTION ===== */}
       <section className="relative py-32 px-4 vt-exclude">

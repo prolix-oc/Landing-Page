@@ -645,7 +645,8 @@ export async function warmupCache(): Promise<void> {
     const primaryPaths = [
       'Character Cards',
       'World Books',
-      'Chat Completion'
+      'Chat Completion',
+      'Lumia DLCs'
     ];
 
     // Fetch all primary directories
@@ -780,6 +781,30 @@ export async function warmupCache(): Promise<void> {
       }
     } catch (error) {
       console.error('[Cache Warmup] Failed to warm up World Books:', error);
+    }
+
+    // Fetch Lumia DLCs packs
+    try {
+      const lumiaDlcsContents = cache.get('github:Lumia DLCs');
+      if (lumiaDlcsContents?.data && Array.isArray(lumiaDlcsContents.data)) {
+        const packFiles = lumiaDlcsContents.data.filter((item: any) =>
+          item.type === 'file' && item.name.toLowerCase().endsWith('.json')
+        );
+
+        // Pre-fetch all pack JSON files
+        await Promise.all(
+          packFiles.map(async (packFile: any) => {
+            try {
+              await getJsonData(packFile);
+              console.log(`[Cache Warmup] Cached Lumia DLC pack: ${packFile.name}`);
+            } catch (error) {
+              console.error(`[Cache Warmup] Failed to cache Lumia DLC pack: ${packFile.path}`, error);
+            }
+          })
+        );
+      }
+    } catch (error) {
+      console.error('[Cache Warmup] Failed to warm up Lumia DLCs:', error);
     }
 
     warmupCompleted = true;
