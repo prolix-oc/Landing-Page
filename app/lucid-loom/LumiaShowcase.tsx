@@ -339,7 +339,7 @@ export default function LumiaShowcase() {
           {isLoading ? (
             <LoadingSkeleton />
           ) : lumias.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 auto-rows-fr">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 auto-rows-fr grid-flow-dense">
               {lumias.map((lumia, index) => (
                 <LumiaCard
                   key={`${lumia.packSlug}-${lumia.lumiaName}`}
