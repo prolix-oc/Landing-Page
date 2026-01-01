@@ -116,10 +116,10 @@ export default function Home() {
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
           {/* Bento Grid inside the glass container */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-6 auto-rows-fr gap-3 sm:gap-4">
+          <div className="relative h-full p-3 sm:p-4 grid grid-cols-6 grid-rows-4 gap-3 sm:gap-4">
 
-            {/* Featured Card - Lucid Loom (spans more area) */}
-            <div className="col-span-6 sm:col-span-3 lg:col-span-2 row-span-4 sm:row-span-4">
+            {/* Featured Card - Lucid Loom (top of left column) */}
+            <div className="col-span-6 sm:col-span-3 lg:col-span-2 row-span-3 sm:row-span-3">
               <TransitionLink href="/lucid-loom" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-2xl ${glowColors.purple} ${borderColors.purple} hover:bg-white/[0.03]`}>
                   {/* Decorative gradient orb */}
@@ -149,6 +149,30 @@ export default function Home() {
                       <span>Explore</span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
+                  </div>
+                </div>
+              </TransitionLink>
+            </div>
+
+            {/* Lumia DLC (bottom of left column) */}
+            <div className="col-span-6 sm:col-span-3 lg:col-span-2 row-span-1">
+              <TransitionLink href="/lumia-dlc" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.rose} ${borderColors.rose} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex flex-row items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                        <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 group-hover:text-rose-100 transition-colors">
+                        Lumia DLC
+                      </h3>
+                      <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                        Character packs and Loom presets
+                      </p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-rose-400/50 group-hover:text-rose-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
                   </div>
                 </div>
               </TransitionLink>
@@ -233,30 +257,6 @@ export default function Home() {
                     <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
                       Custom SillyTavern extensions
                     </p>
-                  </div>
-                </div>
-              </TransitionLink>
-            </div>
-
-            {/* Lumia DLC */}
-            <div className="col-span-6 lg:col-span-4 row-span-1">
-              <TransitionLink href="/lumia-dlc" className="block h-full group">
-                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.rose} ${borderColors.rose} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-row items-center gap-4">
-                    <div className="flex-shrink-0">
-                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
-                        <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 group-hover:text-rose-100 transition-colors">
-                        Lumia DLC
-                      </h3>
-                      <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
-                        Character packs and Loom presets
-                      </p>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-rose-400/50 group-hover:text-rose-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
                   </div>
                 </div>
               </TransitionLink>
