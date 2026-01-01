@@ -14,22 +14,16 @@ import {
   BookOpen,
   ChevronRight,
   Download,
-  Zap,
   Star,
   Scale,
   HardDrive,
-  Sparkles,
-  Clock
+  Sparkles
 } from 'lucide-react';
 
 interface Category {
   name: string;
   path: string;
   displayName: string;
-}
-
-interface LumiverseCategory extends Category {
-  exists: boolean;
 }
 
 interface FileItem {
@@ -50,9 +44,7 @@ function WorldBooksContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [lumiverseCategories, setLumiverseCategories] = useState<LumiverseCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedCategoryExists, setSelectedCategoryExists] = useState(true);
   const [files, setFiles] = useState<FileCategories>({ standard: [], prolix: [] });
   const [loading, setLoading] = useState(true);
   const [filesLoading, setFilesLoading] = useState(false);
@@ -89,7 +81,6 @@ function WorldBooksContent() {
         const data = await response.json();
         if (data.success) {
           setCategories(data.categories);
-          setLumiverseCategories(data.lumiverseCategories || []);
         }
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -104,12 +95,8 @@ function WorldBooksContent() {
   useEffect(() => {
     if (!selectedCategory) {
       setFiles({ standard: [], prolix: [] });
-      setSelectedCategoryExists(true);
       return;
     }
-
-    // Check if this is a Lumiverse category
-    const lumiverseCat = lumiverseCategories.find(cat => cat.name === selectedCategory);
 
     async function fetchFiles() {
       setIsTransitioning(true);
@@ -134,15 +121,12 @@ function WorldBooksContent() {
           });
 
           setFiles({ standard, prolix });
-          setSelectedCategoryExists(true);
         } else {
           setFiles({ standard: [], prolix: [] });
-          setSelectedCategoryExists(lumiverseCat ? lumiverseCat.exists : true);
         }
       } catch (error) {
         console.error('Error fetching files:', error);
         setFiles({ standard: [], prolix: [] });
-        setSelectedCategoryExists(lumiverseCat ? lumiverseCat.exists : true);
       } finally {
         setFilesLoading(false);
         setIsTransitioning(false);
@@ -150,7 +134,7 @@ function WorldBooksContent() {
     }
 
     fetchFiles();
-  }, [selectedCategory, lumiverseCategories]);
+  }, [selectedCategory]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -196,7 +180,7 @@ function WorldBooksContent() {
   const sortedProlix = processList(files.prolix);
   const hasFiles = sortedStandard.length > 0 || sortedProlix.length > 0;
   const totalBooks = files.standard.length + files.prolix.length;
-  const totalCategories = categories.length + lumiverseCategories.length;
+  const totalCategories = categories.length;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -232,11 +216,6 @@ function WorldBooksContent() {
             <div className="flex items-center gap-2 text-gray-400">
               <BookOpen className="w-4 h-4 text-cyan-400" />
               <span><strong className="text-white">{totalCategories}</strong> categories</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-gray-600" />
-            <div className="flex items-center gap-2 text-gray-400">
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span><strong className="text-white">{lumiverseCategories.length}</strong> DLCs</span>
             </div>
           </div>
         </header>
@@ -286,43 +265,6 @@ function WorldBooksContent() {
                       </div>
                     </div>
 
-                    {/* Divider */}
-                    <div className="border-t border-white/[0.05]" />
-
-                    {/* Lumiverse DLCs */}
-                    <div>
-                      <h2 className="text-lg font-semibold text-white flex items-center gap-2 mb-2 px-1">
-                        <Zap className="w-5 h-5 text-purple-400" />
-                        Lumiverse DLCs
-                      </h2>
-                      <p className="text-xs text-gray-500 mb-4 px-1">Specialized preset-based world books</p>
-                      <div className="space-y-2">
-                        {lumiverseCategories.map((category, index) => (
-                          <motion.button
-                            key={category.name}
-                            onClick={() => handleCategoryChange(category.name)}
-                            className={`group w-full text-left px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden flex items-center justify-between hover:translate-x-1 active:scale-[0.98] ${
-                              selectedCategory === category.name
-                                ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/10 text-white border border-purple-500/30'
-                                : 'bg-white/[0.03] text-gray-400 border border-white/[0.05] hover:bg-white/[0.06] hover:text-gray-200 hover:border-white/[0.1]'
-                            } ${!category.exists ? 'opacity-60' : ''}`}
-                            initial={animationsEnabled ? { opacity: 0, x: -20 } : false}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={animationsEnabled ? { delay: (categories.length + index) * 0.05 } : { duration: 0 }}
-                          >
-                            <span className="font-medium flex items-center gap-2">
-                              {category.displayName}
-                              {!category.exists && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-500">Coming Soon</span>
-                              )}
-                            </span>
-                            <ChevronRight className={`w-4 h-4 transition-all ${
-                              selectedCategory === category.name ? 'text-purple-400 opacity-100' : 'opacity-0 group-hover:opacity-50'
-                            }`} />
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -380,22 +322,10 @@ function WorldBooksContent() {
                         transition={animationsEnabled ? { duration: 0.3 } : { duration: 0 }}
                         className="bg-white/[0.03] border border-white/[0.05] rounded-2xl p-12 text-center"
                       >
-                        {!selectedCategoryExists ? (
-                          <>
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 mb-4">
-                              <Clock className="w-8 h-8 text-purple-400" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-white mb-2">Coming Soon</h3>
-                            <p className="text-gray-400">This Lumiverse DLC category is being prepared.<br />Check back later for new content!</p>
-                          </>
-                        ) : (
-                          <>
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-500/10 border border-gray-500/20 mb-4">
-                              <BookOpen className="w-8 h-8 text-gray-400" />
-                            </div>
-                            <p className="text-xl text-gray-400">No world books found in this category</p>
-                          </>
-                        )}
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-500/10 border border-gray-500/20 mb-4">
+                          <BookOpen className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-xl text-gray-400">No world books found in this category</p>
                       </motion.div>
                     ) : (
                       <motion.div
