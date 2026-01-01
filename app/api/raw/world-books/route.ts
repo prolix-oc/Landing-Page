@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDirectoryContents } from '@/lib/github';
 import { slugify } from '@/lib/slugify';
-import { LUMIVERSE_DLC_CATEGORIES, isLumiverseDLC } from '@/lib/constants';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +12,14 @@ const corsHeaders = {
 const DISPLAY_NAME_MAP: Record<string, string> = {
   'Lumia': 'Original Content'
 };
+
+// DLC categories are now handled in the dedicated Lumia DLC section
+const EXCLUDED_CATEGORIES = [
+  'Lumia DLCs',
+  'Loom Utilities',
+  'Loom Retrofits',
+  'Loom Narratives'
+];
 
 interface WorldBookEntry {
   name: string;
@@ -30,23 +37,17 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const lumiverseOnly = searchParams.get('lumiverse') === 'true';
-
     // Get all category directories
     const rootContents = await getDirectoryContents('World Books');
-    const categoryDirs = rootContents.filter(item => item.type === 'dir');
-
-    // Filter categories based on lumiverse parameter
-    const filteredCategories = lumiverseOnly
-      ? categoryDirs.filter(cat => isLumiverseDLC(cat.name))
-      : categoryDirs;
+    const categoryDirs = rootContents.filter(
+      item => item.type === 'dir' && !EXCLUDED_CATEGORIES.includes(item.name)
+    );
 
     // Build the directory structure
     const categories: CategoryEntry[] = await Promise.all(
-      filteredCategories.map(async (category) => {
+      categoryDirs.map(async (category) => {
         // Get all JSON files in this category
         const categoryContents = await getDirectoryContents(category.path);
         const bookFiles = categoryContents.filter(
@@ -73,14 +74,11 @@ export async function GET(request: Request) {
       })
     );
 
-    // Filter out empty categories if lumiverse mode
+    // Filter out empty categories
     const nonEmptyCategories = categories.filter(cat => cat.books.length > 0);
 
     return NextResponse.json(
-      {
-        lumiverse: lumiverseOnly,
-        categories: nonEmptyCategories
-      },
+      { categories: nonEmptyCategories },
       { headers: corsHeaders }
     );
 

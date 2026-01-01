@@ -7,12 +7,10 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import SmartPagination from '@/app/components/SmartPagination';
 import SortDropdown, { SortOption } from '@/app/components/SortDropdown';
-import { isLumiverseDLC } from '@/lib/constants';
 import {
   ArrowLeft,
   BookOpen,
   Download,
-  Link as LinkIcon,
   Search,
   ChevronDown,
   Layers,
@@ -23,8 +21,7 @@ import {
   Sparkles,
   ToggleLeft,
   Database,
-  Tag,
-  Clock
+  Tag
 } from 'lucide-react';
 
 interface WorldBookEntry {
@@ -95,7 +92,6 @@ export default function WorldBookDetailsPage() {
   const [expandedEntries, setExpandedEntries] = useState<Record<number, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
-  const [showCopied, setShowCopied] = useState(false);
   const entriesContainerRef = useRef<HTMLDivElement>(null);
 
   const toggleEntry = (uid: number) => {
@@ -103,38 +99,6 @@ export default function WorldBookDetailsPage() {
       ...prev,
       [uid]: !prev[uid]
     }));
-  };
-
-  const copyImportLink = async () => {
-    if (!worldBook) return;
-
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const importUrl = `${baseUrl}/api/raw/world-books/${encodeURIComponent(worldBook.category)}/${encodeURIComponent(worldBook.name)}.json`;
-
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(importUrl);
-        setShowCopied(true);
-        setTimeout(() => setShowCopied(false), 2000);
-      } else {
-        const textArea = document.createElement('textarea');
-        textArea.value = importUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-          document.execCommand('copy');
-          setShowCopied(true);
-          setTimeout(() => setShowCopied(false), 2000);
-        } catch (err) {
-          console.error('Fallback: Failed to copy URL:', err);
-        }
-        document.body.removeChild(textArea);
-      }
-    } catch (err) {
-      console.error('Failed to copy URL:', err);
-    }
   };
 
   useEffect(() => {
@@ -373,7 +337,7 @@ export default function WorldBookDetailsPage() {
                     </div>
                   </div>
 
-                  {/* Download Buttons */}
+                  {/* Download Button */}
                   <div className="space-y-3 py-4 border-t border-white/[0.05]">
                     <button
                       onClick={() => downloadFile(worldBook.jsonUrl, `${worldBook.name}.json`)}
@@ -386,33 +350,6 @@ export default function WorldBookDetailsPage() {
                       <Download className="w-5 h-5 transition-transform group-hover:-translate-y-0.5" />
                       Download JSON
                     </button>
-
-                    {/* Copy Import Link - Only for Lumiverse DLCs */}
-                    {isLumiverseDLC(worldBook.category) && (
-                      <div className="relative">
-                        <button
-                          onClick={copyImportLink}
-                          className="w-full bg-white/[0.05] hover:bg-white/[0.08] text-white px-4 py-3 rounded-xl transition-all duration-200 font-medium border border-white/[0.08] hover:border-white/[0.15] flex items-center justify-center gap-2 group hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                          <LinkIcon className="w-5 h-5" />
-                          Copy Import Link
-                        </button>
-
-                        <AnimatePresence>
-                          {showCopied && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                              transition={{ duration: 0.2 }}
-                              className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-green-500/20 border border-green-500/30 text-green-400 px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg"
-                            >
-                              Import link copied!
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
