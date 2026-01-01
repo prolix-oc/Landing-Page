@@ -62,13 +62,14 @@ export default function LumiaPackCard({ pack, index = 0, animationsEnabled = tru
         <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${config.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-10`} />
 
         {/* Cover Image or Gradient Placeholder */}
-        <div className="relative aspect-[4/3] overflow-hidden">
+        <div className="relative aspect-square overflow-hidden">
           {hasCover ? (
             <div className="w-full h-full transition-transform duration-400 group-hover:scale-105">
               <LazyImage
                 src={pack.coverUrl!}
                 alt={pack.packName}
                 className="w-full h-full object-cover"
+                style={{ objectPosition: 'center 15%' }}
               />
             </div>
           ) : (

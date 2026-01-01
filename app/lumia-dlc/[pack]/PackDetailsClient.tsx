@@ -253,15 +253,16 @@ export default function PackDetailsClient({ pack }: PackDetailsClientProps) {
               {/* Cover Image */}
               <div className="flex-shrink-0 w-full lg:w-72">
                 {pack.coverUrl ? (
-                  <div className="aspect-[4/3] rounded-2xl overflow-hidden">
+                  <div className="aspect-square rounded-2xl overflow-hidden">
                     <LazyImage
                       src={pack.coverUrl}
                       alt={pack.packName}
                       className="w-full h-full object-cover"
+                      style={{ objectPosition: 'center 15%' }}
                     />
                   </div>
                 ) : (
-                  <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-rose-500/20 via-pink-500/15 to-fuchsia-500/10 flex flex-col items-center justify-center gap-3">
+                  <div className="aspect-square rounded-2xl bg-gradient-to-br from-rose-500/20 via-pink-500/15 to-fuchsia-500/10 flex flex-col items-center justify-center gap-3">
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                       <Package className="w-12 h-12 text-rose-400" />
                     </div>
