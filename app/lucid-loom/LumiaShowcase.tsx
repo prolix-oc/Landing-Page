@@ -77,6 +77,7 @@ function LumiaCard({
     { col: 'lg:col-span-2', row: 'lg:row-span-1', delay: 0.2 },
     { col: 'lg:col-span-1', row: 'lg:row-span-1', delay: 0.25 },
     { col: 'lg:col-span-1', row: 'lg:row-span-1', delay: 0.3 },
+    { col: 'lg:col-span-1', row: 'lg:row-span-1', delay: 0.35 },
   ];
 
   const pos = positions[index % positions.length];
@@ -195,13 +196,14 @@ function LumiaCard({
 // Loading skeleton
 function LoadingSkeleton() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-      {[...Array(6)].map((_, i) => (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 grid-flow-dense">
+      {[...Array(7)].map((_, i) => (
         <div
           key={i}
           className={`relative rounded-3xl overflow-hidden animate-pulse ${
             i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''
           } ${i === 2 ? 'lg:row-span-2' : ''} ${i === 3 ? 'lg:col-span-2' : ''}`}
+          style={{ minHeight: i === 0 ? '400px' : '280px' }}
         >
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md border border-white/[0.08]" />
           <div className="relative min-h-[280px] p-5 flex flex-col">
@@ -272,8 +274,8 @@ export default function LumiaShowcase() {
             });
         });
 
-        // Shuffle and take 6 random Lumias
-        const selectedLumias = shuffleArray(allLumias).slice(0, 6);
+        // Shuffle and take 7 random Lumias (fills the grid nicely)
+        const selectedLumias = shuffleArray(allLumias).slice(0, 7);
         setLumias(selectedLumias);
         setIsLoading(false);
       } catch (error) {
