@@ -2,7 +2,17 @@ import { NextResponse } from 'next/server';
 import { getDirectoryContents, ensureWarmup, getJsonData, getCachedSlug } from '@/lib/github';
 import type { LumiaPackSummary, FilterOption, PackType, LumiaPack } from '@/lib/types/lumia-pack';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 const DLC_DIRECTORY = 'Lumia DLCs';
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 function determinePackType(lumiaCount: number, loomCount: number): PackType {
   if (lumiaCount > 0 && loomCount > 0) return 'mixed';
@@ -84,6 +94,7 @@ export async function GET() {
       },
       {
         headers: {
+          ...corsHeaders,
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
         }
       }
@@ -92,7 +103,7 @@ export async function GET() {
     console.error('Error fetching Lumia DLC packs:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch Lumia DLC packs' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
