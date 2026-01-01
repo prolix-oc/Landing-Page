@@ -8,10 +8,11 @@ interface LazyImageProps {
   src: string;
   alt: string;
   className?: string;
+  style?: React.CSSProperties;
   onLoad?: () => void;
 }
 
-export default function LazyImage({ src, alt, className = '', onLoad }: LazyImageProps) {
+export default function LazyImage({ src, alt, className = '', style, onLoad }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
@@ -79,6 +80,7 @@ export default function LazyImage({ src, alt, className = '', onLoad }: LazyImag
             src={src}
             alt={alt}
             className={className}
+            style={style}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
