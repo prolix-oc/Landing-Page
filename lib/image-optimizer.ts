@@ -97,7 +97,7 @@ export async function processAndSaveImage(
   return {
     filename,
     path: filePath,
-    url: `/uploads/${filename}`,
+    url: `/api/images/${filename}`,
   };
 }
 
