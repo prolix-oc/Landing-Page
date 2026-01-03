@@ -89,7 +89,7 @@ export default function LumiaDownloadModal({
                   You can download and install <span className="text-white font-medium">{packName}</span> directly
                   from within SillyTavern using the{' '}
                   <a
-                    href="https://github.com/RivelleDays/Lumiverse-Helper"
+                    href="https://github.com/prolix-oc/SillyTavern-LumiverseHelper"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1"
