@@ -5,6 +5,7 @@ import AnimatedLink from '@/app/components/AnimatedLink';
 import { motion, useInView } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import LazyImage from '@/app/components/LazyImage';
+import LumiaDownloadModal from './LumiaDownloadModal';
 import {
   ArrowLeft,
   Download,
@@ -223,10 +224,15 @@ function groupLoomItemsByCategory(items: LoomItem[]): Record<string, LoomItem[]>
 }
 
 export default function PackDetailsClient({ pack }: PackDetailsClientProps) {
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const loomGroups = groupLoomItemsByCategory(pack.loomItems);
   const hasLumiaItems = pack.lumiaItems.length > 0;
   const hasLoomItems = pack.loomItems.length > 0;
   const hasExtras = pack.packExtras.length > 0;
+
+  const handleDownload = () => {
+    downloadFile(pack.downloadUrl, `${pack.packName}.json`);
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -312,7 +318,7 @@ export default function PackDetailsClient({ pack }: PackDetailsClientProps) {
 
                 {/* Download Button */}
                 <button
-                  onClick={() => downloadFile(pack.downloadUrl, `${pack.packName}.json`)}
+                  onClick={() => setShowDownloadModal(true)}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-medium transition-all shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40"
                 >
                   <Download className="w-5 h-5" />
@@ -400,6 +406,14 @@ export default function PackDetailsClient({ pack }: PackDetailsClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Download Info Modal */}
+      <LumiaDownloadModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        onDownloadAnyway={handleDownload}
+        packName={pack.packName}
+      />
     </div>
   );
 }
