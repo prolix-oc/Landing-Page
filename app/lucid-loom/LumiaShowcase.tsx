@@ -292,10 +292,25 @@ export default function LumiaShowcase() {
       {/* Atmospheric background */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/10 to-gray-950" />
 
-      {/* Floating orbs for depth */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-pink-600/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute top-1/2 right-1/3 w-[300px] h-[300px] bg-cyan-600/8 rounded-full blur-[80px] pointer-events-none" />
+      {/* Floating orbs for depth - using radial gradients instead of blur for GPU performance */}
+      <div
+        className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(147, 51, 234, 0.10) 0%, rgba(147, 51, 234, 0.07) 20%, rgba(147, 51, 234, 0.04) 40%, rgba(147, 51, 234, 0.015) 60%, rgba(147, 51, 234, 0.005) 80%, transparent 100%)',
+        }}
+      />
+      <div
+        className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(219, 39, 119, 0.10) 0%, rgba(219, 39, 119, 0.07) 20%, rgba(219, 39, 119, 0.04) 40%, rgba(219, 39, 119, 0.015) 60%, rgba(219, 39, 119, 0.005) 80%, transparent 100%)',
+        }}
+      />
+      <div
+        className="absolute top-1/2 right-1/3 w-[300px] h-[300px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, rgba(6, 182, 212, 0.056) 20%, rgba(6, 182, 212, 0.032) 40%, rgba(6, 182, 212, 0.012) 60%, rgba(6, 182, 212, 0.004) 80%, transparent 100%)',
+        }}
+      />
 
       <div className="relative max-w-7xl mx-auto">
         {/* Section header */}

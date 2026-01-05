@@ -641,7 +641,7 @@ button:active:not(.no-click-feedback) {
 /* CSS custom properties for blur control (easier to tune globally) */
 :root {
   --orb-blur: 80px;
-  --orb-blur-safari: 50px;
+  --orb-blur-safari: 30px; /* Reduced from 50px for better GPU perf */
   --backdrop-blur: 12px;
   --backdrop-blur-safari: 8px;
 }
@@ -680,8 +680,8 @@ button:active:not(.no-click-feedback) {
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance: none) {
     .orb-1, .orb-2, .orb-3 {
-      filter: blur(50px) !important;
-      -webkit-filter: blur(50px) !important;
+      filter: blur(30px) !important; /* Reduced from 50px for better GPU perf */
+      -webkit-filter: blur(30px) !important;
       opacity: 0.4;
     }
 

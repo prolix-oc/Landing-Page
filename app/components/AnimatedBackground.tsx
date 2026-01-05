@@ -42,11 +42,15 @@ const THEME_COLORS = [
   'rgba(14, 165, 233, 0.06)',   // sky
 ];
 
+// Gradient cache to avoid recreating gradients every frame
+type GradientCache = Map<string, CanvasGradient>;
+
 export default function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapesRef = useRef<Shape[]>([]);
   const animationFrameRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
+  const gradientCacheRef = useRef<GradientCache>(new Map());
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -59,9 +63,49 @@ export default function AnimatedBackground() {
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      // Clear gradient cache on resize since canvas context changes
+      gradientCacheRef.current.clear();
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+
+    // Helper to get or create cached gradient (reduces GPU work)
+    const getOrCreateGradient = (
+      shapeId: number,
+      size: number,
+      color: string,
+      opacity: number,
+      isGlow: boolean = false
+    ): CanvasGradient => {
+      // Round size to nearest 20px to reduce cache misses while pulse animates
+      const roundedSize = Math.round(size / 20) * 20;
+      const cacheKey = `${shapeId}-${roundedSize}-${isGlow ? 'glow' : 'main'}`;
+
+      let gradient = gradientCacheRef.current.get(cacheKey);
+      if (!gradient) {
+        gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, roundedSize);
+        const baseColor = color.replace(/[\d.]+\)$/, `${opacity})`);
+
+        if (isGlow) {
+          const glowColor = color.replace(/[\d.]+\)$/, `${opacity * 0.2})`);
+          gradient.addColorStop(0, glowColor);
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        } else {
+          gradient.addColorStop(0, baseColor);
+          gradient.addColorStop(0.5, baseColor.replace(/[\d.]+\)$/, `${opacity * 0.5})`));
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        }
+
+        gradientCacheRef.current.set(cacheKey, gradient);
+
+        // Limit cache size to prevent memory bloat
+        if (gradientCacheRef.current.size > 100) {
+          const firstKey = gradientCacheRef.current.keys().next().value;
+          if (firstKey) gradientCacheRef.current.delete(firstKey);
+        }
+      }
+      return gradient;
+    };
 
     // Helper function to create a new shape
     const createShape = (id: number): Shape => {
@@ -184,13 +228,8 @@ export default function AnimatedBackground() {
         ctx.translate(shape.x, shape.y);
         ctx.rotate(shape.rotation);
 
-        // Create gradient for each shape
-        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize);
-        const baseColor = shape.color.replace(/[\d.]+\)$/, `${currentOpacity})`);
-        gradient.addColorStop(0, baseColor);
-        gradient.addColorStop(0.5, baseColor.replace(/[\d.]+\)$/, `${currentOpacity * 0.5})`));
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
+        // Use cached gradient for better performance
+        const gradient = getOrCreateGradient(shape.id, currentSize, shape.color, currentOpacity);
         ctx.fillStyle = gradient;
 
         // Draw shape based on type
@@ -240,13 +279,10 @@ export default function AnimatedBackground() {
             break;
         }
 
-        // Additional ambient glow layer
-        if (Math.random() > 0.7) { // Only on some shapes for subtlety
+        // Additional ambient glow layer (deterministic based on shape ID instead of random)
+        if (shape.id % 3 === 0) { // ~33% of shapes get glow, consistent per shape
           ctx.globalCompositeOperation = 'screen';
-          const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 1.5);
-          const glowColor = shape.color.replace(/[\d.]+\)$/, `${currentOpacity * 0.2})`);
-          glowGradient.addColorStop(0, glowColor);
-          glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          const glowGradient = getOrCreateGradient(shape.id, currentSize * 1.5, shape.color, currentOpacity, true);
           ctx.fillStyle = glowGradient;
           ctx.beginPath();
           ctx.arc(0, 0, currentSize * 1.5, 0, Math.PI * 2);
