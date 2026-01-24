@@ -438,8 +438,7 @@ function ChatPresetsContent() {
                             <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-500/20">
                               <Crown className="w-5 h-5 text-amber-400" />
                             </div>
-                            <h2 className="text-xl font-bold text-white">Prolix Preferred</h2>
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">Premium</span>
+                            <h2 className="text-xl font-bold text-white">Prolix's Options</h2>
                           </div>
 
                           {prolixLatest.map((version) => {
