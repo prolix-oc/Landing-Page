@@ -368,7 +368,7 @@ export default function PackDetailsClient({ pack }: PackDetailsClientProps) {
                   defaultOpen
                   delay={0.1}
                 >
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-2 items-start">
                     {pack.lumiaItems.map((item, index) => (
                       <LumiaItemCard key={index} item={item} />
                     ))}
@@ -392,7 +392,7 @@ export default function PackDetailsClient({ pack }: PackDetailsClientProps) {
                         <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-3">
                           {category}
                         </h4>
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <div className="grid gap-3 md:grid-cols-2 items-start">
                           {items.map((item, index) => (
                             <LoomItemCard key={index} item={item} />
                           ))}

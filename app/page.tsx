@@ -84,7 +84,7 @@ const borderColors: Record<string, string> = {
 
 export default function Home() {
   return (
-    <div className="h-screen flex flex-col overflow-hidden relative vt-exclude">
+    <div className="min-h-screen lg:h-screen flex flex-col lg:overflow-hidden relative vt-exclude">
       {/* Main Container */}
       <div className="flex-1 flex flex-col container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl relative z-10">
 
@@ -111,15 +111,15 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative">
+        <div className="flex-1 min-h-0 relative lg:max-h-[600px]">
           {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
           {/* Bento Grid inside the glass container */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 grid-rows-[repeat(4,1fr)] gap-3 sm:gap-4">
+          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 auto-rows-[minmax(140px,1fr)] lg:grid-rows-[repeat(2,1fr)] gap-3 sm:gap-4">
 
             {/* Featured Card - Lucid Loom (top of left column) */}
-            <div className="col-span-2 row-span-2 lg:col-start-1 lg:row-start-1">
+            <div className="col-span-2 row-span-2 lg:row-span-1 lg:col-start-1 lg:row-start-1">
               <TransitionLink href="/lucid-loom" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-2xl ${glowColors.purple} ${borderColors.purple} hover:bg-white/[0.03]`}>
                   {/* Decorative gradient orb */}
@@ -155,7 +155,7 @@ export default function Home() {
             </div>
 
             {/* Lumia DLC (bottom of left column) */}
-            <div className="col-span-2 row-span-2 lg:col-start-1 lg:row-start-3">
+            <div className="col-span-2 row-span-2 lg:row-span-1 lg:col-start-1 lg:row-start-2">
               <TransitionLink href="/lumia-dlc" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.rose} ${borderColors.rose} hover:bg-white/[0.03]`}>
                   {/* Decorative gradient orb */}
@@ -191,7 +191,7 @@ export default function Home() {
             </div>
 
             {/* Character Cards */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:col-start-3 lg:row-start-1">
+            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-3 lg:row-start-1">
               <TransitionLink href="/character-cards" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.cyan} ${borderColors.cyan} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
@@ -212,7 +212,7 @@ export default function Home() {
             </div>
 
             {/* Chat Presets */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:col-start-5 lg:row-start-1">
+            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-5 lg:row-start-1">
               <TransitionLink href="/chat-presets" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.violet} ${borderColors.violet} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
@@ -233,7 +233,7 @@ export default function Home() {
             </div>
 
             {/* World Books */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:col-start-3 lg:row-start-3">
+            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-3 lg:row-start-2">
               <TransitionLink href="/world-books" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.emerald} ${borderColors.emerald} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
@@ -254,7 +254,7 @@ export default function Home() {
             </div>
 
             {/* Extensions */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:col-start-5 lg:row-start-3">
+            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-5 lg:row-start-2">
               <TransitionLink href="/extensions" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.amber} ${borderColors.amber} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
