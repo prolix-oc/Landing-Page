@@ -2,6 +2,7 @@
 
 # dependencies
 /.crush
+crush.json
 AGENTS.md
 /node_modules
 /.pnp

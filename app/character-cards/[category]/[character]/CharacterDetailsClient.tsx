@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { downloadFile } from '@/lib/download';
 import { slugify } from '@/lib/slugify';
 import LazyImage from '@/app/components/LazyImage';
@@ -78,8 +78,7 @@ function AccordionSection({
   accentColor,
   isOpen,
   onToggle,
-  children,
-  delay = 0
+  children
 }: {
   id: string;
   title: string;
@@ -88,11 +87,8 @@ function AccordionSection({
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-  delay?: number;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
   const [contentHeight, setContentHeight] = useState(0);
 
   // Measure content height whenever it changes or section opens
@@ -111,11 +107,7 @@ function AccordionSection({
   }, [children]);
 
   return (
-    <motion.div
-      ref={sectionRef}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.4, delay, ease: [0.4, 0, 0.2, 1] }}
+    <div
       className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden transition-colors duration-300 hover:border-white/[0.1]"
     >
       {/* Header - always visible */}
@@ -162,7 +154,7 @@ function AccordionSection({
           {children}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -527,7 +519,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
                 {/* Right Column: Content Sections */}
                 <div className="lg:col-span-8 xl:col-span-9 space-y-4">
-                  {contentSections.map((section, index) => (
+                  {contentSections.map((section) => (
                     <AccordionSection
                       key={section.id}
                       id={section.id}
@@ -536,7 +528,6 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                       accentColor={accentColor}
                       isOpen={openSections.has(section.id)}
                       onToggle={() => toggleSection(section.id)}
-                      delay={0.1 + index * 0.05}
                     >
                       <AnimatePresence mode="wait">
                         <motion.div
