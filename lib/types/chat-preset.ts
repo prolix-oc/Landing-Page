@@ -2,10 +2,17 @@
  * Chat Preset Types for Download API
  */
 
+export interface SemanticVersion {
+  major: number;
+  minor: number;
+  patch: number;
+}
+
 export interface PresetVersion {
   name: string;
   path: string;
   slug: string;
+  version: SemanticVersion | null;
   downloadUrl: string | null;
   size: number;
   lastModified: string | null;

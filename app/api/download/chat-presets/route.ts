@@ -23,6 +23,18 @@ function createVersionSlug(fileName: string): string {
   return 'latest';
 }
 
+function parseVersion(fileName: string): { major: number; minor: number; patch: number } | null {
+  const match = fileName.match(/v(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
+  if (match) {
+    return {
+      major: parseInt(match[1], 10),
+      minor: match[2] ? parseInt(match[2], 10) : 0,
+      patch: match[3] ? parseInt(match[3], 10) : 0,
+    };
+  }
+  return null;
+}
+
 export async function GET() {
   ensureWarmup();
 
@@ -60,6 +72,7 @@ export async function GET() {
               name: file.name.replace(/\.json$/i, ''),
               path: file.path,
               slug: createVersionSlug(file.name),
+              version: parseVersion(file.name),
               downloadUrl: file.download_url,
               size: file.size || 0,
               lastModified: commit?.commit.author.date || null,
