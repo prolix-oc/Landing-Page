@@ -3,6 +3,12 @@ import { getExtensionVersion, setExtensionVersion } from '@/lib/extension-versio
 
 const UPLOAD_TOKEN = process.env.IMAGE_UPLOAD_TOKEN;
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 function validateAuth(request: Request): boolean {
   if (!UPLOAD_TOKEN) {
     console.error('IMAGE_UPLOAD_TOKEN not configured');
@@ -16,6 +22,10 @@ function validateAuth(request: Request): boolean {
 
   const token = authHeader.slice(7);
   return token === UPLOAD_TOKEN;
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
 }
 
 /**
@@ -47,7 +57,7 @@ export async function GET(request: Request) {
     if (!extension || typeof extension !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Extension name is required (use ?extension=Name or body)' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -56,7 +66,7 @@ export async function GET(request: Request) {
     if (version === null) {
       return NextResponse.json(
         { success: false, error: `Extension "${extension}" not found` },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -70,6 +80,7 @@ export async function GET(request: Request) {
       },
       {
         headers: {
+          ...corsHeaders,
           'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
         },
       }
@@ -78,7 +89,7 @@ export async function GET(request: Request) {
     console.error('Error fetching extension version:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch extension version' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -98,7 +109,7 @@ export async function POST(request: Request) {
   if (!validateAuth(request)) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
-      { status: 401 }
+      { status: 401, headers: corsHeaders }
     );
   }
 
@@ -110,14 +121,14 @@ export async function POST(request: Request) {
     if (!extension || typeof extension !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Extension name is required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
     if (!version || typeof version !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Version is required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -132,7 +143,7 @@ export async function POST(request: Request) {
           version,
         },
       },
-      { status: 200 }
+      { status: 200, headers: corsHeaders }
     );
   } catch (error) {
     console.error('Error setting extension version:', error);
@@ -140,13 +151,13 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message.includes('Invalid semantic version')) {
       return NextResponse.json(
         { success: false, error: error.message },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
     return NextResponse.json(
       { success: false, error: 'Failed to set extension version' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
