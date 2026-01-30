@@ -22,19 +22,31 @@ function validateAuth(request: Request): boolean {
  * GET /api/extension-versions
  *
  * Returns the semantic version for a specific extension.
- * Accepts extension name in request body.
+ * Accepts extension name via query parameter or request body.
  *
- * Request body: { "extension": "SillyTavern-LumiverseHelper" }
+ * Query: ?extension=SillyTavern-LumiverseHelper
+ * Body: { "extension": "SillyTavern-LumiverseHelper" }
  * Response: { "success": true, "data": { "extension": "SillyTavern-LumiverseHelper", "version": "1.2.3" } }
  */
 export async function GET(request: Request) {
   try {
-    const body = await request.json();
-    const { extension } = body;
+    // Try query parameter first (most compatible)
+    const { searchParams } = new URL(request.url);
+    let extension = searchParams.get('extension');
+
+    // Fall back to body if no query param
+    if (!extension) {
+      try {
+        const body = await request.json();
+        extension = body.extension;
+      } catch {
+        // Body parsing failed, continue with validation
+      }
+    }
 
     if (!extension || typeof extension !== 'string') {
       return NextResponse.json(
-        { success: false, error: 'Extension name is required' },
+        { success: false, error: 'Extension name is required (use ?extension=Name or body)' },
         { status: 400 }
       );
     }
