@@ -34,17 +34,6 @@ function parseVersion(fileName: string): { major: number; minor: number; patch: 
   return null;
 }
 
-function matchVersionSlug(fileName: string, targetSlug: string): boolean {
-  const fileSlug = createVersionSlug(fileName);
-  
-  // Handle "latest" as an alias
-  if (targetSlug === 'latest') {
-    return true; // Will be handled by picking first sorted result
-  }
-  
-  return fileSlug === targetSlug;
-}
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ preset: string; version: string }> }

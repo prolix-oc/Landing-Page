@@ -84,7 +84,7 @@ export async function getLocalDirectoryContents(dirPath: string): Promise<GitHub
  * Reads a file from local cache
  * Uses node:fs/promises which Bun optimizes for 2-3x faster file reading
  */
-export async function getLocalFileContent(filePath: string): Promise<any> {
+export async function getLocalFileContent(filePath: string): Promise<unknown> {
   const localPath = githubPathToLocalPath(filePath);
 
   try {

@@ -74,8 +74,14 @@ export default function FilterModal({
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 100);
-    } else {
-      setSearchQuery('');
+    }
+  }, [isOpen]);
+
+  // Reset search query when modal closes or opens
+  useEffect(() => {
+    if (!isOpen) {
+      const timer = setTimeout(() => setSearchQuery(''), 300); // Wait for animation
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -221,7 +227,7 @@ export default function FilterModal({
                   })}
                   {filteredOptions.length === 0 && (
                     <p className="text-gray-500 text-sm py-8 text-center w-full">
-                      No {title.toLowerCase()} found matching "{searchQuery}"
+                      No {title.toLowerCase()} found matching &quot;{searchQuery}&quot;
                     </p>
                   )}
                 </div>
@@ -273,7 +279,7 @@ export default function FilterModal({
 
                   {filteredOptions.length === 0 && !showAllOption && (
                     <p className="text-gray-500 text-sm py-8 text-center col-span-2">
-                      No {title.toLowerCase()} found matching "{searchQuery}"
+                      No {title.toLowerCase()} found matching &quot;{searchQuery}&quot;
                     </p>
                   )}
                 </div>

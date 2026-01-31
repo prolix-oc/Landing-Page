@@ -76,7 +76,7 @@ export default function SortDropdown({ value, onChange, className = '', options 
   };
 
   // Render icon - handles both Lucide components and string icons
-  const renderIcon = (icon: string | LucideIcon | undefined, isSelected: boolean) => {
+  const renderIcon = (icon: string | LucideIcon | undefined) => {
     if (!icon) return null;
 
     // If it's a string, try to map it to a Lucide icon, otherwise show as text
@@ -150,7 +150,7 @@ export default function SortDropdown({ value, onChange, className = '', options 
                         ? 'bg-cyan-500/20 text-cyan-400'
                         : 'bg-white/[0.03] text-gray-500 group-hover:bg-white/[0.05] group-hover:text-gray-400'
                     }`}>
-                      {renderIcon(option.icon, isSelected)}
+                      {renderIcon(option.icon)}
                     </span>
                     <span className="font-medium text-sm">{option.label}</span>
                     {isSelected && (

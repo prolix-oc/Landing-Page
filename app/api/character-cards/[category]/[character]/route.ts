@@ -9,7 +9,7 @@ interface AlternateScenario {
   thumbnailUrl: string | null;
   pngUrl: string | null;
   jsonUrl: string;
-  cardData: any;
+  cardData: unknown;
   lastModified: string | null;
 }
 

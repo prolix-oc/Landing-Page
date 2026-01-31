@@ -83,12 +83,12 @@ export async function GET(request: Request) {
 
                 // Fetch JSON data to extract tags and creators
                 const cardJsonData = jsonFile ? await getJsonData(jsonFile) : null;
-                const tags: string[] = cardJsonData?.data?.tags || [];
+                const tags: string[] = (cardJsonData?.data?.tags as string[]) || [];
                 const creators: string[] = [];
                 if (cardJsonData?.data?.creators && Array.isArray(cardJsonData.data.creators)) {
-                  creators.push(...cardJsonData.data.creators);
+                  creators.push(...(cardJsonData.data.creators as string[]));
                 } else if (cardJsonData?.data?.creator && typeof cardJsonData.data.creator === 'string') {
-                  creators.push(cardJsonData.data.creator);
+                  creators.push(cardJsonData.data.creator as string);
                 }
 
                 let totalScenarios = 0;

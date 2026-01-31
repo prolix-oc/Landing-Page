@@ -17,10 +17,6 @@ export default function LazyImage({ src, alt, className = '', style, onLoad }: L
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    // Reset state when src changes
-    setIsLoaded(false);
-    setHasError(false);
-
     // Preload the image
     const img = new Image();
     img.src = src;
@@ -37,6 +33,9 @@ export default function LazyImage({ src, alt, className = '', style, onLoad }: L
     return () => {
       img.onload = null;
       img.onerror = null;
+      // Reset state on cleanup (when src changes or component unmounts)
+      setIsLoaded(false);
+      setHasError(false);
     };
   }, [src, onLoad]);
 

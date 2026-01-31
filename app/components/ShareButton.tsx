@@ -5,10 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShareButtonProps {
   url: string;
-  title: string;
 }
 
-export default function ShareButton({ url, title }: ShareButtonProps) {
+export default function ShareButton({ url }: ShareButtonProps) {
   const [showCopied, setShowCopied] = useState(false);
 
   const handleShare = async () => {

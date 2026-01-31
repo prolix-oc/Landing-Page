@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { FastAverageColor } from 'fast-average-color';
+import Image from 'next/image';
 import {
   ArrowLeft,
   ArrowUp,
@@ -21,7 +22,6 @@ import {
   FileText,
   Brain,
   ChevronDown,
-  Download,
   Image as ImageIcon,
   FileJson2,
   X,
@@ -43,7 +43,7 @@ interface CharacterCardData {
     scenario?: string;
     first_mes?: string;
     mes_example?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -72,7 +72,6 @@ interface Character {
 
 // Accordion Section Component - smooth height transitions without layout thrashing
 function AccordionSection({
-  id,
   title,
   icon: Icon,
   accentColor,
@@ -80,7 +79,6 @@ function AccordionSection({
   onToggle,
   children
 }: {
-  id: string;
   title: string;
   icon: React.ElementType;
   accentColor: string;
@@ -511,7 +509,6 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
                       <ShareButton
                         url={`${typeof window !== 'undefined' ? window.location.origin : ''}/character-cards/${encodeURIComponent(character.category)}/${slugify(character.name)}${selectedAlternate > 0 ? `?scenario=${selectedAlternate}` : ''}`}
-                        title={charData.name}
                       />
                     </div>
                   </div>
@@ -522,7 +519,6 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                   {contentSections.map((section) => (
                     <AccordionSection
                       key={section.id}
-                      id={section.id}
                       title={section.title}
                       icon={section.icon}
                       accentColor={accentColor}
@@ -543,13 +539,14 @@ export default function CharacterDetailsClient({ character }: { character: Chara
                               remarkPlugins={[remarkGfm, remarkBreaks]}
                               rehypePlugins={[rehypeRaw]}
                               components={{
-                                p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
-                                em: ({node, ...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
-                                code: ({node, inline, className, children, ...props}: any) => (
-                                  <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
-                                    {children}
-                                  </code>
-                                ),
+                                p: ({...props}) => <p className="mb-3 last:mb-0" {...props} />,
+                                em: ({...props}) => <em style={{ color: accentColor }} className="opacity-80 transition-colors duration-500" {...props} />,
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              code: ({inline, className, children, ...props}: any) => (
+                                <code className={`${className} ${inline ? 'bg-gray-800 px-1 py-0.5 rounded' : 'block bg-gray-800 p-4 rounded-lg overflow-x-auto'}`} {...props}>
+                                  {children}
+                                </code>
+                              ),
                               }}
                             >
                               {formatCharacterText(section.content)}
@@ -600,11 +597,13 @@ export default function CharacterDetailsClient({ character }: { character: Chara
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center pointer-events-none"
             >
-              <img
+              <Image
                 src={currentScenario.pngUrl}
                 alt={charData.name}
-                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl pointer-events-auto border border-white/[0.1]"
+                fill
+                className="object-contain rounded-2xl shadow-2xl pointer-events-auto border border-white/[0.1]"
                 onClick={(e) => e.stopPropagation()}
+                sizes="100vw"
               />
             </motion.div>
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchFromGitHub } from '@/lib/github';
+import { fetchFromGitHub, GitHubFile } from '@/lib/github';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +33,7 @@ export async function GET(
     const stateFilePath = `Chat Completion/${decodedPreset}/statefiles/${decodedStateFilePath}`;
 
     // Use the GitHub caching system to fetch the file
-    const fileData = await fetchFromGitHub(encodeURI(stateFilePath));
+    const fileData = await fetchFromGitHub(encodeURI(stateFilePath)) as GitHubFile | null;
 
     if (!fileData || !fileData.download_url) {
       return NextResponse.json(

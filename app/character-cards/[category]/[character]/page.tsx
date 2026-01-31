@@ -4,6 +4,20 @@ import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getJsonDa
 import { slugify } from "@/lib/slugify";
 import CharacterDetailsClient from "./CharacterDetailsClient";
 
+interface CharacterCardData {
+  spec: string;
+  spec_version: string;
+  data: {
+    name: string;
+    description?: string;
+    personality?: string;
+    scenario?: string;
+    first_mes?: string;
+    mes_example?: string;
+    [key: string]: unknown;
+  };
+}
+
 interface AlternateScenario {
   id: string;
   name: string;
@@ -11,7 +25,7 @@ interface AlternateScenario {
   thumbnailUrl: string | null;
   pngUrl: string | null;
   jsonUrl: string;
-  cardData: any;
+  cardData: CharacterCardData;
   lastModified: string | null;
 }
 
@@ -22,7 +36,7 @@ interface Character {
   thumbnailUrl: string | null;
   pngUrl: string | null;
   jsonUrl: string;
-  cardData: any;
+  cardData: CharacterCardData;
   lastModified: string | null;
   alternates?: AlternateScenario[];
 }

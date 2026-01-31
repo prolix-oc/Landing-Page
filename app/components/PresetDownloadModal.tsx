@@ -61,11 +61,11 @@ interface StateFileSettings {
   };
   systemPrompts?: Record<string, string>;
   templateFormats?: Record<string, string>;
-  behavior?: Record<string, any>;
-  apiOptions?: Record<string, any>;
-  media?: Record<string, any>;
-  generation?: Record<string, any>;
-  regexScripts?: any[];
+  behavior?: Record<string, unknown>;
+  apiOptions?: Record<string, unknown>;
+  media?: Record<string, unknown>;
+  generation?: Record<string, unknown>;
+  regexScripts?: unknown[];
 }
 
 interface StateFile {
@@ -93,10 +93,36 @@ interface TestedSamplersResponse {
 }
 
 // Helper to check if a value is metadata (not a sampler config)
-const isMetadata = (key: string): boolean => key === '_meta';
+// const isMetadata = (key: string): boolean => key === '_meta';
 
 // Alias for backwards compatibility in the component
 type TestedSamplers = TestedSamplersResponse;
+
+interface PresetPrompt {
+  name?: string;
+  identifier?: string;
+  enabled?: boolean;
+  [key: string]: unknown;
+}
+
+interface PresetOrderToggle {
+  identifier?: string;
+  enabled?: boolean;
+  [key: string]: unknown;
+}
+
+interface PresetOrderItem {
+  character_id?: number;
+  order?: PresetOrderToggle[];
+  [key: string]: unknown;
+}
+
+interface PresetData {
+  prompts?: PresetPrompt[];
+  prompt_order?: PresetOrderItem[];
+  spec_version?: string;
+  [key: string]: unknown;
+}
 
 interface PresetDownloadModalProps {
   isOpen: boolean;
@@ -145,12 +171,12 @@ export default function PresetDownloadModal({
   presetName,
 }: PresetDownloadModalProps) {
   const [step, setStep] = useState<'initial' | 'customize' | 'update-choice' | 'update-error'>('initial');
-  const [updateError, setUpdateError] = useState<string | null>(null);
+  // const [updateError, setUpdateError] = useState<string | null>(null);
   const [testedSamplers, setTestedSamplers] = useState<TestedSamplers>({});
   const [loading, setLoading] = useState(false);
   const [loadingSamplers, setLoadingSamplers] = useState(false);
   const [isDataReady, setIsDataReady] = useState(false);
-  const [updatedPreset, setUpdatedPreset] = useState<any>(null);
+  const [updatedPreset, setUpdatedPreset] = useState<PresetData | null>(null);
 
   useEffect(() => {
     if (isOpen && presetUrl) {
@@ -219,7 +245,7 @@ export default function PresetDownloadModal({
     setStep('customize');
   };
 
-  const sanitizeJSON = (obj: any): any => {
+  const sanitizeJSON = (obj: unknown): unknown => {
     if (obj === null || obj === undefined) return obj;
     
     if (typeof obj === 'string') {
@@ -235,10 +261,11 @@ export default function PresetDownloadModal({
     }
     
     if (typeof obj === 'object') {
-      const sanitized: any = {};
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          sanitized[key] = sanitizeJSON(obj[key]);
+      const sanitized: Record<string, unknown> = {};
+      const record = obj as Record<string, unknown>;
+      for (const key in record) {
+        if (Object.prototype.hasOwnProperty.call(record, key)) {
+          sanitized[key] = sanitizeJSON(record[key]);
         }
       }
       return sanitized;
@@ -247,7 +274,7 @@ export default function PresetDownloadModal({
     return obj;
   };
 
-  const saveCustomPromptBackup = async (prompt: any, presetName: string) => {
+  const saveCustomPromptBackup = async (prompt: PresetPrompt, presetName: string) => {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const backupData = {
@@ -276,7 +303,7 @@ export default function PresetDownloadModal({
     }
   };
 
-  const mergePrompts = (userPreset: any, latestPreset: any) => {
+  const mergePrompts = (userPreset: PresetData, latestPreset: PresetData) => {
     try {
       // Helper: Check if prompt is a category (name starts with ━ U+2501)
       const isCategory = (name: string): boolean => {
@@ -300,12 +327,12 @@ export default function PresetDownloadModal({
       };
 
       // Step 1: Build NAME-based maps for user's prompts
-      const userPromptsByName = new Map<string, any>(); // key: matchable name (cleaned, lowercase)
+      const userPromptsByName = new Map<string, PresetPrompt>(); // key: matchable name (cleaned, lowercase)
       const userEnabledStates = new Map<string, boolean>(); // key: identifier
       const userPromptOrder: string[] = []; // Track original order by identifier
 
       if (userPreset.prompts && Array.isArray(userPreset.prompts)) {
-        userPreset.prompts.forEach((prompt: any) => {
+        userPreset.prompts.forEach((prompt) => {
           if (prompt.name && typeof prompt.name === 'string') {
             const matchName = getMatchableName(prompt.name);
             userPromptsByName.set(matchName, prompt);
@@ -323,9 +350,9 @@ export default function PresetDownloadModal({
 
       // Get authoritative enabled states from prompt_order
       if (userPreset.prompt_order && Array.isArray(userPreset.prompt_order)) {
-        userPreset.prompt_order.forEach((orderItem: any) => {
+        userPreset.prompt_order.forEach((orderItem) => {
           if (orderItem.order && Array.isArray(orderItem.order)) {
-            orderItem.order.forEach((toggle: any) => {
+            orderItem.order.forEach((toggle) => {
               if (toggle.identifier) {
                 userEnabledStates.set(toggle.identifier, toggle.enabled || false);
               }
@@ -335,9 +362,9 @@ export default function PresetDownloadModal({
       }
 
       // Step 2: Build NAME-based map for latest prompts
-      const latestPromptsByName = new Map<string, any>();
+      const latestPromptsByName = new Map<string, PresetPrompt>();
       if (latestPreset.prompts && Array.isArray(latestPreset.prompts)) {
-        latestPreset.prompts.forEach((prompt: any) => {
+        latestPreset.prompts.forEach((prompt) => {
           if (prompt.name && typeof prompt.name === 'string') {
             const matchName = getMatchableName(prompt.name);
             latestPromptsByName.set(matchName, prompt);
@@ -350,13 +377,13 @@ export default function PresetDownloadModal({
       const latestCategories = new Set<string>();
 
       userPromptsByName.forEach((prompt, matchName) => {
-        if (isCategory(prompt.name)) {
+        if (prompt.name && isCategory(prompt.name)) {
           userCategories.add(matchName);
         }
       });
 
       latestPromptsByName.forEach((prompt, matchName) => {
-        if (isCategory(prompt.name)) {
+        if (prompt.name && isCategory(prompt.name)) {
           latestCategories.add(matchName);
         }
       });
@@ -375,26 +402,26 @@ export default function PresetDownloadModal({
       }
 
       // Step 4: Start with latest preset structure
-      const mergedPreset = { ...latestPreset };
+      const mergedPreset: PresetData = { ...latestPreset };
       const matchedUserPromptNames = new Set<string>(); // Track which user prompts were matched
 
       // Step 5: Process prompts - match by NAME
       if (mergedPreset.prompts && Array.isArray(mergedPreset.prompts)) {
-        mergedPreset.prompts = mergedPreset.prompts.map((latestPrompt: any) => {
+        mergedPreset.prompts = mergedPreset.prompts.map((latestPrompt) => {
           const latestMatchName = getMatchableName(latestPrompt.name || '');
           const userPrompt = userPromptsByName.get(latestMatchName);
           const userHasPrompt = !!userPrompt;
 
-          if (userHasPrompt) {
+          if (userHasPrompt && userPrompt) {
             matchedUserPromptNames.add(latestMatchName);
-            const userIsProtected = isProtectedPrompt(userPrompt.name);
-            const userEnabledState = userEnabledStates.get(userPrompt.identifier) ?? userPrompt.enabled ?? false;
+            const userIsProtected = userPrompt.name ? isProtectedPrompt(userPrompt.name) : false;
+            const userEnabledState = (userPrompt.identifier ? userEnabledStates.get(userPrompt.identifier) : undefined) ?? userPrompt.enabled ?? false;
 
             if (userIsProtected) {
               // Protected: keep user's content, clean name, preserve toggle
               return {
                 ...userPrompt,
-                name: cleanPromptName(userPrompt.name),
+                name: userPrompt.name ? cleanPromptName(userPrompt.name) : userPrompt.name,
                 enabled: userEnabledState,
               };
             } else {
@@ -417,17 +444,17 @@ export default function PresetDownloadModal({
 
       // Step 6: Handle user-only prompts (deprecated or protected)
       // These are prompts in user's version that don't exist in latest
-      const userOnlyPrompts: any[] = [];
+      const userOnlyPrompts: PresetPrompt[] = [];
       userPromptsByName.forEach((userPrompt, matchName) => {
         if (!matchedUserPromptNames.has(matchName)) {
-          const userIsProtected = isProtectedPrompt(userPrompt.name);
-          const userEnabledState = userEnabledStates.get(userPrompt.identifier) ?? userPrompt.enabled ?? false;
+          const userIsProtected = userPrompt.name ? isProtectedPrompt(userPrompt.name) : false;
+          const userEnabledState = (userPrompt.identifier ? userEnabledStates.get(userPrompt.identifier) : undefined) ?? userPrompt.enabled ?? false;
 
           if (userIsProtected) {
             // Protected: keep as-is with cleaned name, keep toggle state
             userOnlyPrompts.push({
               ...userPrompt,
-              name: cleanPromptName(userPrompt.name),
+              name: userPrompt.name ? cleanPromptName(userPrompt.name) : userPrompt.name,
               enabled: userEnabledState,
             });
           } else {
@@ -446,8 +473,8 @@ export default function PresetDownloadModal({
       if (userOnlyPrompts.length > 0 && mergedPreset.prompts) {
         // Sort user-only prompts by their original order
         userOnlyPrompts.sort((a, b) => {
-          const aIndex = userPromptOrder.indexOf(a.identifier);
-          const bIndex = userPromptOrder.indexOf(b.identifier);
+          const aIndex = a.identifier ? userPromptOrder.indexOf(a.identifier) : -1;
+          const bIndex = b.identifier ? userPromptOrder.indexOf(b.identifier) : -1;
           return aIndex - bIndex;
         });
         mergedPreset.prompts.push(...userOnlyPrompts);
@@ -455,18 +482,18 @@ export default function PresetDownloadModal({
 
       // Step 7: Update prompt_order
       if (mergedPreset.prompt_order && Array.isArray(mergedPreset.prompt_order)) {
-        mergedPreset.prompt_order = mergedPreset.prompt_order.map((orderItem: any) => {
+        mergedPreset.prompt_order = mergedPreset.prompt_order.map((orderItem) => {
           if (orderItem.order && Array.isArray(orderItem.order)) {
             // Process entries in latest's order
-            const newOrder = orderItem.order.map((toggle: any) => {
+            const newOrder = orderItem.order.map((toggle) => {
               // Find the latest prompt for this toggle
               const latestPrompt = latestPreset.prompts?.find(
-                (p: any) => p.identifier === toggle.identifier
+                (p) => p.identifier === toggle.identifier
               );
               const latestMatchName = latestPrompt ? getMatchableName(latestPrompt.name || '') : '';
               const userPrompt = latestMatchName ? userPromptsByName.get(latestMatchName) : null;
 
-              if (userPrompt) {
+              if (userPrompt && userPrompt.identifier) {
                 // User has matching prompt - preserve their toggle state
                 return {
                   ...toggle,
@@ -483,12 +510,14 @@ export default function PresetDownloadModal({
 
             // Add user-only prompts to order (deprecated + protected-only)
             userOnlyPrompts.forEach((prompt) => {
-              const existsInOrder = newOrder.some((t: any) => t.identifier === prompt.identifier);
-              if (!existsInOrder) {
-                newOrder.push({
-                  identifier: prompt.identifier,
-                  enabled: prompt.enabled,
-                });
+              if (prompt.identifier) {
+                const existsInOrder = newOrder.some((t) => t.identifier === prompt.identifier);
+                if (!existsInOrder) {
+                  newOrder.push({
+                    identifier: prompt.identifier,
+                    enabled: prompt.enabled ?? false,
+                  });
+                }
               }
             });
 
@@ -532,16 +561,16 @@ export default function PresetDownloadModal({
       try {
         // Read and parse the uploaded file
         const fileContent = await file.text();
-        let userPreset;
+        let userPreset: PresetData;
         
         try {
           userPreset = JSON.parse(fileContent);
-        } catch (parseError) {
+        } catch {
           throw new Error('Invalid JSON file. Please upload a valid preset file.');
         }
 
         // Sanitize the input
-        userPreset = sanitizeJSON(userPreset);
+        userPreset = sanitizeJSON(userPreset) as PresetData;
 
         // Validate basic structure
         if (!userPreset.prompts || !Array.isArray(userPreset.prompts)) {
@@ -564,7 +593,6 @@ export default function PresetDownloadModal({
       } catch (error) {
         console.error('Error processing update:', error);
         if (error instanceof Error && error.message.includes('CATEGORY_MISMATCH')) {
-          setUpdateError(error.message);
           setStep('update-error');
         } else {
           alert(error instanceof Error ? error.message : 'Failed to process your preset. Please try again.');
@@ -585,22 +613,24 @@ export default function PresetDownloadModal({
    * Maps camelCase state file keys to snake_case preset keys
    * Only applies enabledStates when not updating user's preset (preserves user preferences)
    */
-  const applyStateFile = (preset: any, stateFile: StateFile, skipEnabledStates: boolean): any => {
+  const applyStateFile = (preset: PresetData, stateFile: StateFile, skipEnabledStates: boolean): PresetData => {
     const modified = { ...preset };
 
     // 1. Apply enabled states to prompt_order (only for fresh downloads)
     if (!skipEnabledStates && stateFile.settings.enabledStates && modified.prompt_order) {
-      modified.prompt_order = modified.prompt_order.map((orderItem: any) => {
+      modified.prompt_order = modified.prompt_order.map((orderItem) => {
         if (orderItem.order && Array.isArray(orderItem.order)) {
           return {
             ...orderItem,
-            order: orderItem.order.map((toggle: any) => {
-              const stateValue = stateFile.settings.enabledStates[toggle.identifier];
-              return {
-                ...toggle,
-                // Use state file value if defined, otherwise keep original
-                enabled: stateValue !== undefined ? stateValue : toggle.enabled
-              };
+            order: orderItem.order.map((toggle) => {
+              if (toggle.identifier && stateFile.settings.enabledStates[toggle.identifier] !== undefined) {
+                const stateValue = stateFile.settings.enabledStates[toggle.identifier];
+                return {
+                  ...toggle,
+                  enabled: stateValue
+                };
+              }
+              return toggle;
             })
           };
         }
@@ -609,9 +639,9 @@ export default function PresetDownloadModal({
 
       // Also update prompts array to match
       if (modified.prompts && Array.isArray(modified.prompts)) {
-        modified.prompts = modified.prompts.map((prompt: any) => {
-          const stateValue = stateFile.settings.enabledStates[prompt.identifier];
-          if (stateValue !== undefined) {
+        modified.prompts = modified.prompts.map((prompt) => {
+          if (prompt.identifier && stateFile.settings.enabledStates[prompt.identifier] !== undefined) {
+            const stateValue = stateFile.settings.enabledStates[prompt.identifier];
             return { ...prompt, enabled: stateValue };
           }
           return prompt;
@@ -725,7 +755,7 @@ export default function PresetDownloadModal({
 
     // 8. Apply regex scripts if present
     if (stateFile.settings.regexScripts && Array.isArray(stateFile.settings.regexScripts)) {
-      modified.regex_scripts = stateFile.settings.regexScripts;
+      modified.regex_scripts = stateFile.settings.regexScripts as unknown[]; // Type assertion for compatibility
     }
 
     return modified;
@@ -747,7 +777,7 @@ export default function PresetDownloadModal({
     setLoading(true);
     try {
       // Use the updated preset if available, otherwise fetch the latest
-      let presetData;
+      let presetData: PresetData;
       const isUpdatingUserPreset = !!updatedPreset;
 
       if (updatedPreset) {
@@ -801,13 +831,13 @@ export default function PresetDownloadModal({
 
           // Find the prompt order object with character_id === 100001
           const targetPromptOrder = promptOrder.find(
-            (item: any) => item.character_id === 100001
+            (item) => item.character_id === 100001
           );
 
           if (targetPromptOrder && Array.isArray(targetPromptOrder.order)) {
             const { hardOn, hardOff } = samplerConfig.togglePre;
 
-            targetPromptOrder.order.forEach((toggle: any) => {
+            targetPromptOrder.order.forEach((toggle) => {
               if (!toggle.identifier) return;
 
               // Enable prompts that MUST be turned on
@@ -904,7 +934,7 @@ export default function PresetDownloadModal({
                   className="space-y-4"
                 >
                   <p className="text-gray-300 mb-6">
-                    Choose how you'd like to download <span className="font-semibold text-white">{displayName}</span>
+                    Choose how you&apos;d like to download <span className="font-semibold text-white">{displayName}</span>
                   </p>
 
                   <motion.button
@@ -1095,17 +1125,16 @@ export default function PresetDownloadModal({
                   </div>
 
                   <p className="text-gray-300 mb-6">
-                    We're sorry, but your preset cannot be automatically updated. The latest version has significant structural changes (multiple new categories) that require a fresh download.
+                    We&apos;re sorry, but your preset cannot be automatically updated. The latest version has significant structural changes (multiple new categories) that require a fresh download.
                   </p>
 
                   <p className="text-gray-400 text-sm mb-6">
-                    Please download the latest version and manually transfer any custom prompts you'd like to keep.
+                    Please download the latest version and manually transfer any custom prompts you&apos;d like to keep.
                   </p>
 
                   <motion.button
                     onClick={() => {
                       setStep('initial');
-                      setUpdateError(null);
                     }}
                     className="w-full bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 hover:border-purple-500/50 text-white px-6 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
@@ -1141,7 +1170,7 @@ export default function PresetDownloadModal({
                   </div>
 
                   <p className="text-gray-300 text-sm mb-4">
-                    Choose the model you'll be using. We'll optimize the sampler settings for best results.
+                    Choose the model you&apos;ll be using. We&apos;ll optimize the sampler settings for best results.
                   </p>
 
                   <div className="space-y-3 min-h-[200px]">
@@ -1178,22 +1207,22 @@ export default function PresetDownloadModal({
                               <div className="font-semibold text-white group-hover:text-purple-300 transition-colors">
                                 {config.prettyName}
                               </div>
-                              <div className="text-xs text-gray-400 mt-1 truncate">
-                                {key}
-                              </div>
-                            </div>
-                            
-                            {/* Arrow Icon */}
-                            <svg className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-purple-400 transform group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
+                        <div className="text-sm text-gray-400 mt-1 truncate">
+                          {key}
+                        </div>
+                      </div>
+                      
+                      {/* Arrow Icon */}
+                      <svg className="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-purple-400 transform group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
             </AnimatePresence>
 
             {loading && (

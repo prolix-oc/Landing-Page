@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import LazyImage from './LazyImage';
-import { Users, ScrollText, Sparkles, Package } from 'lucide-react';
+import { Users, ScrollText, Sparkles, Package, Wrench, RefreshCw } from 'lucide-react';
 import type { LumiaPackSummary } from '@/lib/types/lumia-pack';
 
 interface LumiaPackCardProps {
@@ -100,10 +100,22 @@ export default function LumiaPackCard({ pack, index = 0, animationsEnabled = tru
                 <span>{pack.lumiaCount}</span>
               </div>
             )}
-            {pack.loomCount > 0 && (
-              <div className="flex items-center gap-1.5 bg-violet-600/90 text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg border border-violet-500/50">
+            {pack.narrativeStyleCount > 0 && (
+              <div className="flex items-center gap-1.5 bg-violet-600/90 text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg border border-violet-500/50" title="Narrative Styles">
                 <ScrollText className="w-3 h-3" />
-                <span>{pack.loomCount}</span>
+                <span>{pack.narrativeStyleCount}</span>
+              </div>
+            )}
+            {pack.loomUtilityCount > 0 && (
+              <div className="flex items-center gap-1.5 bg-cyan-600/90 text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg border border-cyan-500/50" title="Loom Utilities">
+                <Wrench className="w-3 h-3" />
+                <span>{pack.loomUtilityCount}</span>
+              </div>
+            )}
+            {pack.loomRetrofitCount > 0 && (
+              <div className="flex items-center gap-1.5 bg-emerald-600/90 text-white text-xs font-medium px-2 py-1 rounded-full shadow-lg border border-emerald-500/50" title="Loom Retrofits">
+                <RefreshCw className="w-3 h-3" />
+                <span>{pack.loomRetrofitCount}</span>
               </div>
             )}
           </div>

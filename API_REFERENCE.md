@@ -334,7 +334,9 @@ Returns all Lumia DLC packs with summary information.
       "packAuthor": "Prolix",
       "coverUrl": "https://...",
       "lumiaCount": 5,
-      "loomCount": 3,
+      "narrativeStyleCount": 2,
+      "loomUtilityCount": 1,
+      "loomRetrofitCount": 0,
       "extrasCount": 2,
       "slug": "fantasy-pack",
       "packType": "mixed"

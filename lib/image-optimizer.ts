@@ -51,7 +51,7 @@ function cleanCache(): void {
 /**
  * Generate a unique filename for uploaded images
  */
-export function generateImageFilename(originalName?: string): string {
+export function generateImageFilename(): string {
   const id = randomBytes(8).toString('hex');
   const timestamp = Date.now().toString(36);
   return `${timestamp}-${id}.webp`;

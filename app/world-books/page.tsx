@@ -16,8 +16,7 @@ import {
   Download,
   Star,
   Scale,
-  HardDrive,
-  Sparkles
+  HardDrive
 } from 'lucide-react';
 
 interface Category {
@@ -179,7 +178,6 @@ function WorldBooksContent() {
   const sortedStandard = processList(files.standard);
   const sortedProlix = processList(files.prolix);
   const hasFiles = sortedStandard.length > 0 || sortedProlix.length > 0;
-  const totalBooks = files.standard.length + files.prolix.length;
   const totalCategories = categories.length;
 
   return (

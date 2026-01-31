@@ -45,7 +45,7 @@ interface WorldBookEntry {
   depth: number;
   group: string;
   displayIndex: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface WorldBookData {

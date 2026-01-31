@@ -41,7 +41,7 @@ interface WorldBookEntry {
   delay: number;
   displayIndex: number;
   ignoreBudget: boolean;
-  triggers: any[];
+  triggers: unknown[];
   characterFilter: {
     isExclude: boolean;
     names: string[];

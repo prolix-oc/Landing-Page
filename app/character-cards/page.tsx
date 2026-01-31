@@ -18,7 +18,6 @@ import {
   ArrowLeft,
   Users,
   User,
-  ChevronRight,
   Download,
   ChevronDown,
   Image as ImageIcon,

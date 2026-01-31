@@ -8,7 +8,7 @@ export function getProviderIcon(modelKey: string): string | null {
   const providerMatch = modelKey.match(/^([^/]+)/);
   if (!providerMatch) return null;
   
-  let provider = providerMatch[1];
+  const provider = providerMatch[1];
   
   // Check if there's an endpoint tag (everything after the colon)
   const endpointMatch = modelKey.match(/:([^:]+)$/);

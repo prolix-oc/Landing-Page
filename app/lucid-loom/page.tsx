@@ -393,7 +393,7 @@ export default function LucidLoomPage() {
               <Quote className="absolute -top-4 -left-4 w-16 h-16 text-purple-500/20" />
               <blockquote className="relative text-center">
                 <p className="text-2xl sm:text-3xl lg:text-4xl font-light text-gray-300 leading-relaxed">
-                  Stories don't need to be told quickly.
+                  Stories don&apos;t need to be told quickly.
                   <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 font-medium">
                     They need to be told well.

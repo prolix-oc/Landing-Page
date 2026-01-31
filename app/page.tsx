@@ -12,57 +12,6 @@ import {
   Package
 } from 'lucide-react';
 
-// Category data with Lucide icons
-const categories = [
-  {
-    id: 'lucid-loom',
-    title: 'Lucid Loom',
-    subtitle: 'What is it?',
-    description: 'Discover Lumia and her 13 unique personas — a character system designed for deep, immersive roleplay',
-    href: '/lucid-loom',
-    icon: Lightbulb,
-    gradient: 'from-purple-500 via-pink-500 to-rose-500',
-    glowColor: 'purple',
-    featured: true
-  },
-  {
-    id: 'character-cards',
-    title: 'Character Cards',
-    description: 'Browse and download character cards',
-    href: '/character-cards',
-    icon: Users,
-    gradient: 'from-cyan-500 via-blue-500 to-cyan-600',
-    glowColor: 'cyan'
-  },
-  {
-    id: 'chat-presets',
-    title: 'Chat Presets',
-    description: 'Optimized completion settings',
-    href: '/chat-presets',
-    icon: MessageSquare,
-    gradient: 'from-violet-500 via-purple-500 to-indigo-500',
-    glowColor: 'violet'
-  },
-  {
-    id: 'world-books',
-    title: 'World Books',
-    description: 'Detailed world information',
-    href: '/world-books',
-    icon: BookOpen,
-    gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
-    glowColor: 'emerald'
-  },
-  {
-    id: 'extensions',
-    title: 'Extensions',
-    description: 'Custom SillyTavern extensions',
-    href: '/extensions',
-    icon: Puzzle,
-    gradient: 'from-orange-500 via-amber-500 to-yellow-500',
-    glowColor: 'amber'
-  }
-];
-
 // Glow color mapping for hover states
 const glowColors: Record<string, string> = {
   purple: 'hover:shadow-purple-500/20',

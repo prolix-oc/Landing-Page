@@ -40,7 +40,9 @@ export interface LumiaPackSummary {
   packAuthor: string;
   coverUrl: string | null;
   lumiaCount: number;
-  loomCount: number;
+  narrativeStyleCount: number;
+  loomUtilityCount: number;
+  loomRetrofitCount: number;
   extrasCount: number;
   slug: string;
   packType: 'lumia' | 'loom' | 'mixed';

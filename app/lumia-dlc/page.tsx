@@ -17,7 +17,6 @@ import {
   Package,
   Users,
   ScrollText,
-  Sparkles,
   User,
   X,
   Check,

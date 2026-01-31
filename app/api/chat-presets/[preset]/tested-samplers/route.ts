@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchFromGitHub } from '@/lib/github';
+import { fetchFromGitHub, GitHubFile } from '@/lib/github';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,13 +20,13 @@ export async function GET(
 
     // Try fetching optimized_options.json first (new format)
     const optimizedOptionsPath = `Chat Completion/${decodedPreset}/optimized_options.json`;
-    let fileData = await fetchFromGitHub(encodeURI(optimizedOptionsPath));
+    let fileData = await fetchFromGitHub(encodeURI(optimizedOptionsPath)) as GitHubFile | null;
     let isNewFormat = true;
 
     // Fall back to tested_samplers.json if optimized_options.json not found
     if (!fileData || !fileData.download_url) {
       const testedSamplersPath = `Chat Completion/${decodedPreset}/tested_samplers.json`;
-      fileData = await fetchFromGitHub(encodeURI(testedSamplersPath));
+      fileData = await fetchFromGitHub(encodeURI(testedSamplersPath)) as GitHubFile | null;
       isNewFormat = false;
 
       if (!fileData || !fileData.download_url) {

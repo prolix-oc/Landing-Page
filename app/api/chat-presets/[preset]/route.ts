@@ -29,7 +29,9 @@ export async function GET(
     });
     
     // Separate standard and Prolix files but maintain isLatest per category
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const standardVersions: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prolixVersions: any[] = [];
     
     filteredVersions.forEach(({ file, commit }) => {

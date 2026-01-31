@@ -4,7 +4,6 @@ import crypto from 'crypto';
 // Import cache invalidation functions
 import { 
   invalidateCachePath, 
-  invalidateCacheByPattern,
   invalidateJsonDataCache 
 } from '@/lib/github';
 

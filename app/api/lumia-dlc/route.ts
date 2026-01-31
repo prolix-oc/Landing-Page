@@ -14,8 +14,8 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-function determinePackType(lumiaCount: number, loomCount: number): PackType {
-  if (lumiaCount > 0 && loomCount > 0) return 'mixed';
+function determinePackType(lumiaCount: number, totalLoomCount: number): PackType {
+  if (lumiaCount > 0 && totalLoomCount > 0) return 'mixed';
   if (lumiaCount > 0) return 'lumia';
   return 'loom';
 }
@@ -46,16 +46,32 @@ export async function GET() {
           }
 
           const lumiaCount = packData.lumiaItems?.length || 0;
-          const loomCount = packData.loomItems?.length || 0;
+          
+          let narrativeStyleCount = 0;
+          let loomUtilityCount = 0;
+          let loomRetrofitCount = 0;
+
+          if (packData.loomItems) {
+            packData.loomItems.forEach(item => {
+              // Exact match assuming strict categorization in source
+              if (item.loomCategory === 'Narrative Style') narrativeStyleCount++;
+              else if (item.loomCategory === 'Loom Utility') loomUtilityCount++;
+              else if (item.loomCategory === 'Loom Retrofit') loomRetrofitCount++;
+            });
+          }
+
+          const totalLoomCount = narrativeStyleCount + loomUtilityCount + loomRetrofitCount;
           const extrasCount = packData.packExtras?.length || 0;
-          const packType = determinePackType(lumiaCount, loomCount);
+          const packType = determinePackType(lumiaCount, totalLoomCount);
 
           const summary: LumiaPackSummary = {
             packName: packData.packName,
             packAuthor: packData.packAuthor || 'Unknown',
             coverUrl: packData.coverUrl || null,
             lumiaCount,
-            loomCount,
+            narrativeStyleCount,
+            loomUtilityCount,
+            loomRetrofitCount,
             extrasCount,
             slug: getCachedSlug(packData.packName, file.path),
             packType

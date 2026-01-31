@@ -22,7 +22,7 @@ export interface GitHubCommit {
 }
 
 export interface CachedData {
-  data: any;
+  data: unknown;
   timestamp: number;
   etag?: string;
 }
@@ -43,7 +43,7 @@ export interface JsonData {
     scenario?: string;
     first_mes?: string;
     mes_example?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -122,7 +122,7 @@ const INTERVAL_MULTIPLIERS = {
  * Returns cached data immediately if available, and silently updates in background.
  * If local cache is enabled, it will be used as the data source instead of GitHub API.
  */
-export async function fetchFromGitHub(path: string): Promise<any> {
+export async function fetchFromGitHub(path: string): Promise<unknown> {
   // Check if local cache should be used
   if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
     try {
@@ -240,7 +240,7 @@ async function updatePeriodicRefreshInterval(): Promise<void> {
 /**
  * Fetches fresh data and updates cache
  */
-async function fetchAndCache(path: string, cacheKey: string): Promise<any> {
+async function fetchAndCache(path: string, cacheKey: string): Promise<unknown> {
   const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
   const response = await fetch(url, {
     headers: {
@@ -321,7 +321,7 @@ export async function getLatestCommit(filePath: string): Promise<GitHubCommit | 
       if (isStale && !refreshingKeys.has(cacheKey)) {
         refreshCommitInBackground(filePath, cacheKey);
       }
-      return cached.data;
+      return cached.data as GitHubCommit;
     }
 
     // No cache, fetch immediately
@@ -665,9 +665,11 @@ export async function warmupCache(): Promise<void> {
     try {
       const characterCardsContents = cache.get('github:Character Cards');
       if (characterCardsContents?.data && Array.isArray(characterCardsContents.data)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const categories = characterCardsContents.data.filter((item: any) => item.type === 'dir');
         
         await Promise.all(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           categories.map(async (category: any) => {
             try {
               const categoryPath = category.path;
@@ -677,9 +679,11 @@ export async function warmupCache(): Promise<void> {
               // Fetch character directories within each category
               const categoryContents = cache.get(`github:${categoryPath}`);
               if (categoryContents?.data && Array.isArray(categoryContents.data)) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const charDirs = categoryContents.data.filter((item: any) => item.type === 'dir');
                 
                 await Promise.all(
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   charDirs.map(async (charDir: any) => {
                     try {
                       const charPath = charDir.path;
@@ -691,12 +695,14 @@ export async function warmupCache(): Promise<void> {
                       // Pre-fetch JSON data
                       const charContents = cache.get(`github:${charPath}`);
                       if (charContents?.data && Array.isArray(charContents.data)) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const jsonFiles = charContents.data.filter((file: any) => 
                           file.type === 'file' && file.name.toLowerCase().endsWith('.json')
                         );
                         
                         // Fetch all JSON files for this character
                         await Promise.all(
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           jsonFiles.map(async (jsonFile: any) => {
                             try {
                               await getJsonData(jsonFile);
@@ -726,9 +732,11 @@ export async function warmupCache(): Promise<void> {
     try {
       const worldBooksContents = cache.get('github:World Books');
       if (worldBooksContents?.data && Array.isArray(worldBooksContents.data)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const categories = worldBooksContents.data.filter((item: any) => item.type === 'dir');
         
         await Promise.all(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           categories.map(async (category: any) => {
             try {
               const categoryPath = category.path;
@@ -738,9 +746,11 @@ export async function warmupCache(): Promise<void> {
               // Fetch book directories within each category
               const categoryContents = cache.get(`github:${categoryPath}`);
               if (categoryContents?.data && Array.isArray(categoryContents.data)) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const bookDirs = categoryContents.data.filter((item: any) => item.type === 'dir');
                 
                 await Promise.all(
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   bookDirs.map(async (bookDir: any) => {
                     try {
                       const bookPath = bookDir.path;
@@ -752,12 +762,14 @@ export async function warmupCache(): Promise<void> {
                       // Pre-fetch world book JSON data
                       const bookContents = cache.get(`github:${bookPath}`);
                       if (bookContents?.data && Array.isArray(bookContents.data)) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const jsonFiles = bookContents.data.filter((file: any) => 
                           file.type === 'file' && file.name.toLowerCase().endsWith('.json')
                         );
                         
                         // Fetch all JSON files for this world book
                         await Promise.all(
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           jsonFiles.map(async (jsonFile: any) => {
                             try {
                               await getJsonData(jsonFile);
@@ -787,12 +799,14 @@ export async function warmupCache(): Promise<void> {
     try {
       const lumiaDlcsContents = cache.get('github:Lumia DLCs');
       if (lumiaDlcsContents?.data && Array.isArray(lumiaDlcsContents.data)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const packFiles = lumiaDlcsContents.data.filter((item: any) =>
           item.type === 'file' && item.name.toLowerCase().endsWith('.json')
         );
 
         // Pre-fetch all pack JSON files
         await Promise.all(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           packFiles.map(async (packFile: any) => {
             try {
               await getJsonData(packFile);

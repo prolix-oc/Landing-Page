@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export default function NavigationProgress() {
@@ -11,9 +11,16 @@ export default function NavigationProgress() {
 
   // Reset on route change completion
   useEffect(() => {
-    setIsNavigating(false);
-    setProgress(0);
-  }, [pathname, searchParams]);
+    // Only reset if we were navigating
+    if (isNavigating) {
+      // Use setTimeout to avoid synchronous setState during render cycle warning
+      const timer = setTimeout(() => {
+        setIsNavigating(false);
+        setProgress(0);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, searchParams, isNavigating]);
 
   // Listen for navigation start via click events on links
   useEffect(() => {
@@ -63,9 +70,18 @@ export default function NavigationProgress() {
   // Complete the progress bar when navigation finishes
   useEffect(() => {
     if (!isNavigating && progress > 0) {
-      setProgress(100);
-      const timeout = setTimeout(() => setProgress(0), 200);
-      return () => clearTimeout(timeout);
+      // Use a timeout to avoid synchronous setState inside effect if it causes issues
+      // But here it's likely fine as it's a response to state change, not render loop.
+      // However, to be safe and clear:
+      const completeTimer = setTimeout(() => {
+        setProgress(100);
+      }, 0);
+      
+      const resetTimer = setTimeout(() => setProgress(0), 200);
+      return () => {
+        clearTimeout(completeTimer);
+        clearTimeout(resetTimer);
+      };
     }
   }, [isNavigating, progress]);
 
