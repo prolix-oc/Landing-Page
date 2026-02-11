@@ -238,9 +238,32 @@ async function updatePeriodicRefreshInterval(): Promise<void> {
 }
 
 /**
- * Fetches fresh data and updates cache
+ * Waits for a specified number of milliseconds
  */
-async function fetchAndCache(path: string, cacheKey: string): Promise<unknown> {
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Checks if a response indicates rate limit exhaustion and returns reset time if applicable
+ */
+function isRateLimitError(response: Response): { isRateLimited: boolean; resetTime?: Date } {
+  const remaining = response.headers.get('x-ratelimit-remaining');
+  const resetTimestamp = response.headers.get('x-ratelimit-reset');
+  
+  if (response.status === 403 && remaining === '0' && resetTimestamp) {
+    const resetTime = new Date(parseInt(resetTimestamp, 10) * 1000);
+    return { isRateLimited: true, resetTime };
+  }
+  
+  return { isRateLimited: false };
+}
+
+/**
+ * Fetches fresh data and updates cache
+ * Includes automatic retry on rate limit errors
+ */
+async function fetchAndCache(path: string, cacheKey: string, retryCount = 0): Promise<unknown> {
   const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
   const response = await fetch(url, {
     headers: {
@@ -261,8 +284,24 @@ async function fetchAndCache(path: string, cacheKey: string): Promise<unknown> {
     await updatePeriodicRefreshInterval();
   }
 
+  // Handle rate limit errors with retry
+  const rateLimitCheck = isRateLimitError(response);
+  if (rateLimitCheck.isRateLimited && rateLimitCheck.resetTime) {
+    const now = new Date();
+    const waitMs = rateLimitCheck.resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+    
+    if (waitMs > 0 && retryCount < 3) {
+      const waitSeconds = Math.ceil(waitMs / 1000);
+      console.log(`[GitHub API] Rate limit hit for ${path}. Waiting ${waitSeconds}s until reset at ${rateLimitCheck.resetTime.toISOString()}...`);
+      await sleep(waitMs);
+      console.log(`[GitHub API] Retrying request for ${path}...`);
+      return fetchAndCache(path, cacheKey, retryCount + 1);
+    }
+  }
+
   if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+    const errorBody = await response.text().catch(() => 'Unable to read error body');
+    throw new Error(`GitHub API error: ${response.status} ${response.statusText}. Body: ${errorBody}`);
   }
 
   const data = await response.json();
@@ -333,7 +372,7 @@ export async function getLatestCommit(filePath: string): Promise<GitHubCommit | 
   }
 }
 
-async function fetchAndCacheCommit(filePath: string, cacheKey: string): Promise<GitHubCommit | null> {
+async function fetchAndCacheCommit(filePath: string, cacheKey: string, retryCount = 0): Promise<GitHubCommit | null> {
   const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/commits?path=${filePath}&per_page=1`;
   const response = await fetch(url, {
     headers: {
@@ -352,6 +391,21 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string): Promise<
   if (newRateLimitInfo) {
     rateLimitInfo = newRateLimitInfo;
     await updatePeriodicRefreshInterval();
+  }
+
+  // Handle rate limit errors with retry
+  const rateLimitCheck = isRateLimitError(response);
+  if (rateLimitCheck.isRateLimited && rateLimitCheck.resetTime) {
+    const now = new Date();
+    const waitMs = rateLimitCheck.resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+    
+    if (waitMs > 0 && retryCount < 3) {
+      const waitSeconds = Math.ceil(waitMs / 1000);
+      console.log(`[GitHub API] Rate limit hit for commits/${filePath}. Waiting ${waitSeconds}s until reset at ${rateLimitCheck.resetTime.toISOString()}...`);
+      await sleep(waitMs);
+      console.log(`[GitHub API] Retrying commit request for ${filePath}...`);
+      return fetchAndCacheCommit(filePath, cacheKey, retryCount + 1);
+    }
   }
 
   if (!response.ok) {
