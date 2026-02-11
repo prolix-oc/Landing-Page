@@ -246,8 +246,9 @@ async function fetchAndCache(path: string, cacheKey: string): Promise<unknown> {
     headers: {
       'Accept': 'application/vnd.github.v3+json',
       'User-Agent': USER_AGENT,
+      'X-GitHub-Api-Version': '2022-11-28',
       ...(process.env.GITHUB_TOKEN && {
-        'Authorization': `token ${process.env.GITHUB_TOKEN}`
+        'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`
       })
     },
     cache: 'no-store' // Disable Next.js caching, we handle it ourselves
@@ -338,8 +339,9 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string): Promise<
     headers: {
       'Accept': 'application/vnd.github.v3+json',
       'User-Agent': USER_AGENT,
+      'X-GitHub-Api-Version': '2022-11-28',
       ...(process.env.GITHUB_TOKEN && {
-        'Authorization': `token ${process.env.GITHUB_TOKEN}`
+        'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`
       })
     },
     cache: 'no-store'
