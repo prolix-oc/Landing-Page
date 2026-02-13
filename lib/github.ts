@@ -68,7 +68,8 @@ const REPO_NAME = 'ST-Presets';
 const USER_AGENT = 'Landing-Page-App/1.0';
 const CACHE_DURATION = 30 * 1000; // 30 seconds in milliseconds
 const THUMBNAIL_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for thumbnails
-const JSON_DATA_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for JSON data (character cards, world books, chat presets)
+const JSON_DATA_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for JSON data
+const PERSISTENT_CACHE_TTL = 60 * 60 * 1000; // 1 hour for persistent cache
 
 // Import slugify function
 import { slugify } from './slugify';
@@ -79,6 +80,21 @@ import {
   getLocalFileCommit,
   logLocalCacheStatus 
 } from './local-cache';
+
+// Import persistent cache
+import {
+  getPersistentCache,
+  setPersistentCache,
+  getPersistentCacheStats
+} from './persistent-cache';
+
+// Import GraphQL client (optional, falls back to REST if disabled)
+import {
+  fetchRepositoryTree,
+  batchFetchRepositoryTrees,
+  treeEntriesToGitHubFiles,
+  getGraphQLRateLimit
+} from './github-graphql';
 
 // In-memory cache
 const cache = new Map<string, CachedData>();
@@ -96,70 +112,104 @@ let warmupInProgress = false;
 // Track periodic refresh
 let periodicRefreshInterval: NodeJS.Timeout | null = null;
 let lastPeriodicRefresh: number = 0;
-const BASE_PERIODIC_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes base interval (webhook-friendly)
+const BASE_PERIODIC_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes base interval
 let currentPeriodicRefreshInterval = BASE_PERIODIC_REFRESH_INTERVAL;
 
 // Rate limit tracking
 let rateLimitInfo: RateLimitInfo | null = null;
 
+// Feature flags
+const USE_GRAPHQL = process.env.USE_GITHUB_GRAPHQL === 'true';
+
 // Adaptive caching thresholds
 const RATE_LIMIT_THRESHOLDS = {
-  CRITICAL: 0.1,  // 10% remaining - slow down significantly
-  LOW: 0.25,      // 25% remaining - slow down moderately
-  MEDIUM: 0.5,    // 50% remaining - slight slowdown
-  HEALTHY: 1.0    // Above 50% - normal operation
+  CRITICAL: 0.1,
+  LOW: 0.25,
+  MEDIUM: 0.5,
+  HEALTHY: 1.0
 };
 
 const INTERVAL_MULTIPLIERS = {
-  CRITICAL: 4.0,  // 180 seconds (3 minutes)
-  LOW: 2.5,       // 112.5 seconds (~2 minutes)
-  MEDIUM: 1.5,    // 67.5 seconds (~1 minute)
-  HEALTHY: 1.0    // 45 seconds (base)
+  CRITICAL: 4.0,
+  LOW: 2.5,
+  MEDIUM: 1.5,
+  HEALTHY: 1.0
 };
 
 /**
  * Fetches data from GitHub with background revalidation strategy.
  * Returns cached data immediately if available, and silently updates in background.
- * If local cache is enabled, it will be used as the data source instead of GitHub API.
+ * Checks persistent cache first (survives restarts), then falls back to GitHub API.
  */
 export async function fetchFromGitHub(path: string): Promise<unknown> {
-  // Check if local cache should be used
+  const cacheKey = `github:${path}`;
+  
+  // Check in-memory cache first (fastest)
+  const memoryCached = cache.get(cacheKey);
+  const now = Date.now();
+  
+  if (memoryCached) {
+    const isStale = now - memoryCached.timestamp >= CACHE_DURATION;
+    if (isStale && !refreshingKeys.has(cacheKey)) {
+      refreshInBackground(path, cacheKey);
+    }
+    return memoryCached.data;
+  }
+  
+  // Check persistent cache second (survives restarts)
+  const persistentCached = await getPersistentCache<unknown>(cacheKey, PERSISTENT_CACHE_TTL);
+  if (persistentCached) {
+    // Populate in-memory cache
+    cache.set(cacheKey, {
+      data: persistentCached,
+      timestamp: now
+    });
+    console.log(`[GitHub] Persistent cache hit: ${path}`);
+    
+    // Trigger background refresh to get fresh data
+    refreshInBackground(path, cacheKey);
+    return persistentCached;
+  }
+  
+  // Check local cache third (if enabled)
   if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
     try {
       const localData = await getLocalDirectoryContents(path);
       if (localData && localData.length > 0) {
-        // Cache the local data in memory for consistency with the rest of the system
-        const cacheKey = `github:${path}`;
         cache.set(cacheKey, {
           data: localData,
-          timestamp: Date.now()
+          timestamp: now
         });
+        await setPersistentCache(cacheKey, localData, PERSISTENT_CACHE_TTL);
         return localData;
       }
     } catch (error) {
-      console.warn(`[Local Cache] Failed to read from local cache for ${path}, falling back to GitHub API:`, error);
+      console.warn(`[Local Cache] Failed to read from local cache for ${path}:`, error);
     }
   }
-
-  const cacheKey = `github:${path}`;
-  const cached = cache.get(cacheKey);
-  const now = Date.now();
-
-  // If we have cached data
-  if (cached) {
-    const isStale = now - cached.timestamp >= CACHE_DURATION;
-    
-    // If cache is stale and not already refreshing, trigger background update
-    if (isStale && !refreshingKeys.has(cacheKey)) {
-      refreshInBackground(path, cacheKey);
-    }
-    
-    // Always return cached data immediately (stale-while-revalidate pattern)
-    return cached.data;
-  }
-
-  // No cache exists, fetch immediately
+  
+  // No cache exists, fetch from GitHub
   return await fetchAndCache(path, cacheKey);
+}
+
+/**
+ * Uses GraphQL to fetch repository tree if enabled, otherwise falls back to REST
+ */
+async function fetchDirectoryContents(path: string): Promise<GitHubFile[]> {
+  if (USE_GRAPHQL) {
+    try {
+      const entries = await fetchRepositoryTree(path, false);
+      return treeEntriesToGitHubFiles(entries, path) as GitHubFile[];
+    } catch (error) {
+      console.warn(`[GraphQL] Failed to fetch ${path}, falling back to REST:`, error);
+      // Fall through to REST API
+    }
+  }
+  
+  // Fallback to REST API
+  const contents = await fetchFromGitHub(path);
+  const files = Array.isArray(contents) ? contents : [];
+  return processDirectoryContentsWithSlugs(files);
 }
 
 /**
@@ -212,7 +262,6 @@ function calculateAdaptiveInterval(): number {
 
   const newInterval = Math.floor(BASE_PERIODIC_REFRESH_INTERVAL * multiplier);
   
-  // Log if interval changed significantly
   if (Math.abs(newInterval - currentPeriodicRefreshInterval) > 5000) {
     console.log(`[Rate Limit] Adjusting refresh interval: ${currentPeriodicRefreshInterval}ms → ${newInterval}ms (${status}: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining, ${Math.floor(remainingPercentage * 100)}%)`);
   }
@@ -229,7 +278,6 @@ async function updatePeriodicRefreshInterval(): Promise<void> {
   if (newInterval !== currentPeriodicRefreshInterval) {
     currentPeriodicRefreshInterval = newInterval;
 
-    // Restart the interval with the new timing
     if (periodicRefreshInterval) {
       stopPeriodicRefresh();
       await startPeriodicRefresh();
@@ -245,7 +293,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Checks if a response indicates rate limit exhaustion and returns reset time if applicable
+ * Checks if a response indicates rate limit exhaustion
  */
 function isRateLimitError(response: Response): { isRateLimited: boolean; resetTime?: Date } {
   const remaining = response.headers.get('x-ratelimit-remaining');
@@ -261,7 +309,6 @@ function isRateLimitError(response: Response): { isRateLimited: boolean; resetTi
 
 /**
  * Fetches fresh data and updates cache
- * Includes automatic retry on rate limit errors
  */
 async function fetchAndCache(path: string, cacheKey: string, retryCount = 0): Promise<unknown> {
   const url = `${GITHUB_API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
@@ -274,27 +321,24 @@ async function fetchAndCache(path: string, cacheKey: string, retryCount = 0): Pr
         'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`
       })
     },
-    cache: 'no-store' // Disable Next.js caching, we handle it ourselves
+    cache: 'no-store'
   });
 
-  // Extract and store rate limit info
   const newRateLimitInfo = extractRateLimitInfo(response.headers);
   if (newRateLimitInfo) {
     rateLimitInfo = newRateLimitInfo;
     await updatePeriodicRefreshInterval();
   }
 
-  // Handle rate limit errors with retry
   const rateLimitCheck = isRateLimitError(response);
   if (rateLimitCheck.isRateLimited && rateLimitCheck.resetTime) {
     const now = new Date();
-    const waitMs = rateLimitCheck.resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+    const waitMs = rateLimitCheck.resetTime.getTime() - now.getTime() + 1000;
     
     if (waitMs > 0 && retryCount < 3) {
       const waitSeconds = Math.ceil(waitMs / 1000);
-      console.log(`[GitHub API] Rate limit hit for ${path}. Waiting ${waitSeconds}s until reset at ${rateLimitCheck.resetTime.toISOString()}...`);
+      console.log(`[GitHub API] Rate limit hit for ${path}. Waiting ${waitSeconds}s until reset...`);
       await sleep(waitMs);
-      console.log(`[GitHub API] Retrying request for ${path}...`);
       return fetchAndCache(path, cacheKey, retryCount + 1);
     }
   }
@@ -305,11 +349,11 @@ async function fetchAndCache(path: string, cacheKey: string, retryCount = 0): Pr
   }
 
   const data = await response.json();
+  const timestamp = Date.now();
   
-  cache.set(cacheKey, {
-    data,
-    timestamp: Date.now()
-  });
+  // Update both in-memory and persistent cache
+  cache.set(cacheKey, { data, timestamp });
+  await setPersistentCache(cacheKey, data, PERSISTENT_CACHE_TTL);
 
   return data;
 }
@@ -333,29 +377,11 @@ function refreshInBackground(path: string, cacheKey: string): void {
 
 export async function getLatestCommit(filePath: string): Promise<GitHubCommit | null> {
   try {
-    // Check if local cache should be used
-    if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
-      try {
-        const localCommit = await getLocalFileCommit(filePath);
-        if (localCommit) {
-          // Cache the local commit data in memory
-          const cacheKey = `commit:${filePath}`;
-          cache.set(cacheKey, {
-            data: localCommit,
-            timestamp: Date.now()
-          });
-          return localCommit;
-        }
-      } catch (error) {
-        console.warn(`[Local Cache] Failed to get commit info from local cache for ${filePath}, falling back to GitHub API:`, error);
-      }
-    }
-
+    // Check in-memory cache first
     const cacheKey = `commit:${filePath}`;
     const cached = cache.get(cacheKey);
     const now = Date.now();
-
-    // Return cached commit if available, refresh in background if stale
+    
     if (cached) {
       const isStale = now - cached.timestamp >= CACHE_DURATION;
       if (isStale && !refreshingKeys.has(cacheKey)) {
@@ -363,8 +389,26 @@ export async function getLatestCommit(filePath: string): Promise<GitHubCommit | 
       }
       return cached.data as GitHubCommit;
     }
-
-    // No cache, fetch immediately
+    
+    // Check persistent cache
+    const persistentCached = await getPersistentCache<GitHubCommit>(cacheKey, PERSISTENT_CACHE_TTL);
+    if (persistentCached) {
+      cache.set(cacheKey, { data: persistentCached, timestamp: now });
+      refreshCommitInBackground(filePath, cacheKey);
+      return persistentCached;
+    }
+    
+    // Check local cache
+    if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
+      const localCommit = await getLocalFileCommit(filePath);
+      if (localCommit) {
+        cache.set(cacheKey, { data: localCommit, timestamp: now });
+        await setPersistentCache(cacheKey, localCommit, PERSISTENT_CACHE_TTL);
+        return localCommit;
+      }
+    }
+    
+    // Fetch from GitHub
     return await fetchAndCacheCommit(filePath, cacheKey);
   } catch (error) {
     console.error('Error fetching latest commit:', error);
@@ -386,24 +430,19 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string, retryCoun
     cache: 'no-store'
   });
 
-  // Extract and store rate limit info
   const newRateLimitInfo = extractRateLimitInfo(response.headers);
   if (newRateLimitInfo) {
     rateLimitInfo = newRateLimitInfo;
     await updatePeriodicRefreshInterval();
   }
 
-  // Handle rate limit errors with retry
   const rateLimitCheck = isRateLimitError(response);
   if (rateLimitCheck.isRateLimited && rateLimitCheck.resetTime) {
     const now = new Date();
-    const waitMs = rateLimitCheck.resetTime.getTime() - now.getTime() + 1000; // Add 1 second buffer
+    const waitMs = rateLimitCheck.resetTime.getTime() - now.getTime() + 1000;
     
     if (waitMs > 0 && retryCount < 3) {
-      const waitSeconds = Math.ceil(waitMs / 1000);
-      console.log(`[GitHub API] Rate limit hit for commits/${filePath}. Waiting ${waitSeconds}s until reset at ${rateLimitCheck.resetTime.toISOString()}...`);
       await sleep(waitMs);
-      console.log(`[GitHub API] Retrying commit request for ${filePath}...`);
       return fetchAndCacheCommit(filePath, cacheKey, retryCount + 1);
     }
   }
@@ -414,11 +453,10 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string, retryCoun
 
   const commits = await response.json();
   const commit = commits.length > 0 ? commits[0] : null;
+  const timestamp = Date.now();
   
-  cache.set(cacheKey, {
-    data: commit,
-    timestamp: Date.now()
-  });
+  cache.set(cacheKey, { data: commit, timestamp });
+  await setPersistentCache(cacheKey, commit, PERSISTENT_CACHE_TTL);
 
   return commit;
 }
@@ -438,9 +476,7 @@ function refreshCommitInBackground(filePath: string, cacheKey: string): void {
 }
 
 export async function getDirectoryContents(dirPath: string): Promise<GitHubFile[]> {
-  const contents = await fetchFromGitHub(dirPath);
-  const files = Array.isArray(contents) ? contents : [];
-  return processDirectoryContentsWithSlugs(files);
+  return await fetchDirectoryContents(dirPath);
 }
 
 export async function getFileVersions(dirPath: string): Promise<Array<{ file: GitHubFile; commit: GitHubCommit | null }>> {
@@ -455,7 +491,6 @@ export async function getFileVersions(dirPath: string): Promise<Array<{ file: Gi
       })
   );
 
-  // Sort by commit date (newest first)
   return versions.sort((a, b) => {
     if (!a.commit || !b.commit) return 0;
     return new Date(b.commit.commit.author.date).getTime() - 
@@ -470,13 +505,6 @@ export function clearCache(): void {
   slugCache.clear();
 }
 
-/**
- * Invalidates cache for a specific path
- * Used by webhooks to selectively update cache when content changes
- * @param path - The path to invalidate (e.g., 'Character Cards/Fantasy/Gandalf')
- * @param cacheType - Optional cache type ('github' or 'commit'), defaults to 'github'
- * @returns true if cache was invalidated, false if no cache existed
- */
 export function invalidateCachePath(path: string, cacheType: 'github' | 'commit' = 'github'): boolean {
   const cacheKey = `${cacheType}:${path}`;
   const existed = cache.has(cacheKey);
@@ -489,12 +517,6 @@ export function invalidateCachePath(path: string, cacheType: 'github' | 'commit'
   return existed;
 }
 
-/**
- * Invalidates all cache entries matching a pattern
- * Used by webhooks to batch-invalidate related cache entries
- * @param pattern - Regex pattern to match cache keys
- * @returns Number of cache entries invalidated
- */
 export function invalidateCacheByPattern(pattern: RegExp): number {
   let count = 0;
   
@@ -512,11 +534,6 @@ export function invalidateCacheByPattern(pattern: RegExp): number {
   return count;
 }
 
-/**
- * Invalidates thumbnail cache for a specific path
- * @param path - The file path to invalidate thumbnail for
- * @returns true if cache was invalidated, false if no cache existed
- */
 export function invalidateThumbnailCache(path: string): boolean {
   const existed = thumbnailCache.has(path);
   
@@ -528,11 +545,6 @@ export function invalidateThumbnailCache(path: string): boolean {
   return existed;
 }
 
-/**
- * Invalidates JSON data cache for a specific path
- * @param path - The file path to invalidate JSON data for
- * @returns true if cache was invalidated, false if no cache existed
- */
 export function invalidateJsonDataCache(path: string): boolean {
   const existed = jsonDataCache.has(path);
   
@@ -544,9 +556,6 @@ export function invalidateJsonDataCache(path: string): boolean {
   return existed;
 }
 
-/**
- * Generates and caches a slug for a given name
- */
 function generateAndCacheSlug(name: string, path: string): string {
   const baseName = name.replace(/\s+V\d+$/i, '');
   const slug = slugify(baseName);
@@ -554,9 +563,6 @@ function generateAndCacheSlug(name: string, path: string): string {
   return slug;
 }
 
-/**
- * Gets cached slug for a path, or generates one if not cached
- */
 export function getCachedSlug(name: string, path: string): string {
   const cachedSlug = slugCache.get(path);
   if (cachedSlug) {
@@ -565,9 +571,6 @@ export function getCachedSlug(name: string, path: string): string {
   return generateAndCacheSlug(name, path);
 }
 
-/**
- * Processes directory contents to add slugs to each item
- */
 function processDirectoryContentsWithSlugs(contents: GitHubFile[]): GitHubFile[] {
   return contents.map(item => ({
     ...item,
@@ -578,7 +581,6 @@ function processDirectoryContentsWithSlugs(contents: GitHubFile[]): GitHubFile[]
 export function getThumbnailFromCache(path: string, sha: string): string | null {
   const cached = thumbnailCache.get(path);
   
-  // If cached and SHA matches and not expired, return cached URL
   if (cached && cached.sha === sha && Date.now() - cached.timestamp < THUMBNAIL_CACHE_DURATION) {
     return cached.url;
   }
@@ -600,21 +602,16 @@ export async function getCharacterThumbnail(
 ): Promise<string | null> {
   if (!pngFile) return null;
   
-  // Check if thumbnail is in cache with matching SHA
   const cachedUrl = getThumbnailFromCache(pngFile.path, pngFile.sha);
   if (cachedUrl) {
     return cachedUrl;
   }
   
-  // Cache the new thumbnail URL
   cacheThumbnail(pngFile.path, pngFile.download_url, pngFile.sha);
   
   return pngFile.download_url;
 }
 
-/**
- * Fetches and caches JSON data (character cards, world books, chat presets)
- */
 export async function getJsonData(
   jsonFile: GitHubFile
 ): Promise<JsonData | null> {
@@ -623,12 +620,21 @@ export async function getJsonData(
   const cached = jsonDataCache.get(jsonFile.path);
   const now = Date.now();
   
-  // If cached, SHA matches, and not expired, return cached data
   if (cached && cached.sha === jsonFile.sha && now - cached.timestamp < JSON_DATA_CACHE_DURATION) {
     return cached.data;
   }
   
-  // Fetch fresh data
+  // Check persistent cache for JSON data
+  const persistentCached = await getPersistentCache<JsonData>(`json:${jsonFile.path}`, JSON_DATA_CACHE_DURATION);
+  if (persistentCached) {
+    jsonDataCache.set(jsonFile.path, {
+      data: persistentCached,
+      sha: jsonFile.sha,
+      timestamp: now
+    });
+    return persistentCached;
+  }
+  
   try {
     const response = await fetch(jsonFile.download_url, {
       headers: {
@@ -644,12 +650,13 @@ export async function getJsonData(
     
     const data: JsonData = await response.json();
     
-    // Cache the data
     jsonDataCache.set(jsonFile.path, {
       data,
       sha: jsonFile.sha,
       timestamp: now
     });
+    
+    await setPersistentCache(`json:${jsonFile.path}`, data, JSON_DATA_CACHE_DURATION);
     
     return data;
   } catch (error) {
@@ -658,13 +665,9 @@ export async function getJsonData(
   }
 }
 
-/**
- * Gets JSON data from cache only (for checking if refresh needed)
- */
 export function getJsonDataFromCache(path: string, sha: string): JsonData | null {
   const cached = jsonDataCache.get(path);
   
-  // If cached and SHA matches and not expired, return cached data
   if (cached && cached.sha === sha && Date.now() - cached.timestamp < JSON_DATA_CACHE_DURATION) {
     return cached.data;
   }
@@ -673,19 +676,18 @@ export function getJsonDataFromCache(path: string, sha: string): JsonData | null
 }
 
 /**
- * Warm-up cache by pre-fetching all required GitHub content
- * This ensures fresh data is always available and prevents stale cache issues
- * If local cache is enabled, warmup is skipped as data is loaded from disk on demand
+ * LAZY WARMUP: Only fetches top-level directories on startup
+ * Actual content is fetched on-demand when users navigate to pages
+ * This prevents burning API quota on unused data
  */
 export async function warmupCache(): Promise<void> {
   if (warmupInProgress || warmupCompleted) {
     return;
   }
 
-  // Log local cache status
   await logLocalCacheStatus();
 
-  // If local cache is enabled and available, skip GitHub warmup
+  // If local cache is enabled, skip GitHub warmup entirely
   if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
     console.log('[Cache Warmup] Skipping GitHub warmup - using local cache');
     warmupCompleted = true;
@@ -693,11 +695,11 @@ export async function warmupCache(): Promise<void> {
   }
 
   warmupInProgress = true;
-  console.log('[Cache Warmup] Starting cache warm-up...');
+  console.log('[Cache Warmup] Starting lazy warm-up (top-level directories only)...');
   const startTime = Date.now();
 
   try {
-    // Define all paths to warm up
+    // Only fetch top-level directories - lazy load the rest
     const primaryPaths = [
       'Character Cards',
       'World Books',
@@ -705,181 +707,43 @@ export async function warmupCache(): Promise<void> {
       'Lumia DLCs'
     ];
 
-    // Fetch all primary directories
-    await Promise.all(
-      primaryPaths.map(async (path) => {
-        try {
-          await fetchAndCache(path, `github:${path}`);
-          console.log(`[Cache Warmup] Cached: ${path}`);
-        } catch (error) {
-          console.error(`[Cache Warmup] Failed to cache ${path}:`, error);
-        }
-      })
-    );
-
-    // Fetch Character Cards categories and their contents
-    try {
-      const characterCardsContents = cache.get('github:Character Cards');
-      if (characterCardsContents?.data && Array.isArray(characterCardsContents.data)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const categories = characterCardsContents.data.filter((item: any) => item.type === 'dir');
-        
-        await Promise.all(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          categories.map(async (category: any) => {
-            try {
-              const categoryPath = category.path;
-              await fetchAndCache(categoryPath, `github:${categoryPath}`);
-              console.log(`[Cache Warmup] Cached: ${categoryPath}`);
-              
-              // Fetch character directories within each category
-              const categoryContents = cache.get(`github:${categoryPath}`);
-              if (categoryContents?.data && Array.isArray(categoryContents.data)) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const charDirs = categoryContents.data.filter((item: any) => item.type === 'dir');
-                
-                await Promise.all(
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  charDirs.map(async (charDir: any) => {
-                    try {
-                      const charPath = charDir.path;
-                      await fetchAndCache(charPath, `github:${charPath}`);
-                      
-                      // Also fetch commits for the character directory
-                      await fetchAndCacheCommit(charPath, `commit:${charPath}`);
-                      
-                      // Pre-fetch JSON data
-                      const charContents = cache.get(`github:${charPath}`);
-                      if (charContents?.data && Array.isArray(charContents.data)) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const jsonFiles = charContents.data.filter((file: any) => 
-                          file.type === 'file' && file.name.toLowerCase().endsWith('.json')
-                        );
-                        
-                        // Fetch all JSON files for this character
-                        await Promise.all(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          jsonFiles.map(async (jsonFile: any) => {
-                            try {
-                              await getJsonData(jsonFile);
-                            } catch (error) {
-                              console.error(`[Cache Warmup] Failed to cache JSON: ${jsonFile.path}`, error);
-                            }
-                          })
-                        );
-                      }
-                    } catch (error) {
-                      console.error(`[Cache Warmup] Failed to cache character: ${charDir.path}`, error);
-                    }
-                  })
-                );
-              }
-            } catch (error) {
-              console.error(`[Cache Warmup] Failed to cache category: ${category.path}`, error);
-            }
-          })
-        );
+    // Use batch fetch with GraphQL if enabled, otherwise parallel REST calls
+    if (USE_GRAPHQL) {
+      console.log('[Cache Warmup] Using GraphQL for batch fetching...');
+      const results = await batchFetchRepositoryTrees(primaryPaths);
+      
+      for (const [path, entries] of results.entries()) {
+        const files = treeEntriesToGitHubFiles(entries, path);
+        const processedFiles = processDirectoryContentsWithSlugs(files as GitHubFile[]);
+        cache.set(`github:${path}`, {
+          data: processedFiles,
+          timestamp: Date.now()
+        });
+        await setPersistentCache(`github:${path}`, processedFiles, PERSISTENT_CACHE_TTL);
+        console.log(`[Cache Warmup] Cached via GraphQL: ${path} (${entries.length} entries)`);
       }
-    } catch (error) {
-      console.error('[Cache Warmup] Failed to warm up Character Cards:', error);
-    }
-
-    // Fetch World Books categories and their contents
-    try {
-      const worldBooksContents = cache.get('github:World Books');
-      if (worldBooksContents?.data && Array.isArray(worldBooksContents.data)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const categories = worldBooksContents.data.filter((item: any) => item.type === 'dir');
-        
-        await Promise.all(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          categories.map(async (category: any) => {
-            try {
-              const categoryPath = category.path;
-              await fetchAndCache(categoryPath, `github:${categoryPath}`);
-              console.log(`[Cache Warmup] Cached: ${categoryPath}`);
-              
-              // Fetch book directories within each category
-              const categoryContents = cache.get(`github:${categoryPath}`);
-              if (categoryContents?.data && Array.isArray(categoryContents.data)) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const bookDirs = categoryContents.data.filter((item: any) => item.type === 'dir');
-                
-                await Promise.all(
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  bookDirs.map(async (bookDir: any) => {
-                    try {
-                      const bookPath = bookDir.path;
-                      await fetchAndCache(bookPath, `github:${bookPath}`);
-                      
-                      // Also fetch commits for the book directory
-                      await fetchAndCacheCommit(bookPath, `commit:${bookPath}`);
-                      
-                      // Pre-fetch world book JSON data
-                      const bookContents = cache.get(`github:${bookPath}`);
-                      if (bookContents?.data && Array.isArray(bookContents.data)) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const jsonFiles = bookContents.data.filter((file: any) => 
-                          file.type === 'file' && file.name.toLowerCase().endsWith('.json')
-                        );
-                        
-                        // Fetch all JSON files for this world book
-                        await Promise.all(
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          jsonFiles.map(async (jsonFile: any) => {
-                            try {
-                              await getJsonData(jsonFile);
-                            } catch (error) {
-                              console.error(`[Cache Warmup] Failed to cache world book JSON: ${jsonFile.path}`, error);
-                            }
-                          })
-                        );
-                      }
-                    } catch (error) {
-                      console.error(`[Cache Warmup] Failed to cache book: ${bookDir.path}`, error);
-                    }
-                  })
-                );
-              }
-            } catch (error) {
-              console.error(`[Cache Warmup] Failed to cache category: ${category.path}`, error);
-            }
-          })
-        );
-      }
-    } catch (error) {
-      console.error('[Cache Warmup] Failed to warm up World Books:', error);
-    }
-
-    // Fetch Lumia DLCs packs
-    try {
-      const lumiaDlcsContents = cache.get('github:Lumia DLCs');
-      if (lumiaDlcsContents?.data && Array.isArray(lumiaDlcsContents.data)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const packFiles = lumiaDlcsContents.data.filter((item: any) =>
-          item.type === 'file' && item.name.toLowerCase().endsWith('.json')
-        );
-
-        // Pre-fetch all pack JSON files
-        await Promise.all(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          packFiles.map(async (packFile: any) => {
-            try {
-              await getJsonData(packFile);
-              console.log(`[Cache Warmup] Cached Lumia DLC pack: ${packFile.name}`);
-            } catch (error) {
-              console.error(`[Cache Warmup] Failed to cache Lumia DLC pack: ${packFile.path}`, error);
-            }
-          })
-        );
-      }
-    } catch (error) {
-      console.error('[Cache Warmup] Failed to warm up Lumia DLCs:', error);
+    } else {
+      // Fallback to parallel REST API calls
+      await Promise.all(
+        primaryPaths.map(async (path) => {
+          try {
+            await fetchAndCache(path, `github:${path}`);
+            console.log(`[Cache Warmup] Cached via REST: ${path}`);
+          } catch (error) {
+            console.error(`[Cache Warmup] Failed to cache ${path}:`, error);
+          }
+        })
+      );
     }
 
     warmupCompleted = true;
     const duration = Date.now() - startTime;
-    console.log(`[Cache Warmup] Completed in ${duration}ms`);
+    console.log(`[Cache Warmup] Lazy warmup completed in ${duration}ms`);
+    console.log(`[Cache Warmup] Subdirectories will be fetched on-demand as users navigate`);
+
+    // Log persistent cache stats
+    const cacheStats = await getPersistentCacheStats();
+    console.log(`[Persistent Cache] Current cache: ${cacheStats.entries} entries, ${cacheStats.totalSizeMB}MB`);
 
     // Start periodic refresh after warmup completes
     await startPeriodicRefresh();
@@ -892,20 +756,16 @@ export async function warmupCache(): Promise<void> {
 
 /**
  * Ensures warm-up has been triggered
- * Can be called from API routes to ensure cache is warmed up
+ * With lazy loading, this is non-blocking and minimal
  */
 export function ensureWarmup(): void {
   if (!warmupCompleted && !warmupInProgress) {
-    // Run warmup asynchronously without blocking
     warmupCache().catch(error => {
       console.error('[Cache Warmup] Async warmup failed:', error);
     });
   }
 }
 
-/**
- * Gets warmup status
- */
 export function getWarmupStatus(): { completed: boolean; inProgress: boolean } {
   return {
     completed: warmupCompleted,
@@ -915,23 +775,28 @@ export function getWarmupStatus(): { completed: boolean; inProgress: boolean } {
 
 /**
  * Refreshes all cached entries in the background
- * This ensures fresh data is always available
+ * Only refreshes entries that have been accessed recently
  */
 async function refreshAllCachedEntries(): Promise<void> {
-  // Log rate limit status
   if (rateLimitInfo) {
     const remainingPercentage = Math.floor((rateLimitInfo.remaining / rateLimitInfo.limit) * 100);
     const resetDate = new Date(rateLimitInfo.reset * 1000);
-    console.log(`[Periodic Refresh] Rate Limit Status: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining (${remainingPercentage}%), resets at ${resetDate.toLocaleTimeString()}`);
+    console.log(`[Periodic Refresh] Rate Limit: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining (${remainingPercentage}%), resets at ${resetDate.toLocaleTimeString()}`);
   }
   
-  console.log(`[Periodic Refresh] Starting periodic cache refresh (interval: ${currentPeriodicRefreshInterval}ms)...`);
+  console.log(`[Periodic Refresh] Starting periodic cache refresh...`);
   const startTime = Date.now();
   
   try {
     const cacheKeys = Array.from(cache.keys());
     const githubKeys = cacheKeys.filter(key => key.startsWith('github:'));
     const commitKeys = cacheKeys.filter(key => key.startsWith('commit:'));
+    
+    // Only refresh if we have healthy rate limits
+    if (rateLimitInfo && rateLimitInfo.remaining / rateLimitInfo.limit < 0.2) {
+      console.log('[Periodic Refresh] Skipping refresh - rate limit too low');
+      return;
+    }
     
     // Refresh GitHub content cache entries
     const githubRefreshes = githubKeys.map(async (cacheKey) => {
@@ -945,7 +810,6 @@ async function refreshAllCachedEntries(): Promise<void> {
       }
     });
     
-    // Refresh commit cache entries
     const commitRefreshes = commitKeys.map(async (cacheKey) => {
       const filePath = cacheKey.replace('commit:', '');
       if (!refreshingKeys.has(cacheKey)) {
@@ -957,39 +821,29 @@ async function refreshAllCachedEntries(): Promise<void> {
       }
     });
     
-    // Execute all refreshes in parallel
     await Promise.all([...githubRefreshes, ...commitRefreshes]);
     
     lastPeriodicRefresh = Date.now();
     const duration = Date.now() - startTime;
-    console.log(`[Periodic Refresh] Completed in ${duration}ms. Refreshed ${githubKeys.length} content entries and ${commitKeys.length} commit entries.`);
+    console.log(`[Periodic Refresh] Completed in ${duration}ms. Refreshed ${githubKeys.length} content and ${commitKeys.length} commit entries.`);
   } catch (error) {
     console.error('[Periodic Refresh] Error during periodic refresh:', error);
   }
 }
 
-/**
- * Starts the periodic cache refresh mechanism
- * Ensures cache is refreshed every 45 seconds to keep data fresh
- * Does not start if local cache is enabled (data is always fresh from disk)
- */
 export async function startPeriodicRefresh(): Promise<void> {
-  // Don't start if already running
   if (periodicRefreshInterval) {
     return;
   }
 
-  // Don't start periodic refresh if using local cache
   if (USE_LOCAL_CACHE && await isLocalCacheAvailable()) {
-    console.log('[Periodic Refresh] Disabled - using local cache (data is always fresh from disk)');
+    console.log('[Periodic Refresh] Disabled - using local cache');
     return;
   }
   
-  console.log(`[Periodic Refresh] Starting periodic refresh with ${Math.floor(BASE_PERIODIC_REFRESH_INTERVAL / 60000)}min interval...`);
+  console.log(`[Periodic Refresh] Starting with ${Math.floor(currentPeriodicRefreshInterval / 60000)}min interval...`);
   
-  // Start the interval
   periodicRefreshInterval = setInterval(() => {
-    // Only refresh if warmup is complete and we have cached entries
     if (warmupCompleted && cache.size > 0) {
       refreshAllCachedEntries().catch(error => {
         console.error('[Periodic Refresh] Async refresh failed:', error);
@@ -997,15 +851,11 @@ export async function startPeriodicRefresh(): Promise<void> {
     }
   }, currentPeriodicRefreshInterval);
   
-  // Prevent the interval from keeping the process alive in serverless environments
   if (periodicRefreshInterval.unref) {
     periodicRefreshInterval.unref();
   }
 }
 
-/**
- * Stops the periodic cache refresh
- */
 export function stopPeriodicRefresh(): void {
   if (periodicRefreshInterval) {
     clearInterval(periodicRefreshInterval);
@@ -1014,9 +864,6 @@ export function stopPeriodicRefresh(): void {
   }
 }
 
-/**
- * Gets the status of periodic refresh
- */
 export function getPeriodicRefreshStatus(): {
   isActive: boolean;
   lastRefresh: number;
@@ -1029,10 +876,40 @@ export function getPeriodicRefreshStatus(): {
   };
 }
 
-/**
- * Gets the current rate limit status
- * Returns null if no rate limit information has been received yet
- */
 export function getRateLimitStatus(): RateLimitInfo | null {
   return rateLimitInfo;
+}
+
+/**
+ * Gets the persistent cache statistics
+ */
+export async function getCacheStats(): Promise<{
+  memoryEntries: number;
+  persistentEntries: number;
+  persistentSizeMB: number;
+  rateLimit: RateLimitInfo | null;
+}> {
+  const persistentStats = await getPersistentCacheStats();
+  
+  return {
+    memoryEntries: cache.size,
+    persistentEntries: persistentStats.entries,
+    persistentSizeMB: persistentStats.totalSizeMB,
+    rateLimit: rateLimitInfo
+  };
+}
+
+/**
+ * Gets the GraphQL rate limit status (if GraphQL is enabled)
+ */
+export async function getGraphQLRateLimitStatus(): Promise<{
+  enabled: boolean;
+  rateLimit: { limit: number; remaining: number; resetAt: string; used: number } | null;
+}> {
+  if (!USE_GRAPHQL) {
+    return { enabled: false, rateLimit: null };
+  }
+  
+  const rateLimit = await getGraphQLRateLimit();
+  return { enabled: true, rateLimit };
 }
