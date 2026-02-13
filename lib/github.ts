@@ -108,6 +108,7 @@ const refreshingKeys = new Set<string>();
 // Track if warm-up has been completed
 let warmupCompleted = false;
 let warmupInProgress = false;
+let warmupPromise: Promise<void> | null = null;
 
 // Track periodic refresh
 let periodicRefreshInterval: NodeJS.Timeout | null = null;
@@ -199,7 +200,8 @@ async function fetchDirectoryContents(path: string): Promise<GitHubFile[]> {
   if (USE_GRAPHQL) {
     try {
       const entries = await fetchRepositoryTree(path, false);
-      return treeEntriesToGitHubFiles(entries, path) as GitHubFile[];
+      const files = treeEntriesToGitHubFiles(entries, path) as GitHubFile[];
+      return processDirectoryContentsWithSlugs(files);
     } catch (error) {
       console.warn(`[GraphQL] Failed to fetch ${path}, falling back to REST:`, error);
       // Fall through to REST API
@@ -681,9 +683,21 @@ export function getJsonDataFromCache(path: string, sha: string): JsonData | null
  * This prevents burning API quota on unused data
  */
 export async function warmupCache(): Promise<void> {
-  if (warmupInProgress || warmupCompleted) {
+  // Check if already completed
+  if (warmupCompleted) {
     return;
   }
+  
+  // Check if already in progress (shouldn't happen with ensureWarmup, but defensive)
+  if (warmupInProgress) {
+    // Wait for existing warmup to complete
+    while (warmupInProgress) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return;
+  }
+  
+  warmupInProgress = true;
 
   await logLocalCacheStatus();
 
@@ -757,13 +771,27 @@ export async function warmupCache(): Promise<void> {
 /**
  * Ensures warm-up has been triggered
  * With lazy loading, this is non-blocking and minimal
+ * Uses promise deduplication to prevent race conditions
  */
-export function ensureWarmup(): void {
-  if (!warmupCompleted && !warmupInProgress) {
-    warmupCache().catch(error => {
-      console.error('[Cache Warmup] Async warmup failed:', error);
-    });
+export function ensureWarmup(): Promise<void> {
+  // Return existing promise if warmup is in progress
+  if (warmupPromise) {
+    return warmupPromise;
   }
+  
+  // Return resolved promise if already completed
+  if (warmupCompleted) {
+    return Promise.resolve();
+  }
+  
+  // Start new warmup and store promise
+  warmupPromise = warmupCache().catch(error => {
+    console.error('[Cache Warmup] Async warmup failed:', error);
+  }).finally(() => {
+    warmupPromise = null;
+  });
+  
+  return warmupPromise;
 }
 
 export function getWarmupStatus(): { completed: boolean; inProgress: boolean } {

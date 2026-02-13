@@ -36,7 +36,7 @@ function parseVersion(fileName: string): { major: number; minor: number; patch: 
 }
 
 export async function GET() {
-  ensureWarmup();
+  await ensureWarmup();
 
   try {
     const contents = await getDirectoryContents(PRESET_DIRECTORY);

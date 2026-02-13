@@ -21,7 +21,7 @@ function determinePackType(lumiaCount: number, totalLoomCount: number): PackType
 }
 
 export async function GET() {
-  ensureWarmup();
+  await ensureWarmup();
 
   try {
     const contents = await getDirectoryContents(DLC_DIRECTORY);

@@ -38,7 +38,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ preset: string; version: string }> }
 ) {
-  ensureWarmup();
+  await ensureWarmup();
 
   const { preset: presetSlug, version: versionSlug } = await params;
   const decodedPresetSlug = decodeURIComponent(presetSlug);

@@ -22,9 +22,9 @@ interface FilterOption {
 }
 
 export async function GET(request: Request) {
-  // Ensure cache warmup is triggered
-  ensureWarmup();
-  
+  // Ensure cache warmup is triggered and wait for it to complete
+  await ensureWarmup();
+
   try {
     const { searchParams } = new URL(request.url);
     const includeAll = searchParams.get('all') === 'true';

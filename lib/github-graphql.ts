@@ -246,18 +246,29 @@ export function treeEntriesToGitHubFiles(
   type: 'file' | 'dir';
   sha: string;
   size: number;
+  url: string;
+  html_url: string;
+  git_url: string;
   download_url: string;
 }> {
-  return entries.map(entry => ({
-    name: entry.name,
-    path: `${basePath}/${entry.name}`.replace(/^\//, ''),
-    type: entry.type === 'tree' ? 'dir' : 'file',
-    sha: entry.oid,
-    size: entry.size || 0,
-    download_url: entry.type === 'blob' 
-      ? `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/HEAD/${basePath}/${entry.name}`.replace(/^\//, '')
-      : ''
-  }));
+  return entries.map(entry => {
+    const path = `${basePath}/${entry.name}`.replace(/^\//, '');
+    const isDir = entry.type === 'tree';
+    
+    return {
+      name: entry.name,
+      path: path,
+      type: isDir ? 'dir' : 'file',
+      sha: entry.oid,
+      size: entry.size || 0,
+      url: `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`,
+      html_url: `https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/HEAD/${path}`,
+      git_url: `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/git/trees/${entry.oid}`,
+      download_url: isDir 
+        ? ''
+        : `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/HEAD/${path}`
+    };
+  });
 }
 
 /**

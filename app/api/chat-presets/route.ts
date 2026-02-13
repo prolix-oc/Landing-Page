@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { getDirectoryContents, ensureWarmup } from '@/lib/github';
 
 export async function GET() {
-  // Ensure cache warmup is triggered
-  ensureWarmup();
-  
+  // Ensure cache warmup is triggered and wait for completion
+  await ensureWarmup();
+
   try {
     const contents = await getDirectoryContents('Chat Completion');
     

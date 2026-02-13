@@ -18,7 +18,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ pack: string }> }
 ) {
-  ensureWarmup();
+  await ensureWarmup();
 
   const { pack: packSlug } = await params;
 
