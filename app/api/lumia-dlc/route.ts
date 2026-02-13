@@ -55,7 +55,7 @@ export async function GET() {
             packData.loomItems.forEach(item => {
               // Exact match assuming strict categorization in source
               if (item.loomCategory === 'Narrative Style') narrativeStyleCount++;
-              else if (item.loomCategory === 'Loom Utility') loomUtilityCount++;
+              else if (item.loomCategory === 'Loom Utilities') loomUtilityCount++;
               else if (item.loomCategory === 'Loom Retrofit') loomRetrofitCount++;
             });
           }
