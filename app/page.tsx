@@ -64,11 +64,11 @@ export default function Home() {
           {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
-          {/* Bento Grid inside the glass container */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 auto-rows-[minmax(140px,1fr)] lg:grid-rows-[repeat(2,1fr)] gap-3 sm:gap-4">
+          {/* Bento Grid — 4-col explicit layout on desktop, 2-col auto on mobile */}
+          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)] gap-3 sm:gap-4">
 
-            {/* Featured Card - Lucid Loom (top of left column) */}
-            <div className="col-span-2 row-span-2 lg:row-span-1 lg:col-start-1 lg:row-start-1">
+            {/* Lucid Loom — LARGEST (2x2 on desktop, full-width on mobile) */}
+            <div className="col-span-2 lg:row-span-2 lg:col-start-1 lg:row-start-1">
               <TransitionLink href="/lucid-loom" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-2xl ${glowColors.purple} ${borderColors.purple} hover:bg-white/[0.03]`}>
                   {/* Decorative gradient orb */}
@@ -103,8 +103,50 @@ export default function Home() {
               </TransitionLink>
             </div>
 
-            {/* Lumia DLC (bottom of left column) */}
-            <div className="col-span-2 row-span-2 lg:row-span-1 lg:col-start-1 lg:row-start-2">
+            {/* Chat Presets — SECOND LARGEST (2x1 on desktop, full-width on mobile) */}
+            <div className="col-span-2 lg:col-start-3 lg:row-start-1">
+              <TransitionLink href="/chat-presets" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.violet} ${borderColors.violet} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
+                    <div className="mb-3">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-violet-100 transition-colors">
+                      Chat Presets
+                    </h3>
+                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                      Optimized completion settings
+                    </p>
+                  </div>
+                </div>
+              </TransitionLink>
+            </div>
+
+            {/* Character Cards — 1x1 on desktop */}
+            <div className="lg:col-start-3 lg:row-start-2">
+              <TransitionLink href="/character-cards" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.cyan} ${borderColors.cyan} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
+                    <div className="mb-3">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-cyan-100 transition-colors">
+                      Character Cards
+                    </h3>
+                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                      Browse and download character cards
+                    </p>
+                  </div>
+                </div>
+              </TransitionLink>
+            </div>
+
+            {/* Lumia DLC — 2x1 on desktop */}
+            <div className="lg:col-span-2 lg:col-start-1 lg:row-start-3">
               <TransitionLink href="/lumia-dlc" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.rose} ${borderColors.rose} hover:bg-white/[0.03]`}>
                   {/* Decorative gradient orb */}
@@ -139,55 +181,13 @@ export default function Home() {
               </TransitionLink>
             </div>
 
-            {/* Character Cards */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-3 lg:row-start-1">
-              <TransitionLink href="/character-cards" className="block h-full group">
-                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.cyan} ${borderColors.cyan} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
-                    <div className="mb-3">
-                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
-                        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                      </div>
-                    </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-cyan-100 transition-colors">
-                      Character Cards
-                    </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
-                      Browse and download character cards
-                    </p>
-                  </div>
-                </div>
-              </TransitionLink>
-            </div>
-
-            {/* Chat Presets */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-5 lg:row-start-1">
-              <TransitionLink href="/chat-presets" className="block h-full group">
-                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.violet} ${borderColors.violet} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
-                    <div className="mb-3">
-                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
-                        <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                      </div>
-                    </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-violet-100 transition-colors">
-                      Chat Presets
-                    </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
-                      Optimized completion settings
-                    </p>
-                  </div>
-                </div>
-              </TransitionLink>
-            </div>
-
-            {/* World Books */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-3 lg:row-start-2">
+            {/* World Books — 2x1 on desktop */}
+            <div className="lg:col-span-2 lg:col-start-3 lg:row-start-3">
               <TransitionLink href="/world-books" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.emerald} ${borderColors.emerald} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
                     <div className="mb-3">
-                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
                         <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
                     </div>
@@ -202,13 +202,13 @@ export default function Home() {
               </TransitionLink>
             </div>
 
-            {/* Extensions */}
-            <div className="col-span-1 sm:col-span-2 row-span-2 lg:row-span-1 lg:col-start-5 lg:row-start-2">
+            {/* Extensions — SMALLEST (1x1 on desktop) */}
+            <div className="lg:col-start-4 lg:row-start-2">
               <TransitionLink href="/extensions" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.amber} ${borderColors.amber} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
                     <div className="mb-3">
-                      <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
                         <Puzzle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
                     </div>

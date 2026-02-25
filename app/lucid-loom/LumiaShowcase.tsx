@@ -101,7 +101,7 @@ function LumiaCard({
     >
       <AnimatedLink
         href={`/lumia-dlc/${lumia.packSlug}`}
-        className="block relative h-full min-h-[280px] rounded-3xl overflow-hidden"
+        className="block relative h-full min-h-[220px] lg:min-h-[280px] rounded-3xl overflow-hidden"
       >
         {/* Background gradient atmosphere */}
         <div
@@ -126,7 +126,7 @@ function LumiaCard({
           {/* Avatar image or placeholder */}
           <div
             className={`relative flex-1 rounded-2xl overflow-hidden mb-4 ${
-              isLarge ? 'min-h-[200px]' : 'min-h-[120px]'
+              isLarge ? 'min-h-[140px] lg:min-h-[200px]' : 'min-h-[100px] lg:min-h-[120px]'
             }`}
           >
             {lumia.avatarUrl ? (
@@ -196,14 +196,14 @@ function LumiaCard({
 // Loading skeleton
 function LoadingSkeleton() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 grid-flow-dense">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 auto-rows-[minmax(200px,auto)] grid-flow-dense">
       {[...Array(7)].map((_, i) => (
         <div
           key={i}
           className={`relative rounded-3xl overflow-hidden animate-pulse ${
             i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''
           } ${i === 2 ? 'lg:row-span-2' : ''} ${i === 3 ? 'lg:col-span-2' : ''}`}
-          style={{ minHeight: i === 0 ? '400px' : '280px' }}
+          style={{ minHeight: i === 0 ? '320px' : '220px' }}
         >
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md border border-white/[0.08]" />
           <div className="relative min-h-[280px] p-5 flex flex-col">
@@ -356,7 +356,7 @@ export default function LumiaShowcase() {
           {isLoading ? (
             <LoadingSkeleton />
           ) : lumias.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 auto-rows-fr grid-flow-dense">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6 auto-rows-[minmax(200px,auto)] grid-flow-dense">
               {lumias.map((lumia, index) => (
                 <LumiaCard
                   key={`${lumia.packSlug}-${lumia.lumiaName}`}
