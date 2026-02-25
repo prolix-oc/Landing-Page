@@ -63,12 +63,12 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative lg:max-h-[780px]">
+        <div className="flex-1 min-h-0 relative lg:max-h-[640px]">
           {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
-          {/* Bento Grid — 4-col explicit layout on desktop, 2-col auto on mobile */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)_auto] gap-3 sm:gap-4">
+          {/* Bento Grid — 4-col, 4-row explicit layout on desktop, 2-col auto on mobile */}
+          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-4 gap-3 sm:gap-4">
 
             {/* Lucid Loom — LARGEST (2x2 on desktop, full-width on mobile) */}
             <div className="col-span-2 lg:row-span-2 lg:col-start-1 lg:row-start-1">
