@@ -88,12 +88,14 @@ import {
   getPersistentCacheStats
 } from './persistent-cache';
 
-// Import GraphQL client (optional, falls back to REST if disabled)
+// Import GraphQL client (used exclusively when USE_GITHUB_GRAPHQL=true)
 import {
   fetchRepositoryTree,
   batchFetchRepositoryTrees,
   treeEntriesToGitHubFiles,
-  getGraphQLRateLimit
+  getGraphQLRateLimit,
+  fetchObjectGraphQL,
+  fetchLatestCommitGraphQL
 } from './github-graphql';
 
 // In-memory cache
@@ -190,25 +192,24 @@ export async function fetchFromGitHub(path: string): Promise<unknown> {
   }
   
   // No cache exists, fetch from GitHub
+  if (USE_GRAPHQL) {
+    return await fetchAndCacheViaGraphQL(path, cacheKey);
+  }
   return await fetchAndCache(path, cacheKey);
 }
 
 /**
- * Uses GraphQL to fetch repository tree if enabled, otherwise falls back to REST
+ * Uses GraphQL to fetch repository tree if enabled, otherwise uses REST.
+ * When GraphQL is enabled, no REST fallback occurs — errors propagate to the caller.
  */
 async function fetchDirectoryContents(path: string): Promise<GitHubFile[]> {
   if (USE_GRAPHQL) {
-    try {
-      const entries = await fetchRepositoryTree(path, false);
-      const files = treeEntriesToGitHubFiles(entries, path) as GitHubFile[];
-      return processDirectoryContentsWithSlugs(files);
-    } catch (error) {
-      console.warn(`[GraphQL] Failed to fetch ${path}, falling back to REST:`, error);
-      // Fall through to REST API
-    }
+    const entries = await fetchRepositoryTree(path, false);
+    const files = treeEntriesToGitHubFiles(entries, path) as GitHubFile[];
+    return processDirectoryContentsWithSlugs(files);
   }
-  
-  // Fallback to REST API
+
+  // REST API path
   const contents = await fetchFromGitHub(path);
   const files = Array.isArray(contents) ? contents : [];
   return processDirectoryContentsWithSlugs(files);
@@ -361,14 +362,58 @@ async function fetchAndCache(path: string, cacheKey: string, retryCount = 0): Pr
 }
 
 /**
+ * Fetches fresh data via GraphQL and updates cache.
+ * GraphQL equivalent of fetchAndCache — used when USE_GRAPHQL is enabled.
+ */
+async function fetchAndCacheViaGraphQL(path: string, cacheKey: string): Promise<unknown> {
+  const result = await fetchObjectGraphQL(path);
+
+  if (!result) {
+    throw new Error(`GraphQL: Object not found at path: ${path}`);
+  }
+
+  let data: unknown;
+
+  if (result.type === 'tree') {
+    // Directory — convert tree entries to GitHubFile array
+    data = treeEntriesToGitHubFiles(result.entries!, path);
+  } else {
+    // File — construct a GitHubFile-compatible object
+    const fileName = path.split('/').pop() || path;
+    const decodedPath = decodeURIComponent(path);
+    data = {
+      name: decodeURIComponent(fileName),
+      path: decodedPath,
+      sha: result.oid,
+      size: result.byteSize || 0,
+      type: 'file',
+      url: `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`,
+      html_url: `https://github.com/${REPO_OWNER}/${REPO_NAME}/blob/HEAD/${path}`,
+      git_url: `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/git/blobs/${result.oid}`,
+      download_url: `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/HEAD/${path}`
+    };
+  }
+
+  const timestamp = Date.now();
+  cache.set(cacheKey, { data, timestamp });
+  await setPersistentCache(cacheKey, data, PERSISTENT_CACHE_TTL);
+
+  return data;
+}
+
+/**
  * Refreshes cache in the background without blocking the response
  */
 function refreshInBackground(path: string, cacheKey: string): void {
   if (refreshingKeys.has(cacheKey)) return;
-  
+
   refreshingKeys.add(cacheKey);
-  
-  fetchAndCache(path, cacheKey)
+
+  const fetchFn = USE_GRAPHQL
+    ? fetchAndCacheViaGraphQL(path, cacheKey)
+    : fetchAndCache(path, cacheKey);
+
+  fetchFn
     .catch(error => {
       console.error(`Background refresh failed for ${path}:`, error);
     })
@@ -411,6 +456,9 @@ export async function getLatestCommit(filePath: string): Promise<GitHubCommit | 
     }
     
     // Fetch from GitHub
+    if (USE_GRAPHQL) {
+      return await fetchAndCacheCommitViaGraphQL(filePath, cacheKey);
+    }
     return await fetchAndCacheCommit(filePath, cacheKey);
   } catch (error) {
     console.error('Error fetching latest commit:', error);
@@ -463,12 +511,30 @@ async function fetchAndCacheCommit(filePath: string, cacheKey: string, retryCoun
   return commit;
 }
 
+/**
+ * Fetches latest commit via GraphQL and updates cache.
+ * GraphQL equivalent of fetchAndCacheCommit — used when USE_GRAPHQL is enabled.
+ */
+async function fetchAndCacheCommitViaGraphQL(filePath: string, cacheKey: string): Promise<GitHubCommit | null> {
+  const commit = await fetchLatestCommitGraphQL(filePath);
+
+  const timestamp = Date.now();
+  cache.set(cacheKey, { data: commit, timestamp });
+  await setPersistentCache(cacheKey, commit, PERSISTENT_CACHE_TTL);
+
+  return commit as GitHubCommit | null;
+}
+
 function refreshCommitInBackground(filePath: string, cacheKey: string): void {
   if (refreshingKeys.has(cacheKey)) return;
-  
+
   refreshingKeys.add(cacheKey);
-  
-  fetchAndCacheCommit(filePath, cacheKey)
+
+  const fetchFn = USE_GRAPHQL
+    ? fetchAndCacheCommitViaGraphQL(filePath, cacheKey)
+    : fetchAndCacheCommit(filePath, cacheKey);
+
+  fetchFn
     .catch(error => {
       console.error(`Background commit refresh failed for ${filePath}:`, error);
     })
@@ -831,18 +897,26 @@ async function refreshAllCachedEntries(): Promise<void> {
       const path = cacheKey.replace('github:', '');
       if (!refreshingKeys.has(cacheKey)) {
         try {
-          await fetchAndCache(path, cacheKey);
+          if (USE_GRAPHQL) {
+            await fetchAndCacheViaGraphQL(path, cacheKey);
+          } else {
+            await fetchAndCache(path, cacheKey);
+          }
         } catch (error) {
           console.error(`[Periodic Refresh] Failed to refresh ${path}:`, error);
         }
       }
     });
-    
+
     const commitRefreshes = commitKeys.map(async (cacheKey) => {
       const filePath = cacheKey.replace('commit:', '');
       if (!refreshingKeys.has(cacheKey)) {
         try {
-          await fetchAndCacheCommit(filePath, cacheKey);
+          if (USE_GRAPHQL) {
+            await fetchAndCacheCommitViaGraphQL(filePath, cacheKey);
+          } else {
+            await fetchAndCacheCommit(filePath, cacheKey);
+          }
         } catch (error) {
           console.error(`[Periodic Refresh] Failed to refresh commit ${filePath}:`, error);
         }

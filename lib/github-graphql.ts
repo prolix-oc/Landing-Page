@@ -285,12 +285,233 @@ export async function getGraphQLRateLimit(): Promise<RateLimitInfo | null> {
       }
     }
   `;
-  
+
   try {
     const response = await executeGraphQL<{ rateLimit: RateLimitInfo }>(query);
     return response.data?.rateLimit || null;
   } catch (error) {
     console.error('[GraphQL] Failed to get rate limit:', error);
     return null;
+  }
+}
+
+/**
+ * Fetches a repository object (file or directory) using GraphQL.
+ * Unified query that returns either tree entries (directory) or blob metadata (file).
+ * Used by fetchFromGitHub when GraphQL mode is enabled.
+ */
+export async function fetchObjectGraphQL(
+  path: string
+): Promise<{
+  type: 'tree' | 'blob';
+  entries?: TreeEntry[];
+  oid?: string;
+  byteSize?: number;
+} | null> {
+  const cacheKey = `graphql:object:${path}`;
+
+  const cached = await getPersistentCache<{
+    type: 'tree' | 'blob';
+    entries?: TreeEntry[];
+    oid?: string;
+    byteSize?: number;
+  }>(cacheKey, GRAPHQL_CACHE_TTL);
+  if (cached) {
+    console.log(`[GraphQL] Cache hit for object: ${path}`);
+    return cached;
+  }
+
+  const query = `
+    query($owner: String!, $repo: String!, $expression: String!) {
+      repository(owner: $owner, name: $repo) {
+        object(expression: $expression) {
+          __typename
+          ... on Tree {
+            entries {
+              name
+              type
+              mode
+              oid
+              size
+            }
+          }
+          ... on Blob {
+            oid
+            byteSize
+            isTruncated
+          }
+        }
+      }
+      rateLimit {
+        limit
+        remaining
+        resetAt
+        used
+      }
+    }
+  `;
+
+  // Decode URI-encoded paths (e.g., %20 → space) for the GraphQL expression
+  const decodedPath = decodeURIComponent(path);
+  const expression = `HEAD:${decodedPath}`;
+
+  try {
+    console.log(`[GraphQL] Fetching object: ${decodedPath}...`);
+    const response = await executeGraphQL<{
+      repository: {
+        object: {
+          __typename: string;
+          entries?: TreeEntry[];
+          oid?: string;
+          byteSize?: number;
+          isTruncated?: boolean;
+        } | null;
+      } | null;
+      rateLimit: RateLimitInfo;
+    }>(query, {
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
+      expression
+    });
+
+    if (response.errors) {
+      console.error('[GraphQL] Errors:', response.errors);
+      throw new Error(`GraphQL errors: ${response.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const obj = response.data?.repository?.object;
+    if (!obj) {
+      return null;
+    }
+
+    const rateLimit = response.data?.rateLimit;
+    if (rateLimit) {
+      console.log(`[GraphQL] Rate limit: ${rateLimit.remaining}/${rateLimit.limit} remaining`);
+    }
+
+    const result = obj.__typename === 'Tree'
+      ? { type: 'tree' as const, entries: obj.entries || [] }
+      : { type: 'blob' as const, oid: obj.oid, byteSize: obj.byteSize };
+
+    await setPersistentCache(cacheKey, result, GRAPHQL_CACHE_TTL);
+
+    return result;
+  } catch (error) {
+    console.error(`[GraphQL] Failed to fetch object ${decodedPath}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches the latest commit for a file path using GraphQL.
+ * Returns data in GitHubCommit-compatible format for drop-in replacement of REST commit endpoint.
+ */
+export async function fetchLatestCommitGraphQL(
+  filePath: string
+): Promise<{
+  sha: string;
+  commit: {
+    author: {
+      name: string;
+      date: string;
+    };
+  };
+} | null> {
+  const cacheKey = `graphql:commit:${filePath}`;
+
+  const cached = await getPersistentCache<{
+    sha: string;
+    commit: { author: { name: string; date: string } };
+  }>(cacheKey, GRAPHQL_CACHE_TTL);
+  if (cached) {
+    console.log(`[GraphQL] Cache hit for commit: ${filePath}`);
+    return cached;
+  }
+
+  const query = `
+    query($owner: String!, $repo: String!, $path: String!) {
+      repository(owner: $owner, name: $repo) {
+        defaultBranchRef {
+          target {
+            ... on Commit {
+              history(first: 1, path: $path) {
+                nodes {
+                  oid
+                  author {
+                    name
+                    date
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      rateLimit {
+        limit
+        remaining
+        resetAt
+        used
+      }
+    }
+  `;
+
+  try {
+    console.log(`[GraphQL] Fetching latest commit for: ${filePath}...`);
+    const response = await executeGraphQL<{
+      repository: {
+        defaultBranchRef: {
+          target: {
+            history: {
+              nodes: Array<{
+                oid: string;
+                author: {
+                  name: string;
+                  date: string;
+                };
+              }>;
+            };
+          };
+        } | null;
+      } | null;
+      rateLimit: RateLimitInfo;
+    }>(query, {
+      owner: REPO_OWNER,
+      repo: REPO_NAME,
+      path: filePath
+    });
+
+    if (response.errors) {
+      console.error('[GraphQL] Errors:', response.errors);
+      throw new Error(`GraphQL errors: ${response.errors.map(e => e.message).join(', ')}`);
+    }
+
+    const rateLimit = response.data?.rateLimit;
+    if (rateLimit) {
+      console.log(`[GraphQL] Rate limit: ${rateLimit.remaining}/${rateLimit.limit} remaining`);
+    }
+
+    const nodes = response.data?.repository?.defaultBranchRef?.target?.history?.nodes;
+    if (!nodes || nodes.length === 0) {
+      return null;
+    }
+
+    const node = nodes[0];
+    const result = {
+      sha: node.oid,
+      commit: {
+        author: {
+          name: node.author.name,
+          date: node.author.date
+        }
+      }
+    };
+
+    await setPersistentCache(cacheKey, result, GRAPHQL_CACHE_TTL);
+
+    return result;
+  } catch (error) {
+    console.error(`[GraphQL] Failed to fetch commit for ${filePath}:`, error);
+    throw error;
   }
 }
