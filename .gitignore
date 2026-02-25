@@ -4,6 +4,7 @@
 /.crush
 crush.json
 AGENTS.md
+CLAUDE.md
 /node_modules
 /.pnp
 .pnp.*
