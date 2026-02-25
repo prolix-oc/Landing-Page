@@ -9,7 +9,8 @@ import {
   Github,
   Lightbulb,
   ArrowRight,
-  Package
+  Package,
+  FileText
 } from 'lucide-react';
 
 // Glow color mapping for hover states
@@ -19,7 +20,8 @@ const glowColors: Record<string, string> = {
   violet: 'hover:shadow-violet-500/20',
   emerald: 'hover:shadow-emerald-500/20',
   amber: 'hover:shadow-amber-500/20',
-  rose: 'hover:shadow-rose-500/20'
+  rose: 'hover:shadow-rose-500/20',
+  sky: 'hover:shadow-sky-500/20',
 };
 
 const borderColors: Record<string, string> = {
@@ -28,7 +30,8 @@ const borderColors: Record<string, string> = {
   violet: 'hover:border-violet-500/40',
   emerald: 'hover:border-emerald-500/40',
   amber: 'hover:border-amber-500/40',
-  rose: 'hover:border-rose-500/40'
+  rose: 'hover:border-rose-500/40',
+  sky: 'hover:border-sky-500/40',
 };
 
 export default function Home() {
@@ -60,12 +63,12 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative lg:max-h-[600px]">
+        <div className="flex-1 min-h-0 relative lg:max-h-[780px]">
           {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
           {/* Bento Grid — 4-col explicit layout on desktop, 2-col auto on mobile */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)] gap-3 sm:gap-4">
+          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)_auto] gap-3 sm:gap-4">
 
             {/* Lucid Loom — LARGEST (2x2 on desktop, full-width on mobile) */}
             <div className="col-span-2 lg:row-span-2 lg:col-start-1 lg:row-start-1">
@@ -218,6 +221,33 @@ export default function Home() {
                     <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
                       Custom SillyTavern extensions
                     </p>
+                  </div>
+                </div>
+              </TransitionLink>
+            </div>
+
+            {/* Browse Posts — Full-width banner (4x1 on desktop, row 4) */}
+            <div className="col-span-2 lg:col-span-4 lg:row-start-4">
+              <TransitionLink href="/posts" className="block h-full group">
+                <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.sky} ${borderColors.sky} hover:bg-white/[0.03]`}>
+                  <div className="relative h-full p-4 sm:p-5 flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-sky-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 group-hover:text-sky-100 transition-colors">
+                        Browse Posts
+                      </h3>
+                      <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                        Thoughts, ideas, and documentation about Lucid Loom
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 flex items-center gap-2 text-sky-400 text-sm font-medium">
+                      <span className="hidden sm:inline">Read</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
                 </div>
               </TransitionLink>
