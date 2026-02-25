@@ -13,7 +13,6 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { FastAverageColor } from 'fast-average-color';
-import Image from 'next/image';
 import {
   ArrowLeft,
   ArrowUp,
@@ -630,15 +629,14 @@ export default function CharacterDetailsClient({ character }: { character: Chara
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center pointer-events-none"
+              className="max-w-7xl max-h-full flex items-center justify-center pointer-events-none"
             >
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={currentScenario.pngUrl}
                 alt={charData.name}
-                fill
-                className="object-contain rounded-2xl shadow-2xl pointer-events-auto border border-white/[0.1]"
+                className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl pointer-events-auto border border-white/[0.1]"
                 onClick={(e) => e.stopPropagation()}
-                sizes="100vw"
               />
             </motion.div>
 
