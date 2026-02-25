@@ -1,12 +1,7 @@
 export default function CharacterDetailsLoading() {
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background orbs skeleton */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="absolute top-[5%] right-[10%] w-[500px] h-[500px] rounded-full blur-[80px] bg-blue-500/20" />
-        <div className="absolute top-[40%] left-[0%] w-[550px] h-[550px] bg-purple-600/20 rounded-full blur-[80px]" />
-        <div className="absolute bottom-[10%] right-[20%] w-[450px] h-[450px] bg-cyan-600/20 rounded-full blur-[70px]" />
-      </div>
+      {/* GlobalBackground provides ambient orbs - no duplicate orbs here to avoid jarring color swap */}
 
       {/* Back Button Skeleton */}
       <div className="fixed top-6 left-6 z-50">

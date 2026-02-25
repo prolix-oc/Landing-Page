@@ -188,10 +188,14 @@ function CharacterCardsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Initialize filter state directly from URL params to avoid flash on back-navigation
   const [categories, setCategories] = useState<Category[]>([]);
   const [allCards, setAllCards] = useState<CharacterCard[]>([]);
   const [filteredCards, setFilteredCards] = useState<CharacterCard[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+    const param = searchParams.get('category');
+    return param ? decodeURIComponent(param) : null;
+  });
   const [loading, setLoading] = useState(true);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -199,11 +203,23 @@ function CharacterCardsContent() {
   const [sortBy, setSortBy] = useState<SortOption>('a-z');
   const [isContentLoaded, setIsContentLoaded] = useState(false);
 
-  // Search and filter state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [selectedCreators, setSelectedCreators] = useState<Set<string>>(new Set());
+  // Search and filter state - initialized from URL params for instant navigation consistency
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const param = searchParams.get('search');
+    return param ? decodeURIComponent(param) : '';
+  });
+  const [debouncedSearch, setDebouncedSearch] = useState(() => {
+    const param = searchParams.get('search');
+    return param ? decodeURIComponent(param) : '';
+  });
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(() => {
+    const param = searchParams.get('tags');
+    return param ? new Set(param.split(',').map(decodeURIComponent)) : new Set();
+  });
+  const [selectedCreators, setSelectedCreators] = useState<Set<string>>(() => {
+    const param = searchParams.get('creators');
+    return param ? new Set(param.split(',').map(decodeURIComponent)) : new Set();
+  });
   const [allTags, setAllTags] = useState<FilterOption[]>([]);
   const [allCreators, setAllCreators] = useState<FilterOption[]>([]);
 
@@ -256,25 +272,23 @@ function CharacterCardsContent() {
     return () => window.removeEventListener('resize', handleResize);
   }, [cardsPerPage]);
 
-  // Check URL parameters on mount
+  // Sync filter state when URL params change externally (browser back, direct navigation)
+  // Initial state is already set from searchParams in useState initializers above
+  const prevParams = useRef(searchParams.toString());
   useEffect(() => {
+    const currentParams = searchParams.toString();
+    if (currentParams === prevParams.current) return;
+    prevParams.current = currentParams;
+
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
     const tagsParam = searchParams.get('tags');
     const creatorsParam = searchParams.get('creators');
 
-    if (categoryParam) {
-      setSelectedCategory(decodeURIComponent(categoryParam));
-    }
-    if (searchParam) {
-      setSearchQuery(decodeURIComponent(searchParam));
-    }
-    if (tagsParam) {
-      setSelectedTags(new Set(tagsParam.split(',').map(decodeURIComponent)));
-    }
-    if (creatorsParam) {
-      setSelectedCreators(new Set(creatorsParam.split(',').map(decodeURIComponent)));
-    }
+    setSelectedCategory(categoryParam ? decodeURIComponent(categoryParam) : null);
+    setSearchQuery(searchParam ? decodeURIComponent(searchParam) : '');
+    setSelectedTags(tagsParam ? new Set(tagsParam.split(',').map(decodeURIComponent)) : new Set());
+    setSelectedCreators(creatorsParam ? new Set(creatorsParam.split(',').map(decodeURIComponent)) : new Set());
   }, [searchParams]);
 
   // Fetch all cards on initial load

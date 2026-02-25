@@ -156,6 +156,14 @@ function AccordionSection({
   );
 }
 
+// Simulated blur via radial gradient - matches GlobalBackground pattern, avoids expensive CSS filter
+function createAccentGradient(hex: string, peakOpacity = 0.15): string {
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!match) return 'transparent';
+  const rgb = `${parseInt(match[1], 16)}, ${parseInt(match[2], 16)}, ${parseInt(match[3], 16)}`;
+  return `radial-gradient(circle, rgba(${rgb}, ${peakOpacity}) 0%, rgba(${rgb}, ${peakOpacity * 0.7}) 20%, rgba(${rgb}, ${peakOpacity * 0.4}) 40%, rgba(${rgb}, ${peakOpacity * 0.15}) 60%, rgba(${rgb}, ${peakOpacity * 0.05}) 80%, rgba(${rgb}, 0) 100%)`;
+}
+
 export default function CharacterDetailsClient({ character }: { character: Character }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -173,6 +181,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
   const selectedAlternate = getScenarioIndex();
   const [accentColor, setAccentColor] = useState<string>('#60a5fa');
+  const [accentReady, setAccentReady] = useState(false);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['firstMessage']));
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showFullScreenImage, setShowFullScreenImage] = useState(false);
@@ -189,9 +198,14 @@ export default function CharacterDetailsClient({ character }: { character: Chara
     });
   };
 
-  // Extract average color from image
+  // Extract average color from image with smooth fade-in
   useEffect(() => {
     const fac = new FastAverageColor();
+    let cancelled = false;
+
+    // Fade out accent orb while extracting new color
+    setAccentReady(false);
+
     const imageUrl = character.alternates?.[selectedAlternate]?.thumbnailUrl ||
                     character.alternates?.[selectedAlternate]?.pngUrl ||
                     character.thumbnailUrl ||
@@ -206,6 +220,8 @@ export default function CharacterDetailsClient({ character }: { character: Chara
         ]
       })
         .then(color => {
+          if (cancelled) return;
+
           const [r, g, b] = color.value;
           const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
           const max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
@@ -247,11 +263,22 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           const finalHex = `#${toHex(finalR)}${toHex(finalG)}${toHex(finalB)}`;
 
           setAccentColor(finalHex);
+          // Allow a frame for the new gradient to render before fading in
+          requestAnimationFrame(() => {
+            if (!cancelled) setAccentReady(true);
+          });
         })
         .catch(() => {
+          if (cancelled) return;
           setAccentColor('#60a5fa');
+          setAccentReady(true);
         });
     }
+
+    return () => {
+      cancelled = true;
+      fac.destroy();
+    };
   }, [selectedAlternate, character]);
 
   useEffect(() => {
@@ -307,11 +334,19 @@ export default function CharacterDetailsClient({ character }: { character: Chara
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* CSS Animated Orbs - GPU Optimized with Dynamic Accent (reduced blur for Safari perf) */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20">
-        <div className="orb-1 absolute top-[5%] right-[10%] w-[500px] h-[500px] rounded-full blur-[80px]" style={{ backgroundColor: `${accentColor}25` }} />
-        <div className="orb-2 absolute top-[40%] left-[0%] w-[550px] h-[550px] bg-purple-600/20 rounded-full blur-[80px]" />
-        <div className="orb-3 absolute bottom-[10%] right-[20%] w-[450px] h-[450px] bg-cyan-600/20 rounded-full blur-[70px]" />
+      {/* Accent Orb - GPU optimized with simulated blur gradient (no CSS filter), fades in after color extraction */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-20" style={{ isolation: 'isolate', contain: 'paint' }}>
+        <div
+          className="orb-1 absolute top-[5%] right-[10%] w-[500px] h-[500px] rounded-full"
+          style={{
+            background: createAccentGradient(accentColor, 0.18),
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+            willChange: 'opacity',
+            opacity: accentReady ? 1 : 0,
+            transition: 'opacity 0.8s ease-in-out',
+          }}
+        />
       </div>
 
       {/* Back Link - Fixed Pill Button */}
