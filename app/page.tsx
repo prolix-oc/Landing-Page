@@ -63,12 +63,12 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative lg:max-h-[640px]">
+        <div className="flex-1 min-h-0 relative lg:max-h-[600px]">
           {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
-          {/* Bento Grid — 4-col, 4-row explicit layout on desktop, 2-col auto on mobile */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-4 gap-3 sm:gap-4">
+          {/* Bento Grid — 4-col explicit layout on desktop, 2-col auto on mobile */}
+          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)] gap-3 sm:gap-4">
 
             {/* Lucid Loom — LARGEST (2x2 on desktop, full-width on mobile) */}
             <div className="col-span-2 lg:row-span-2 lg:col-start-1 lg:row-start-1">
@@ -184,8 +184,8 @@ export default function Home() {
               </TransitionLink>
             </div>
 
-            {/* World Books — 2x1 on desktop */}
-            <div className="lg:col-span-2 lg:col-start-3 lg:row-start-3">
+            {/* World Books — 1x1 on desktop */}
+            <div className="lg:col-start-4 lg:row-start-3">
               <TransitionLink href="/world-books" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.emerald} ${borderColors.emerald} hover:bg-white/[0.03]`}>
                   <div className="relative h-full p-4 sm:p-5 flex flex-col">
@@ -226,28 +226,22 @@ export default function Home() {
               </TransitionLink>
             </div>
 
-            {/* Browse Posts — Full-width banner (4x1 on desktop, row 4) */}
-            <div className="col-span-2 lg:col-span-4 lg:row-start-4">
+            {/* Browse Posts — 1x1 on desktop */}
+            <div className="col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-3">
               <TransitionLink href="/posts" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.sky} ${borderColors.sky} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex items-center gap-4">
-                    <div className="flex-shrink-0">
+                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
+                    <div className="mb-3">
                       <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-sky-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
                         <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 group-hover:text-sky-100 transition-colors">
-                        Browse Posts
-                      </h3>
-                      <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
-                        Thoughts, ideas, and documentation about Lucid Loom
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 flex items-center gap-2 text-sky-400 text-sm font-medium">
-                      <span className="hidden sm:inline">Read</span>
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-sky-100 transition-colors">
+                      Posts
+                    </h3>
+                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                      Thoughts, ideas & documentation
+                    </p>
                   </div>
                 </div>
               </TransitionLink>
