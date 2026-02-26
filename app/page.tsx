@@ -251,7 +251,7 @@ export default function Home() {
         </div>
 
         {/* Compact Footer */}
-        <footer className="flex-shrink-0 pt-3 sm:pt-4 flex items-center justify-center">
+        <footer className="flex-shrink-0 mt-auto pt-3 sm:pt-4 flex items-center justify-center">
           <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500">
             <span>Data from</span>
             <a
