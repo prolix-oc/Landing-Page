@@ -92,6 +92,7 @@ import {
 import {
   fetchRepositoryTree,
   batchFetchRepositoryTrees,
+  batchFetchCommits,
   treeEntriesToGitHubFiles,
   getGraphQLRateLimit,
   fetchObjectGraphQL,
@@ -549,19 +550,44 @@ export async function getDirectoryContents(dirPath: string): Promise<GitHubFile[
 
 export async function getFileVersions(dirPath: string): Promise<Array<{ file: GitHubFile; commit: GitHubCommit | null }>> {
   const files = await getDirectoryContents(dirPath);
-  
-  const versions = await Promise.all(
-    files
-      .filter(file => file.type === 'file')
-      .map(async (file) => {
+  const fileItems = files.filter(file => file.type === 'file');
+
+  if (fileItems.length === 0) {
+    return [];
+  }
+
+  let versions: Array<{ file: GitHubFile; commit: GitHubCommit | null }>;
+
+  // Use batched commit fetch when GraphQL is enabled (N commits in 1 HTTP request)
+  if (USE_GRAPHQL && fileItems.length > 1) {
+    const filePaths = fileItems.map(f => f.path);
+    const commitsMap = await batchFetchCommits(filePaths);
+
+    // Populate in-memory and persistent caches so getLatestCommit gets hits later
+    const now = Date.now();
+    for (const [filePath, commitData] of commitsMap) {
+      const cacheKey = `commit:${filePath}`;
+      cache.set(cacheKey, { data: commitData, timestamp: now });
+      await setPersistentCache(cacheKey, commitData, PERSISTENT_CACHE_TTL);
+    }
+
+    versions = fileItems.map(file => ({
+      file,
+      commit: (commitsMap.get(file.path) as GitHubCommit | null) ?? null
+    }));
+  } else {
+    // REST fallback or single file — individual fetches
+    versions = await Promise.all(
+      fileItems.map(async (file) => {
         const commit = await getLatestCommit(file.path);
         return { file, commit };
       })
-  );
+    );
+  }
 
   return versions.sort((a, b) => {
     if (!a.commit || !b.commit) return 0;
-    return new Date(b.commit.commit.author.date).getTime() - 
+    return new Date(b.commit.commit.author.date).getTime() -
            new Date(a.commit.commit.author.date).getTime();
   });
 }
@@ -877,54 +903,83 @@ async function refreshAllCachedEntries(): Promise<void> {
     const resetDate = new Date(rateLimitInfo.reset * 1000);
     console.log(`[Periodic Refresh] Rate Limit: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining (${remainingPercentage}%), resets at ${resetDate.toLocaleTimeString()}`);
   }
-  
+
   console.log(`[Periodic Refresh] Starting periodic cache refresh...`);
   const startTime = Date.now();
-  
+
   try {
     const cacheKeys = Array.from(cache.keys());
     const githubKeys = cacheKeys.filter(key => key.startsWith('github:'));
     const commitKeys = cacheKeys.filter(key => key.startsWith('commit:'));
-    
+
     // Only refresh if we have healthy rate limits
     if (rateLimitInfo && rateLimitInfo.remaining / rateLimitInfo.limit < 0.2) {
       console.log('[Periodic Refresh] Skipping refresh - rate limit too low');
       return;
     }
-    
-    // Refresh GitHub content cache entries
-    const githubRefreshes = githubKeys.map(async (cacheKey) => {
-      const path = cacheKey.replace('github:', '');
-      if (!refreshingKeys.has(cacheKey)) {
-        try {
-          if (USE_GRAPHQL) {
-            await fetchAndCacheViaGraphQL(path, cacheKey);
-          } else {
-            await fetchAndCache(path, cacheKey);
-          }
-        } catch (error) {
-          console.error(`[Periodic Refresh] Failed to refresh ${path}:`, error);
-        }
-      }
-    });
 
-    const commitRefreshes = commitKeys.map(async (cacheKey) => {
-      const filePath = cacheKey.replace('commit:', '');
-      if (!refreshingKeys.has(cacheKey)) {
+    if (USE_GRAPHQL) {
+      // BATCHED REFRESH: all trees in 1 query, all commits in 1 query
+      const now = Date.now();
+
+      // Batch refresh directory trees
+      if (githubKeys.length > 0) {
+        const treePaths = githubKeys.map(key => key.replace('github:', ''));
         try {
-          if (USE_GRAPHQL) {
-            await fetchAndCacheCommitViaGraphQL(filePath, cacheKey);
-          } else {
-            await fetchAndCacheCommit(filePath, cacheKey);
+          const treeResults = await batchFetchRepositoryTrees(treePaths);
+          for (const [path, entries] of treeResults) {
+            const cacheKey = `github:${path}`;
+            const files = treeEntriesToGitHubFiles(entries, path);
+            const processedFiles = processDirectoryContentsWithSlugs(files as GitHubFile[]);
+            cache.set(cacheKey, { data: processedFiles, timestamp: now });
+            await setPersistentCache(cacheKey, processedFiles, PERSISTENT_CACHE_TTL);
           }
         } catch (error) {
-          console.error(`[Periodic Refresh] Failed to refresh commit ${filePath}:`, error);
+          console.error('[Periodic Refresh] Batch tree refresh failed:', error);
         }
       }
-    });
-    
-    await Promise.all([...githubRefreshes, ...commitRefreshes]);
-    
+
+      // Batch refresh commits
+      if (commitKeys.length > 0) {
+        const commitPaths = commitKeys.map(key => key.replace('commit:', ''));
+        try {
+          const commitResults = await batchFetchCommits(commitPaths);
+          for (const [filePath, commitData] of commitResults) {
+            const cacheKey = `commit:${filePath}`;
+            cache.set(cacheKey, { data: commitData, timestamp: now });
+            await setPersistentCache(cacheKey, commitData, PERSISTENT_CACHE_TTL);
+          }
+        } catch (error) {
+          console.error('[Periodic Refresh] Batch commit refresh failed:', error);
+        }
+      }
+    } else {
+      // REST fallback: individual refreshes (existing behavior)
+      const githubRefreshes = githubKeys.map(async (cacheKey) => {
+        const path = cacheKey.replace('github:', '');
+        if (!refreshingKeys.has(cacheKey)) {
+          try {
+            await fetchAndCache(path, cacheKey);
+          } catch (error) {
+            console.error(`[Periodic Refresh] Failed to refresh ${path}:`, error);
+          }
+        }
+      });
+
+      const commitRefreshes = commitKeys.map(async (cacheKey) => {
+        const filePath = cacheKey.replace('commit:', '');
+        if (!refreshingKeys.has(cacheKey)) {
+          try {
+            await fetchAndCacheCommit(filePath, cacheKey);
+          } catch (error) {
+            console.error(`[Periodic Refresh] Failed to refresh commit ${filePath}:`, error);
+          }
+        }
+      });
+
+      await Promise.all([...githubRefreshes, ...commitRefreshes]);
+    }
+
     lastPeriodicRefresh = Date.now();
     const duration = Date.now() - startTime;
     console.log(`[Periodic Refresh] Completed in ${duration}ms. Refreshed ${githubKeys.length} content and ${commitKeys.length} commit entries.`);
