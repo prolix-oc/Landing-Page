@@ -63,7 +63,7 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative lg:max-h-[clamp(500px,55vh,900px)]">
+        <div className="min-h-0 relative lg:h-[clamp(500px,55vh,900px)]">
           {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
