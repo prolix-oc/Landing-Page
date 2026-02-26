@@ -38,7 +38,7 @@ export default function Home() {
   return (
     <div className="min-h-screen lg:h-screen flex flex-col lg:overflow-hidden relative vt-exclude">
       {/* Main Container */}
-      <div className="flex-1 flex flex-col container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl relative z-10">
+      <div className="flex-1 flex flex-col w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl lg:max-w-[clamp(80rem,85vw,120rem)] relative z-10">
 
         {/* Compact Hero */}
         <header className="text-center mb-4 sm:mb-6 flex-shrink-0">
@@ -63,7 +63,7 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="bento-wrapper flex-1 min-h-0 relative lg:max-h-[clamp(600px,65vh,1100px)]">
+        <div className="bento-wrapper flex-1 min-h-0 relative lg:max-h-[clamp(600px,72vh,1100px)]">
           {/* The single backdrop-blur layer */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
