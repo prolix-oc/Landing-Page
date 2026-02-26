@@ -30,44 +30,50 @@ export async function GET(
       item => item.type === 'file' && item.name.toLowerCase().endsWith('.json')
     );
 
-    // Find the pack matching the slug
-    for (const file of packFiles) {
-      try {
-        const packData = await getJsonData(file) as unknown as LumiaPack | null;
-
-        if (!packData || !packData.packName) continue;
-
-        const slug = getCachedSlug(packData.packName, file.path);
-
-        if (slug === packSlug) {
-          // Found the pack - return full data
-          const fullPack: LumiaPack = {
-            packName: packData.packName,
-            packAuthor: packData.packAuthor || 'Unknown',
-            coverUrl: packData.coverUrl || null,
-            version: packData.version || 1,
-            packExtras: packData.packExtras || [],
-            lumiaItems: packData.lumiaItems || [],
-            loomItems: packData.loomItems || [],
-            slug,
-            downloadUrl: file.download_url
-          };
-
-          return NextResponse.json(
-            {
-              success: true,
-              pack: fullPack
-            },
-            {
-              headers: {
-                ...corsHeaders,
-                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
-              }
-            }
-          );
+    // Fetch all pack data in parallel (cached after first /api/lumia-dlc listing call)
+    const packResults = await Promise.all(
+      packFiles.map(async (file) => {
+        try {
+          const packData = await getJsonData(file) as unknown as LumiaPack | null;
+          return { file, packData };
+        } catch (error) {
+          console.error(`Error processing pack ${file.name}:`, error);
+          return { file, packData: null };
         }
-      } catch (error) {
-        console.error(`Error processing pack ${file.name}:`, error);
+      })
+    );
+
+    // Find the pack matching the slug
+    for (const { file, packData } of packResults) {
+      if (!packData || !packData.packName) continue;
+
+      const slug = getCachedSlug(packData.packName, file.path);
+
+      if (slug === packSlug) {
+        const fullPack: LumiaPack = {
+          packName: packData.packName,
+          packAuthor: packData.packAuthor || 'Unknown',
+          coverUrl: packData.coverUrl || null,
+          version: packData.version || 1,
+          packExtras: packData.packExtras || [],
+          lumiaItems: packData.lumiaItems || [],
+          loomItems: packData.loomItems || [],
+          slug,
+          downloadUrl: file.download_url
+        };
+
+        return NextResponse.json(
+          {
+            success: true,
+            pack: fullPack
+          },
+          {
+            headers: {
+              ...corsHeaders,
+              'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+            }
+          }
+        );
       }
     }
 

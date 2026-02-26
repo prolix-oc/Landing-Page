@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents, getLatestCommit, getCharacterThumbnail } from '@/lib/github';
+import { getDirectoryContents, getCharacterThumbnail, batchGetDirectoryContents, batchGetLatestCommits } from '@/lib/github';
 
 interface CharacterCard {
   name: string;
@@ -21,57 +21,65 @@ export async function GET(
     const path = `Character Cards/${decodedCategory}`;
     
     const contents = await getDirectoryContents(path);
-    
+
     // Filter for directories (character card subdirectories)
     const characterDirs = contents.filter(item => item.type === 'dir');
-    
+
     // Group directories by base name (without V2, V3, etc.)
     const groupedDirs = new Map<string, typeof characterDirs>();
     characterDirs.forEach(dir => {
-      // Remove V2, V3, etc. from the end to get base name
       const baseName = dir.name.replace(/\s+V\d+$/i, '');
       if (!groupedDirs.has(baseName)) {
         groupedDirs.set(baseName, []);
       }
       groupedDirs.get(baseName)!.push(dir);
     });
-    
-    // Process each character card directory group
+
+    const groups = Array.from(groupedDirs.entries()).map(([baseName, dirs]) => ({
+      baseName,
+      dirs,
+      primaryDir: dirs.find(d => d.name === baseName) || dirs[0]
+    }));
+
+    // Phase 1: Batch-fetch all directory contents (primary dirs + version dirs for scenario counts)
+    const allDirPaths = new Set<string>();
+    for (const { dirs, primaryDir } of groups) {
+      allDirPaths.add(primaryDir.path);
+      for (const dir of dirs) {
+        allDirPaths.add(dir.path);
+      }
+    }
+    const allDirContentsMap = await batchGetDirectoryContents(Array.from(allDirPaths));
+
+    // Phase 2: Batch-fetch all commits for primary directories
+    const commitPaths = groups.map(g => g.primaryDir.path);
+    const commitsMap = await batchGetLatestCommits(commitPaths);
+
+    // Phase 3: Process groups using pre-fetched data
     const characterCards: CharacterCard[] = await Promise.all(
-      Array.from(groupedDirs.entries()).map(async ([baseName, dirs]) => {
-        // Use the first directory (or the one without V suffix) as the primary
-        const primaryDir = dirs.find(d => d.name === baseName) || dirs[0];
+      groups.map(async ({ baseName, dirs, primaryDir }) => {
         try {
-          // Get contents of the primary character directory
-          const dirContents = await getDirectoryContents(primaryDir.path);
-          
-          // Find .png and .json files (exclude .md files)
-          const pngFile = dirContents.find(file => 
+          const dirContents = allDirContentsMap.get(primaryDir.path) || [];
+
+          const pngFile = dirContents.find(file =>
             file.type === 'file' && file.name.toLowerCase().endsWith('.png')
           );
-          const jsonFiles = dirContents.filter(file => 
+          const jsonFiles = dirContents.filter(file =>
             file.type === 'file' && file.name.toLowerCase().endsWith('.json')
           );
           const jsonFile = jsonFiles[0];
-          
-          // Get cached thumbnail URL
+
           const thumbnailUrl = pngFile ? await getCharacterThumbnail(primaryDir.path, pngFile) : null;
-          
-          // Get last modification date
-          const commit = await getLatestCommit(primaryDir.path);
-          
-          // Calculate alternate count:
-          // - Multiple directories (V2, V3, etc.): count additional directories
-          // - Multiple JSON files in same directory: count additional files
-          // - Total alternates is the sum minus 1 (the primary)
+          const commit = commitsMap.get(primaryDir.path) || null;
+
           let totalScenarios = 0;
           for (const dir of dirs) {
-            const contents = await getDirectoryContents(dir.path);
-            const jsonCount = contents.filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.json')).length;
+            const dirContent = allDirContentsMap.get(dir.path) || [];
+            const jsonCount = dirContent.filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.json')).length;
             totalScenarios += jsonCount;
           }
           const alternateCount = totalScenarios > 1 ? totalScenarios - 1 : 0;
-          
+
           return {
             name: baseName,
             path: primaryDir.path,

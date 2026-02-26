@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getCachedSlug, ensureWarmup, getJsonData } from '@/lib/github';
+import { getDirectoryContents, getCharacterThumbnail, getCachedSlug, ensureWarmup, getJsonData, batchGetDirectoryContents, batchGetLatestCommits } from '@/lib/github';
 
 interface CharacterCard {
   name: string;
@@ -43,101 +43,120 @@ export async function GET(request: Request) {
 
     // If ?all=true is provided, fetch all character cards from all categories
     if (includeAll) {
-      const allCards: CharacterCard[] = [];
+      // Phase 1: Batch-fetch all category directories in one request
+      const categoryPaths = categoryList.map(c => `Character Cards/${c.name}`);
+      const categoryContentsMap = await batchGetDirectoryContents(categoryPaths);
+
+      // Build grouped dirs for all categories
+      type DirInfo = { name: string; path: string; type: string; slug?: string; sha: string; size: number; url: string; html_url: string; git_url: string; download_url: string };
+      const allGroups: Array<{
+        category: typeof categoryList[0];
+        baseName: string;
+        dirs: DirInfo[];
+        primaryDir: DirInfo;
+      }> = [];
 
       for (const category of categoryList) {
-        try {
-          const path = `Character Cards/${category.name}`;
-          const categoryContents = await getDirectoryContents(path);
-          
-          // Filter for directories (character card subdirectories)
-          const characterDirs = categoryContents.filter(item => item.type === 'dir');
-          
-          // Group directories by base name (without V2, V3, etc.)
-          const groupedDirs = new Map<string, typeof characterDirs>();
-          characterDirs.forEach(dir => {
-            const baseName = dir.name.replace(/\s+V\d+$/i, '');
-            if (!groupedDirs.has(baseName)) {
-              groupedDirs.set(baseName, []);
-            }
-            groupedDirs.get(baseName)!.push(dir);
-          });
-          
-          // Process each character card directory group
-          const categoryCards = await Promise.all(
-            Array.from(groupedDirs.entries()).map(async ([baseName, dirs]) => {
-              const primaryDir = dirs.find(d => d.name === baseName) || dirs[0];
-              try {
-                const dirContents = await getDirectoryContents(primaryDir.path);
-                
-                const pngFile = dirContents.find(file => 
-                  file.type === 'file' && file.name.toLowerCase().endsWith('.png')
-                );
-                const jsonFiles = dirContents.filter(file => 
-                  file.type === 'file' && file.name.toLowerCase().endsWith('.json')
-                );
-                const jsonFile = jsonFiles[0];
-                
-                const thumbnailUrl = pngFile ? await getCharacterThumbnail(primaryDir.path, pngFile) : null;
-                const commit = await getLatestCommit(primaryDir.path);
+        const path = `Character Cards/${category.name}`;
+        const categoryContents = categoryContentsMap.get(path) || [];
+        const characterDirs = categoryContents.filter(item => item.type === 'dir');
 
-                // Fetch JSON data to extract tags and creators
-                const cardJsonData = jsonFile ? await getJsonData(jsonFile) : null;
-                const tags: string[] = (cardJsonData?.data?.tags as string[]) || [];
-                const creators: string[] = [];
-                if (cardJsonData?.data?.creators && Array.isArray(cardJsonData.data.creators)) {
-                  creators.push(...(cardJsonData.data.creators as string[]));
-                } else if (cardJsonData?.data?.creator && typeof cardJsonData.data.creator === 'string') {
-                  creators.push(cardJsonData.data.creator as string);
-                }
+        const groupedDirs = new Map<string, typeof characterDirs>();
+        characterDirs.forEach(dir => {
+          const baseName = dir.name.replace(/\s+V\d+$/i, '');
+          if (!groupedDirs.has(baseName)) {
+            groupedDirs.set(baseName, []);
+          }
+          groupedDirs.get(baseName)!.push(dir);
+        });
 
-                let totalScenarios = 0;
-                for (const dir of dirs) {
-                  const contents = await getDirectoryContents(dir.path);
-                  const jsonCount = contents.filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.json')).length;
-                  totalScenarios += jsonCount;
-                }
-                const alternateCount = totalScenarios > 1 ? totalScenarios - 1 : 0;
-
-                return {
-                  name: baseName,
-                  path: primaryDir.path,
-                  category: category.name,
-                  categoryDisplayName: category.displayName,
-                  thumbnailUrl,
-                  jsonUrl: jsonFile?.download_url || null,
-                  size: (pngFile?.size || 0) + (jsonFile?.size || 0),
-                  lastModified: commit?.commit.author.date || null,
-                  alternateCount,
-                  slug: getCachedSlug(baseName, primaryDir.path),
-                  tags,
-                  creators
-                };
-              } catch (error) {
-                console.error(`Error processing character card ${baseName}:`, error);
-                return {
-                  name: baseName,
-                  path: primaryDir.path,
-                  category: category.name,
-                  categoryDisplayName: category.displayName,
-                  thumbnailUrl: null,
-                  jsonUrl: null,
-                  size: 0,
-                  lastModified: null,
-                  alternateCount: dirs.length > 1 ? dirs.length - 1 : 0,
-                  slug: getCachedSlug(baseName, primaryDir.path),
-                  tags: [],
-                  creators: []
-                };
-              }
-            })
-          );
-
-          allCards.push(...categoryCards);
-        } catch (error) {
-          console.error(`Error fetching cards for category ${category.name}:`, error);
+        for (const [baseName, dirs] of groupedDirs) {
+          const primaryDir = dirs.find(d => d.name === baseName) || dirs[0];
+          allGroups.push({ category, baseName, dirs, primaryDir });
         }
       }
+
+      // Phase 2: Batch-fetch all primary character directories + all version directories for scenario counts
+      const allDirPaths = new Set<string>();
+      for (const group of allGroups) {
+        allDirPaths.add(group.primaryDir.path);
+        for (const dir of group.dirs) {
+          allDirPaths.add(dir.path);
+        }
+      }
+      const allDirContentsMap = await batchGetDirectoryContents(Array.from(allDirPaths));
+
+      // Phase 3: Batch-fetch all commits for primary directories
+      const commitPaths = allGroups.map(g => g.primaryDir.path);
+      const commitsMap = await batchGetLatestCommits(commitPaths);
+
+      // Phase 4: Process all groups using pre-fetched data
+      const allCards: CharacterCard[] = await Promise.all(
+        allGroups.map(async ({ category, baseName, dirs, primaryDir }) => {
+          try {
+            const dirContents = allDirContentsMap.get(primaryDir.path) || [];
+
+            const pngFile = dirContents.find(file =>
+              file.type === 'file' && file.name.toLowerCase().endsWith('.png')
+            );
+            const jsonFiles = dirContents.filter(file =>
+              file.type === 'file' && file.name.toLowerCase().endsWith('.json')
+            );
+            const jsonFile = jsonFiles[0];
+
+            const thumbnailUrl = pngFile ? await getCharacterThumbnail(primaryDir.path, pngFile) : null;
+            const commit = commitsMap.get(primaryDir.path) || null;
+
+            const cardJsonData = jsonFile ? await getJsonData(jsonFile) : null;
+            const tags: string[] = (cardJsonData?.data?.tags as string[]) || [];
+            const creators: string[] = [];
+            if (cardJsonData?.data?.creators && Array.isArray(cardJsonData.data.creators)) {
+              creators.push(...(cardJsonData.data.creators as string[]));
+            } else if (cardJsonData?.data?.creator && typeof cardJsonData.data.creator === 'string') {
+              creators.push(cardJsonData.data.creator as string);
+            }
+
+            let totalScenarios = 0;
+            for (const dir of dirs) {
+              const contents = allDirContentsMap.get(dir.path) || [];
+              const jsonCount = contents.filter(f => f.type === 'file' && f.name.toLowerCase().endsWith('.json')).length;
+              totalScenarios += jsonCount;
+            }
+            const alternateCount = totalScenarios > 1 ? totalScenarios - 1 : 0;
+
+            return {
+              name: baseName,
+              path: primaryDir.path,
+              category: category.name,
+              categoryDisplayName: category.displayName,
+              thumbnailUrl,
+              jsonUrl: jsonFile?.download_url || null,
+              size: (pngFile?.size || 0) + (jsonFile?.size || 0),
+              lastModified: commit?.commit.author.date || null,
+              alternateCount,
+              slug: getCachedSlug(baseName, primaryDir.path),
+              tags,
+              creators
+            };
+          } catch (error) {
+            console.error(`Error processing character card ${baseName}:`, error);
+            return {
+              name: baseName,
+              path: primaryDir.path,
+              category: category.name,
+              categoryDisplayName: category.displayName,
+              thumbnailUrl: null,
+              jsonUrl: null,
+              size: 0,
+              lastModified: null,
+              alternateCount: dirs.length > 1 ? dirs.length - 1 : 0,
+              slug: getCachedSlug(baseName, primaryDir.path),
+              tags: [],
+              creators: []
+            };
+          }
+        })
+      );
 
       // Sort by last modified date (newest first)
       allCards.sort((a, b) => {

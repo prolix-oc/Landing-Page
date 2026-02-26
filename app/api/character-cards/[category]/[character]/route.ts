@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDirectoryContents, getLatestCommit, getCharacterThumbnail, getJsonData } from '@/lib/github';
+import { getDirectoryContents, getCharacterThumbnail, getJsonData, batchGetDirectoryContents, batchGetLatestCommits } from '@/lib/github';
 import { slugify } from '@/lib/slugify';
 
 interface AlternateScenario {
@@ -71,43 +71,44 @@ export async function GET(
       return 0;
     });
     
-    // Process all matching directories to find alternates
+    // Phase 1: Batch-fetch all directory contents for matching dirs
+    const dirPaths = sortedDirs.map(item => item.dir.path);
+    const allDirContentsMap = await batchGetDirectoryContents(dirPaths);
+
+    // Phase 2: Batch-fetch all commits for matching dirs
+    const commitsMap = await batchGetLatestCommits(dirPaths);
+
+    // Phase 3: Process all directories using pre-fetched data
     const alternates: AlternateScenario[] = [];
-    
-    for (const item of sortedDirs) {
+
+    await Promise.all(sortedDirs.map(async (item) => {
       const path = item.dir.path;
-    
-      // Get contents of the character directory
-      const dirContents = await getDirectoryContents(path);
-      
-      // Find all .png and .json files
-      const pngFiles = dirContents.filter(file => 
+      const dirContents = allDirContentsMap.get(path) || [];
+
+      const pngFiles = dirContents.filter(file =>
         file.type === 'file' && file.name.toLowerCase().endsWith('.png')
       );
-      const jsonFiles = dirContents.filter(file => 
+      const jsonFiles = dirContents.filter(file =>
         file.type === 'file' && file.name.toLowerCase().endsWith('.json')
       );
-      
-      // Check if there are multiple JSON files (alternate scenarios in same directory)
+
+      const commit = commitsMap.get(path) || null;
+
       if (jsonFiles.length > 1) {
-        // Multiple scenarios in the same directory
-        for (const jsonFile of jsonFiles) {
+        // Multiple scenarios in the same directory — process in parallel
+        const scenarios = await Promise.all(jsonFiles.map(async (jsonFile) => {
           const cardData = await getJsonData(jsonFile);
-          if (!cardData) continue;
-          
-          // Find matching PNG file based on JSON filename
+          if (!cardData) return null;
+
           const jsonBaseName = jsonFile.name.replace(/\.json$/i, '');
-          const pngFile = pngFiles.find(png => 
+          const pngFile = pngFiles.find(png =>
             png.name.replace(/\.png$/i, '') === jsonBaseName
           );
-          
+
           const thumbnailUrl = pngFile ? await getCharacterThumbnail(path, pngFile) : null;
-          const commit = await getLatestCommit(path);
-          
-          // Extract scenario name from filename or card data
           const scenarioName = cardData.data?.name || jsonBaseName;
-          
-          alternates.push({
+
+          return {
             id: `${item.dir.name}-${jsonFile.name}`,
             name: scenarioName,
             path: path,
@@ -116,23 +117,23 @@ export async function GET(
             jsonUrl: jsonFile.download_url,
             cardData,
             lastModified: commit?.commit.author.date || null
-          });
+          };
+        }));
+
+        for (const scenario of scenarios) {
+          if (scenario) alternates.push(scenario);
         }
       } else if (jsonFiles.length === 1) {
-        // Single scenario in this directory
         const jsonFile = jsonFiles[0];
         const pngFile = pngFiles[0];
-        
+
         const cardData = await getJsonData(jsonFile);
-        if (!cardData) continue;
-        
+        if (!cardData) return;
+
         const thumbnailUrl = pngFile ? await getCharacterThumbnail(path, pngFile) : null;
-        const commit = await getLatestCommit(path);
-        
-        // Use directory name suffix or card name
         const versionMatch = item.dir.name.match(/V(\d+)$/i);
         const scenarioName = cardData.data?.name || (versionMatch ? `Version ${versionMatch[1]}` : 'Original');
-        
+
         alternates.push({
           id: item.dir.name,
           name: scenarioName,
@@ -144,7 +145,7 @@ export async function GET(
           lastModified: commit?.commit.author.date || null
         });
       }
-    }
+    }));
     
     if (alternates.length === 0) {
       return NextResponse.json(

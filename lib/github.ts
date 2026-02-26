@@ -592,6 +592,136 @@ export async function getFileVersions(dirPath: string): Promise<Array<{ file: Gi
   });
 }
 
+/**
+ * Batch-fetches directory contents for multiple paths in minimal HTTP requests.
+ * When GraphQL is enabled, all paths are fetched in a single aliased query.
+ * Results are cached individually so subsequent getDirectoryContents calls get hits.
+ */
+export async function batchGetDirectoryContents(
+  paths: string[]
+): Promise<Map<string, GitHubFile[]>> {
+  if (paths.length === 0) return new Map();
+
+  const results = new Map<string, GitHubFile[]>();
+  const uncachedPaths: string[] = [];
+  const now = Date.now();
+
+  // Check in-memory cache first
+  for (const path of paths) {
+    const cacheKey = `github:${path}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      results.set(path, cached.data as GitHubFile[]);
+      continue;
+    }
+
+    // Check persistent cache
+    const persistentCached = await getPersistentCache<GitHubFile[]>(cacheKey, PERSISTENT_CACHE_TTL);
+    if (persistentCached) {
+      cache.set(cacheKey, { data: persistentCached, timestamp: now });
+      results.set(path, persistentCached);
+      continue;
+    }
+
+    uncachedPaths.push(path);
+  }
+
+  if (uncachedPaths.length === 0) return results;
+
+  if (USE_GRAPHQL) {
+    // Batch fetch via GraphQL aliases
+    const treeResults = await batchFetchRepositoryTrees(uncachedPaths);
+    for (const [path, entries] of treeResults) {
+      const files = treeEntriesToGitHubFiles(entries, path);
+      const processedFiles = processDirectoryContentsWithSlugs(files as GitHubFile[]);
+      const cacheKey = `github:${path}`;
+      cache.set(cacheKey, { data: processedFiles, timestamp: now });
+      await setPersistentCache(cacheKey, processedFiles, PERSISTENT_CACHE_TTL);
+      results.set(path, processedFiles);
+    }
+  } else {
+    // REST fallback: parallel individual fetches
+    await Promise.all(
+      uncachedPaths.map(async (path) => {
+        try {
+          const data = await fetchFromGitHub(path);
+          const files = Array.isArray(data) ? data as GitHubFile[] : [];
+          const processedFiles = processDirectoryContentsWithSlugs(files);
+          results.set(path, processedFiles);
+        } catch (error) {
+          console.error(`[Batch Dir] Failed to fetch ${path}:`, error);
+          results.set(path, []);
+        }
+      })
+    );
+  }
+
+  return results;
+}
+
+/**
+ * Batch-fetches latest commits for multiple file paths in minimal HTTP requests.
+ * When GraphQL is enabled, all commits are fetched in a single aliased query.
+ * Results are cached individually so subsequent getLatestCommit calls get hits.
+ */
+export async function batchGetLatestCommits(
+  filePaths: string[]
+): Promise<Map<string, GitHubCommit | null>> {
+  if (filePaths.length === 0) return new Map();
+
+  const results = new Map<string, GitHubCommit | null>();
+  const uncachedPaths: string[] = [];
+  const now = Date.now();
+
+  // Check in-memory cache first
+  for (const filePath of filePaths) {
+    const cacheKey = `commit:${filePath}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      results.set(filePath, cached.data as GitHubCommit | null);
+      continue;
+    }
+
+    // Check persistent cache
+    const persistentCached = await getPersistentCache<GitHubCommit>(cacheKey, PERSISTENT_CACHE_TTL);
+    if (persistentCached) {
+      cache.set(cacheKey, { data: persistentCached, timestamp: now });
+      results.set(filePath, persistentCached);
+      continue;
+    }
+
+    uncachedPaths.push(filePath);
+  }
+
+  if (uncachedPaths.length === 0) return results;
+
+  if (USE_GRAPHQL) {
+    // Batch fetch via GraphQL aliases
+    const commitResults = await batchFetchCommits(uncachedPaths);
+    for (const [filePath, commitData] of commitResults) {
+      const cacheKey = `commit:${filePath}`;
+      cache.set(cacheKey, { data: commitData, timestamp: now });
+      await setPersistentCache(cacheKey, commitData, PERSISTENT_CACHE_TTL);
+      results.set(filePath, commitData as GitHubCommit | null);
+    }
+  } else {
+    // REST fallback: parallel individual fetches
+    await Promise.all(
+      uncachedPaths.map(async (filePath) => {
+        try {
+          const commit = await getLatestCommit(filePath);
+          results.set(filePath, commit);
+        } catch (error) {
+          console.error(`[Batch Commit] Failed to fetch ${filePath}:`, error);
+          results.set(filePath, null);
+        }
+      })
+    );
+  }
+
+  return results;
+}
+
 export function clearCache(): void {
   cache.clear();
   thumbnailCache.clear();
