@@ -575,6 +575,73 @@ a:active {
 .bento-card:nth-child(4) { animation-delay: 0.2s; }
 .bento-card:nth-child(5) { animation-delay: 0.25s; }
 
+/* ==================== */
+/* Bento Container Query Scaling */
+/* ==================== */
+
+/* Only activate container queries on desktop where bento has definite height */
+@media (min-width: 1024px) {
+  .bento-wrapper {
+    container-type: size;
+    container-name: bento;
+  }
+}
+
+/* Tier 1: Default — MacBook baseline (~600px container) */
+.bento-grid {
+  --bento-p: 1rem;
+  --bento-gap: 1rem;
+  --bento-card-p: 1.25rem;
+  --bento-card-p-lg: 1.5rem;
+  --bento-icon: 2.75rem;
+  --bento-icon-lg: 3rem;
+  --bento-icon-inner: 1.5rem;
+  --bento-heading: 1.125rem;
+  --bento-heading-lg: 1.25rem;
+  --bento-desc: 0.875rem;
+  --bento-label: 0.75rem;
+  --bento-cta: 0.875rem;
+  --bento-mb-icon: 0.75rem;
+}
+
+/* Tier 2: 1440p range (~700px+ container) */
+@container bento (min-height: 700px) {
+  .bento-grid {
+    --bento-p: 1.25rem;
+    --bento-gap: 1.25rem;
+    --bento-card-p: 1.5rem;
+    --bento-card-p-lg: 1.75rem;
+    --bento-icon: 3rem;
+    --bento-icon-lg: 3.5rem;
+    --bento-icon-inner: 1.75rem;
+    --bento-heading: 1.25rem;
+    --bento-heading-lg: 1.5rem;
+    --bento-desc: 0.9375rem;
+    --bento-label: 0.8125rem;
+    --bento-cta: 0.9375rem;
+    --bento-mb-icon: 1rem;
+  }
+}
+
+/* Tier 3: 4K range (~900px+ container) */
+@container bento (min-height: 900px) {
+  .bento-grid {
+    --bento-p: 1.5rem;
+    --bento-gap: 1.5rem;
+    --bento-card-p: 1.75rem;
+    --bento-card-p-lg: 2rem;
+    --bento-icon: 3.5rem;
+    --bento-icon-lg: 4rem;
+    --bento-icon-inner: 2rem;
+    --bento-heading: 1.5rem;
+    --bento-heading-lg: 1.75rem;
+    --bento-desc: 1rem;
+    --bento-label: 0.875rem;
+    --bento-cta: 1rem;
+    --bento-mb-icon: 1.25rem;
+  }
+}
+
 /* Header entrance animation */
 @keyframes headerFadeIn {
   from {

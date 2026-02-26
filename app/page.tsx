@@ -63,12 +63,12 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative lg:max-h-[clamp(600px,65vh,900px)]">
+        <div className="bento-wrapper flex-1 min-h-0 relative lg:max-h-[clamp(600px,65vh,1100px)]">
           {/* The single backdrop-blur layer */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
           {/* Bento Grid — 4-col explicit layout on desktop, 2-col auto on mobile */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)] gap-3 sm:gap-4">
+          <div className="bento-grid relative h-full p-3 sm:p-4 lg:p-[var(--bento-p)] grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)] gap-3 sm:gap-4 lg:gap-[var(--bento-gap)]">
 
             {/* Lucid Loom — LARGEST (2x2 on desktop, full-width on mobile) */}
             <div className="col-span-2 lg:row-span-2 lg:col-start-1 lg:row-start-1">
@@ -77,27 +77,27 @@ export default function Home() {
                   {/* Decorative gradient orb */}
                   <div className="absolute -top-16 -right-16 w-32 h-32 bg-purple-500/30 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
 
-                  <div className="relative h-full p-5 sm:p-6 flex flex-col">
+                  <div className="relative h-full p-5 sm:p-6 lg:p-[var(--bento-card-p-lg)] flex flex-col">
                     {/* Icon */}
-                    <div className="mb-3">
-                      <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
-                        <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    <div className="mb-3 lg:mb-[var(--bento-mb-icon)]">
+                      <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 lg:w-[var(--bento-icon-lg)] lg:h-[var(--bento-icon-lg)] rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
+                        <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6 lg:w-[var(--bento-icon-inner)] lg:h-[var(--bento-icon-inner)] text-white" />
                       </div>
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 flex flex-col min-h-0">
-                      <span className="text-[10px] sm:text-xs text-purple-400 font-medium mb-1 uppercase tracking-wider">Featured</span>
-                      <h2 className="text-lg sm:text-xl font-bold text-white mb-1 group-hover:text-purple-100 transition-colors">
+                      <span className="text-[10px] sm:text-xs lg:text-[length:var(--bento-label)] text-purple-400 font-medium mb-1 uppercase tracking-wider">Featured</span>
+                      <h2 className="text-lg sm:text-xl lg:text-[length:var(--bento-heading-lg)] font-bold text-white mb-1 group-hover:text-purple-100 transition-colors">
                         Lucid Loom
                       </h2>
-                      <p className="text-gray-400 text-xs sm:text-sm leading-relaxed group-hover:text-gray-300 transition-colors line-clamp-3">
+                      <p className="text-gray-400 text-xs sm:text-sm lg:text-[length:var(--bento-desc)] leading-relaxed group-hover:text-gray-300 transition-colors line-clamp-3">
                         Discover Lumia and her 13 unique personas — a character system for deep, immersive roleplay
                       </p>
                     </div>
 
                     {/* CTA */}
-                    <div className="mt-auto pt-2 flex items-center gap-2 text-purple-400 text-sm font-medium">
+                    <div className="mt-auto pt-2 flex items-center gap-2 text-purple-400 text-sm lg:text-[length:var(--bento-cta)] font-medium">
                       <span>Explore</span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -110,16 +110,16 @@ export default function Home() {
             <div className="col-span-2 lg:col-start-3 lg:row-start-1">
               <TransitionLink href="/chat-presets" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500/10 via-purple-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.violet} ${borderColors.violet} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
-                    <div className="mb-3">
-                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                        <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="relative h-full p-4 sm:p-5 lg:p-[var(--bento-card-p)] flex flex-col">
+                    <div className="mb-3 lg:mb-[var(--bento-mb-icon)]">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-[var(--bento-icon)] lg:h-[var(--bento-icon)] rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 lg:w-[var(--bento-icon-inner)] lg:h-[var(--bento-icon-inner)] text-white" />
                       </div>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-violet-100 transition-colors">
+                    <h3 className="text-base sm:text-lg lg:text-[length:var(--bento-heading)] font-bold text-white mb-1 group-hover:text-violet-100 transition-colors">
                       Chat Presets
                     </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                    <p className="text-gray-500 text-xs sm:text-sm lg:text-[length:var(--bento-desc)] group-hover:text-gray-400 transition-colors">
                       Optimized completion settings
                     </p>
                   </div>
@@ -131,16 +131,16 @@ export default function Home() {
             <div className="lg:col-start-3 lg:row-start-2">
               <TransitionLink href="/character-cards" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.cyan} ${borderColors.cyan} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
-                    <div className="mb-3">
-                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="relative h-full p-4 sm:p-5 lg:p-[var(--bento-card-p)] flex flex-col">
+                    <div className="mb-3 lg:mb-[var(--bento-mb-icon)]">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-[var(--bento-icon)] lg:h-[var(--bento-icon)] rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <Users className="w-5 h-5 sm:w-6 sm:h-6 lg:w-[var(--bento-icon-inner)] lg:h-[var(--bento-icon-inner)] text-white" />
                       </div>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-cyan-100 transition-colors">
+                    <h3 className="text-base sm:text-lg lg:text-[length:var(--bento-heading)] font-bold text-white mb-1 group-hover:text-cyan-100 transition-colors">
                       Character Cards
                     </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                    <p className="text-gray-500 text-xs sm:text-sm lg:text-[length:var(--bento-desc)] group-hover:text-gray-400 transition-colors">
                       Browse and download character cards
                     </p>
                   </div>
@@ -155,27 +155,27 @@ export default function Home() {
                   {/* Decorative gradient orb */}
                   <div className="absolute -bottom-16 -right-16 w-32 h-32 bg-rose-500/30 rounded-full blur-2xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
 
-                  <div className="relative h-full p-5 sm:p-6 flex flex-col">
+                  <div className="relative h-full p-5 sm:p-6 lg:p-[var(--bento-card-p-lg)] flex flex-col">
                     {/* Icon */}
-                    <div className="mb-3">
-                      <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/25 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
-                        <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    <div className="mb-3 lg:mb-[var(--bento-mb-icon)]">
+                      <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 lg:w-[var(--bento-icon-lg)] lg:h-[var(--bento-icon-lg)] rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 shadow-lg shadow-rose-500/25 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
+                        <Package className="w-5 h-5 sm:w-6 sm:h-6 lg:w-[var(--bento-icon-inner)] lg:h-[var(--bento-icon-inner)] text-white" />
                       </div>
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 flex flex-col min-h-0">
-                      <span className="text-[10px] sm:text-xs text-rose-400 font-medium mb-1 uppercase tracking-wider">Expansion</span>
-                      <h2 className="text-lg sm:text-xl font-bold text-white mb-1 group-hover:text-rose-100 transition-colors">
+                      <span className="text-[10px] sm:text-xs lg:text-[length:var(--bento-label)] text-rose-400 font-medium mb-1 uppercase tracking-wider">Expansion</span>
+                      <h2 className="text-lg sm:text-xl lg:text-[length:var(--bento-heading-lg)] font-bold text-white mb-1 group-hover:text-rose-100 transition-colors">
                         Lumia DLC
                       </h2>
-                      <p className="text-gray-400 text-xs sm:text-sm leading-relaxed group-hover:text-gray-300 transition-colors line-clamp-3">
+                      <p className="text-gray-400 text-xs sm:text-sm lg:text-[length:var(--bento-desc)] leading-relaxed group-hover:text-gray-300 transition-colors line-clamp-3">
                         Character packs and Loom presets to expand your roleplay experience
                       </p>
                     </div>
 
                     {/* CTA */}
-                    <div className="mt-auto pt-2 flex items-center gap-2 text-rose-400 text-sm font-medium">
+                    <div className="mt-auto pt-2 flex items-center gap-2 text-rose-400 text-sm lg:text-[length:var(--bento-cta)] font-medium">
                       <span>Browse</span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
@@ -188,16 +188,16 @@ export default function Home() {
             <div className="lg:col-start-4 lg:row-start-3">
               <TransitionLink href="/world-books" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.emerald} ${borderColors.emerald} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
-                    <div className="mb-3">
-                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                        <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="relative h-full p-4 sm:p-5 lg:p-[var(--bento-card-p)] flex flex-col">
+                    <div className="mb-3 lg:mb-[var(--bento-mb-icon)]">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-[var(--bento-icon)] lg:h-[var(--bento-icon)] rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 lg:w-[var(--bento-icon-inner)] lg:h-[var(--bento-icon-inner)] text-white" />
                       </div>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-emerald-100 transition-colors">
+                    <h3 className="text-base sm:text-lg lg:text-[length:var(--bento-heading)] font-bold text-white mb-1 group-hover:text-emerald-100 transition-colors">
                       World Books
                     </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                    <p className="text-gray-500 text-xs sm:text-sm lg:text-[length:var(--bento-desc)] group-hover:text-gray-400 transition-colors">
                       Detailed world information
                     </p>
                   </div>
@@ -209,16 +209,16 @@ export default function Home() {
             <div className="lg:col-start-4 lg:row-start-2">
               <TransitionLink href="/extensions" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.amber} ${borderColors.amber} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
-                    <div className="mb-3">
-                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                        <Puzzle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="relative h-full p-4 sm:p-5 lg:p-[var(--bento-card-p)] flex flex-col">
+                    <div className="mb-3 lg:mb-[var(--bento-mb-icon)]">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-[var(--bento-icon)] lg:h-[var(--bento-icon)] rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <Puzzle className="w-5 h-5 sm:w-6 sm:h-6 lg:w-[var(--bento-icon-inner)] lg:h-[var(--bento-icon-inner)] text-white" />
                       </div>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-amber-100 transition-colors">
+                    <h3 className="text-base sm:text-lg lg:text-[length:var(--bento-heading)] font-bold text-white mb-1 group-hover:text-amber-100 transition-colors">
                       Extensions
                     </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                    <p className="text-gray-500 text-xs sm:text-sm lg:text-[length:var(--bento-desc)] group-hover:text-gray-400 transition-colors">
                       Custom SillyTavern extensions
                     </p>
                   </div>
@@ -230,16 +230,16 @@ export default function Home() {
             <div className="col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-3">
               <TransitionLink href="/posts" className="block h-full group">
                 <div className={`relative h-full overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent border border-white/[0.08] transition-all duration-300 hover:shadow-xl ${glowColors.sky} ${borderColors.sky} hover:bg-white/[0.03]`}>
-                  <div className="relative h-full p-4 sm:p-5 flex flex-col">
-                    <div className="mb-3">
-                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-sky-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                        <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  <div className="relative h-full p-4 sm:p-5 lg:p-[var(--bento-card-p)] flex flex-col">
+                    <div className="mb-3 lg:mb-[var(--bento-mb-icon)]">
+                      <div className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-[var(--bento-icon)] lg:h-[var(--bento-icon)] rounded-lg bg-gradient-to-br from-sky-500 to-blue-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <FileText className="w-5 h-5 sm:w-6 sm:h-6 lg:w-[var(--bento-icon-inner)] lg:h-[var(--bento-icon-inner)] text-white" />
                       </div>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1 group-hover:text-sky-100 transition-colors">
+                    <h3 className="text-base sm:text-lg lg:text-[length:var(--bento-heading)] font-bold text-white mb-1 group-hover:text-sky-100 transition-colors">
                       Posts
                     </h3>
-                    <p className="text-gray-500 text-xs sm:text-sm group-hover:text-gray-400 transition-colors">
+                    <p className="text-gray-500 text-xs sm:text-sm lg:text-[length:var(--bento-desc)] group-hover:text-gray-400 transition-colors">
                       Thoughts, ideas & documentation
                     </p>
                   </div>
