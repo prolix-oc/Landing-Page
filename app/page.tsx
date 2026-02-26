@@ -63,7 +63,7 @@ export default function Home() {
         </header>
 
         {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="flex-1 min-h-0 relative lg:max-h-(--bento-max-h)">
+        <div className="flex-1 min-h-0 relative lg:max-h-[clamp(600px,65vh,900px)]">
           {/* The single backdrop-blur layer */}
           <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
 
