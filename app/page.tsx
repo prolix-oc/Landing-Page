@@ -62,13 +62,8 @@ export default function Home() {
           </p>
         </header>
 
-        {/* Single Glass Container (ONE backdrop-blur for all cards) */}
-        <div className="min-h-0 relative lg:h-[clamp(500px,55vh,900px)]">
-          {/* The single backdrop-blur layer (reduced blur for Safari perf) */}
-          <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
-
-          {/* Bento Grid — 4-col explicit layout on desktop, 2-col auto on mobile */}
-          <div className="relative h-full p-3 sm:p-4 grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)] gap-3 sm:gap-4">
+        {/* Bento Grid — glass container IS the grid, so they always match */}
+        <div className="min-h-0 relative p-3 sm:p-4 bg-white/[0.03] backdrop-blur-md rounded-2xl sm:rounded-3xl border border-white/[0.05] grid grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(120px,auto)] lg:grid-rows-[repeat(3,1fr)] gap-3 sm:gap-4 lg:max-h-[clamp(500px,55vh,900px)]">
 
             {/* Lucid Loom — LARGEST (2x2 on desktop, full-width on mobile) */}
             <div className="col-span-2 lg:row-span-2 lg:col-start-1 lg:row-start-1">
@@ -247,7 +242,6 @@ export default function Home() {
               </TransitionLink>
             </div>
 
-          </div>
         </div>
 
         {/* Compact Footer */}
