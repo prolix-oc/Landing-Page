@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --bento-max-h: clamp(500px, 55vh, 900px);
 }
 
 @theme inline {
