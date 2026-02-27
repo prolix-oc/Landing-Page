@@ -17,14 +17,18 @@ export async function generateMetadata(
   }
 
   const ogImages = post.frontmatter.hero_image ? [{ url: post.frontmatter.hero_image }] : undefined;
+  const description = post.frontmatter.excerpt || `Read "${post.frontmatter.title}" on Lucid.cards`;
 
   return {
     title: `${post.frontmatter.title} - Lucid.cards`,
-    description: post.frontmatter.excerpt,
+    description,
     openGraph: {
       title: post.frontmatter.title,
-      description: post.frontmatter.excerpt,
+      description,
       type: 'article',
+      locale: 'en_US',
+      siteName: 'Lucid.cards',
+      url: `/posts/${slug}`,
       publishedTime: post.frontmatter.date,
       modifiedTime: post.frontmatter.updated,
       tags: post.frontmatter.tags,
@@ -33,7 +37,7 @@ export async function generateMetadata(
     twitter: {
       card: 'summary_large_image',
       title: post.frontmatter.title,
-      description: post.frontmatter.excerpt,
+      description,
       images: ogImages,
     },
   };
