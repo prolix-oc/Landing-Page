@@ -6,9 +6,10 @@ import { parseHeadingsFromMarkdown, type TocEntry } from '@/lib/heading-utils';
 
 interface TableOfContentsProps {
   content: string;
+  variant?: 'sidebar' | 'mobile';
 }
 
-export default function TableOfContents({ content }: TableOfContentsProps) {
+export default function TableOfContents({ content, variant = 'sidebar' }: TableOfContentsProps) {
   const [headings, setHeadings] = useState<TocEntry[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -19,7 +20,6 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
   }, [content]);
 
   const observerCallback = useCallback((entries: IntersectionObserverEntry[]) => {
-    // Find the first heading that is intersecting (visible)
     const visible = entries
       .filter((e) => e.isIntersecting)
       .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -87,21 +87,9 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
     </nav>
   );
 
-  return (
-    <>
-      {/* Desktop: sticky sidebar */}
-      <div className="hidden lg:block w-56 shrink-0">
-        <div className="sticky top-24 bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 max-h-[calc(100vh-8rem)] overflow-y-auto sidebar-scroll">
-          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <List className="w-3.5 h-3.5" />
-            On this page
-          </h4>
-          {tocList}
-        </div>
-      </div>
-
-      {/* Mobile: collapsible accordion */}
-      <div className="lg:hidden mb-6">
+  if (variant === 'mobile') {
+    return (
+      <div>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-gray-400 hover:text-gray-300 transition-colors"
@@ -120,6 +108,16 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
           </div>
         )}
       </div>
-    </>
+    );
+  }
+
+  return (
+    <div className="sticky top-24 bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 max-h-[calc(100vh-8rem)] overflow-y-auto sidebar-scroll">
+      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <List className="w-3.5 h-3.5" />
+        On this page
+      </h4>
+      {tocList}
+    </div>
   );
 }

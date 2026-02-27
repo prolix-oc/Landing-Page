@@ -101,14 +101,15 @@ export default function PostContent({ post }: { post: BlogPost }) {
           </div>
         )}
 
+        {/* Mobile TOC */}
+        <div className="lg:hidden max-w-3xl mx-auto mb-6">
+          <TableOfContents content={content} variant="mobile" />
+        </div>
+
         {/* Content area with TOC sidebar */}
-        <div className="flex gap-8 max-w-6xl mx-auto items-start">
+        <div className="lg:flex lg:gap-8 max-w-6xl mx-auto items-start">
           {/* Main content */}
-          <div className="flex-1 min-w-0 max-w-3xl mx-auto">
-            {/* Mobile TOC */}
-            <div className="lg:hidden">
-              <TableOfContents content={content} />
-            </div>
+          <div className="flex-1 min-w-0 max-w-4xl">
 
             {/* Post Body */}
             <div className="relative">
@@ -223,7 +224,9 @@ export default function PostContent({ post }: { post: BlogPost }) {
           </div>
 
           {/* Desktop TOC sidebar */}
-          <TableOfContents content={content} />
+          <div className="hidden lg:block w-56 shrink-0">
+            <TableOfContents content={content} variant="sidebar" />
+          </div>
         </div>
       </div>
 
