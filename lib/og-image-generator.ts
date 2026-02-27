@@ -136,13 +136,12 @@ function computeSmartCrop(
 }
 
 function createGradientOverlay(): Buffer {
-  // Semi-transparent black gradient bar at the bottom 140px
-  const barHeight = 140;
+  const barHeight = 180;
   const svg = `<svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="black" stop-opacity="0"/>
-        <stop offset="100%" stop-color="black" stop-opacity="0.75"/>
+        <stop offset="100%" stop-color="black" stop-opacity="0.8"/>
       </linearGradient>
     </defs>
     <rect x="0" y="${OG_HEIGHT - barHeight}" width="${OG_WIDTH}" height="${barHeight}" fill="url(#g)"/>
@@ -152,11 +151,10 @@ function createGradientOverlay(): Buffer {
 
 function createTextOverlay(): Buffer {
   const svg = `<svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-    <text x="${OG_WIDTH - 40}" y="${OG_HEIGHT - 38}"
+    <text x="${OG_WIDTH - 48}" y="${OG_HEIGHT - 48}"
           font-family="system-ui, -apple-system, sans-serif"
-          font-size="44" font-weight="700" fill="white"
-          text-anchor="end" dominant-baseline="middle"
-          opacity="0.95">Lucid.cards</text>
+          font-size="64" font-weight="800" fill="white"
+          text-anchor="end" dominant-baseline="middle">Lucid.cards</text>
   </svg>`;
   return Buffer.from(svg);
 }
@@ -219,8 +217,8 @@ export async function generateOgImage(
     });
   }
 
-  // Load logo SVG resized to 80px height
-  const logoHeight = 80;
+  // Load logo SVG resized to 100px height
+  const logoHeight = 100;
   const logoBuffer = await sharp(LOGO_PATH)
     .resize({ height: logoHeight })
     .png()
@@ -228,11 +226,11 @@ export async function generateOgImage(
   const logoMeta = await sharp(logoBuffer).metadata();
   const logoWidth = logoMeta.width!;
 
-  // Position: logo sits left of "Lucid.cards" text, both vertically centered in the bottom bar
-  // Text is ~240px wide at 44px font, right-anchored at OG_WIDTH - 40
-  const textBlockWidth = 250;
-  const logoLeft = OG_WIDTH - 40 - textBlockWidth - logoWidth - 8;
-  const logoTop = OG_HEIGHT - Math.round(logoHeight / 2) - 38;
+  // Position: logo sits left of "Lucid.cards" text, both vertically centered
+  // in the bottom bar. Text is ~380px wide at 64px font, right-anchored at OG_WIDTH - 48
+  const textBlockWidth = 390;
+  const logoLeft = OG_WIDTH - 48 - textBlockWidth - logoWidth - 12;
+  const logoTop = OG_HEIGHT - Math.round(logoHeight / 2) - 48;
 
   // Composite: gradient + logo + text
   const ogBuffer = await cropped
