@@ -407,7 +407,7 @@ function PostsContent() {
                                   delay: index * 0.03,
                                   ease: [0.25, 0.1, 0.25, 1]
                                 } : { duration: 0 }}
-                                className="break-inside-avoid mb-5 inline-block w-full isolate [transform:translateZ(0)]"
+                                className="break-inside-avoid mb-5 pt-1 inline-block w-full isolate [transform:translateZ(0)]"
                               >
                                 <Link
                                   href={`/posts/${post.slug}`}
