@@ -13,6 +13,7 @@ export interface BlogPost {
   slug: string;
   frontmatter: BlogPostFrontmatter;
   content: string;
+  og_image?: string;
 }
 
 export interface BlogPostSummary {
@@ -24,6 +25,7 @@ export interface BlogPostSummary {
   updated?: string;
   excerpt: string;
   hero_image?: string;
+  og_image?: string;
 }
 
 export interface BlogFilterOption {

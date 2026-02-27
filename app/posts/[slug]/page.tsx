@@ -16,10 +16,12 @@ export async function generateMetadata(
     };
   }
 
-  // OG image: serve a smaller 1200x630 version for embed previews
-  const ogImages = post.frontmatter.hero_image
-    ? [{ url: `${post.frontmatter.hero_image}?w=1200&h=630&fit=cover&q=75`, width: 1200, height: 630 }]
-    : undefined;
+  // OG image: prefer branded OG image, fall back to resized hero
+  const ogImages = post.og_image
+    ? [{ url: post.og_image, width: 1200, height: 630 }]
+    : post.frontmatter.hero_image
+      ? [{ url: `${post.frontmatter.hero_image}?w=1200&h=630&fit=cover&q=75`, width: 1200, height: 630 }]
+      : undefined;
 
   // Description: use excerpt, or strip markdown from content and truncate
   const description = post.frontmatter.excerpt || (() => {

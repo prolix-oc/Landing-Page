@@ -62,6 +62,13 @@ function getDb(): InstanceType<typeof Database> {
     // Column already exists — ignore
   }
 
+  // Add og_image column if it doesn't exist
+  try {
+    _db.exec('ALTER TABLE posts ADD COLUMN og_image TEXT');
+  } catch {
+    // Column already exists — ignore
+  }
+
   migrateMarkdownFiles(_db);
   migrateExistingImages(_db);
 
@@ -197,6 +204,7 @@ export interface PostRow {
   tags: string; // JSON string
   draft: number; // 0 or 1
   hero_image: string | null;
+  og_image: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -227,14 +235,15 @@ export function dbCreatePost(params: {
   tags: string[];
   draft: boolean;
   hero_image?: string;
+  og_image?: string;
 }): PostRow {
   const existing = dbGetPostBySlug(params.slug);
   if (existing) throw new Error('CONFLICT');
 
   const db = getDb();
   db.prepare(`
-    INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft, hero_image)
-    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft, $hero_image)
+    INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft, hero_image, og_image)
+    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft, $hero_image, $og_image)
   `).run({
     slug: params.slug,
     raw_content: params.raw_content,
@@ -246,6 +255,7 @@ export function dbCreatePost(params: {
     tags: JSON.stringify(params.tags),
     draft: params.draft ? 1 : 0,
     hero_image: params.hero_image ?? null,
+    og_image: params.og_image ?? null,
   });
 
   return dbGetPostBySlug(params.slug)!;
@@ -261,6 +271,7 @@ export function dbUpdatePost(slug: string, params: {
   tags: string[];
   draft: boolean;
   hero_image?: string;
+  og_image?: string;
 }): PostRow {
   const existing = dbGetPostBySlug(slug);
   if (!existing) throw new Error('NOT_FOUND');
@@ -277,6 +288,7 @@ export function dbUpdatePost(slug: string, params: {
         tags = $tags,
         draft = $draft,
         hero_image = $hero_image,
+        og_image = $og_image,
         updated_at = datetime('now')
     WHERE slug = $slug
   `).run({
@@ -290,9 +302,18 @@ export function dbUpdatePost(slug: string, params: {
     tags: JSON.stringify(params.tags),
     draft: params.draft ? 1 : 0,
     hero_image: params.hero_image ?? null,
+    og_image: params.og_image ?? null,
   });
 
   return dbGetPostBySlug(slug)!;
+}
+
+export function dbSetOgImage(slug: string, ogUrl: string | null): void {
+  const db = getDb();
+  db.prepare('UPDATE posts SET og_image = $og_image WHERE slug = $slug').run({
+    slug,
+    og_image: ogUrl,
+  });
 }
 
 export function dbDeletePost(slug: string): void {

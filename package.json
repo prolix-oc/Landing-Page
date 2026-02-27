@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.4.1",
     "fast-average-color": "^9.5.0",
     "framer-motion": "^12.23.24",
     "gray-matter": "^4.0.3",
@@ -19,7 +20,8 @@
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
     "remark-breaks": "^4.0.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -31,7 +33,6 @@
     "baseline-browser-mapping": "^2.9.11",
     "eslint": "^9",
     "eslint-config-next": "^16.1.6",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

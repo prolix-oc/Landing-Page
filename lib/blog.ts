@@ -73,13 +73,14 @@ function rowToSummary(row: PostRow): BlogPostSummary {
     updated: row.updated ?? undefined,
     excerpt: row.excerpt,
     hero_image: row.hero_image ?? undefined,
+    og_image: row.og_image ?? undefined,
   };
 }
 
 function rowToBlogPost(row: PostRow): BlogPost {
   const { data, content } = matter(row.raw_content);
   const frontmatter = validateFrontmatter(data);
-  return { slug: row.slug, frontmatter, content };
+  return { slug: row.slug, frontmatter, content, og_image: row.og_image ?? undefined };
 }
 
 export async function getAllPosts(includeDrafts = false): Promise<BlogPostSummary[]> {
@@ -127,6 +128,38 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   return post;
 }
 
+// Concurrency guard: prevents duplicate OG generation for the same slug
+const ogGenerationMap = new Map<string, Promise<void>>();
+
+async function triggerOgGeneration(slug: string, heroUrl: string): Promise<void> {
+  // Only process local image URLs
+  if (!heroUrl.startsWith('/api/images/')) return;
+
+  // Deduplicate concurrent runs for the same slug
+  const existing = ogGenerationMap.get(slug);
+  if (existing) return existing;
+
+  const task = (async () => {
+    try {
+      const { generateOgImage } = await import('@/lib/og-image-generator');
+      const ogUrl = await generateOgImage(slug, heroUrl);
+
+      // Write OG URL back to DB
+      const db = await loadDb();
+      if (db) {
+        db.dbSetOgImage(slug, ogUrl);
+      }
+    } catch (err) {
+      console.error(`[og] Failed to generate OG image for "${slug}":`, err);
+    } finally {
+      ogGenerationMap.delete(slug);
+    }
+  })();
+
+  ogGenerationMap.set(slug, task);
+  return task;
+}
+
 export async function createPost(slug: string, content: string): Promise<BlogPost> {
   const db = await loadDb();
   if (!db) throw new Error('Database unavailable');
@@ -149,6 +182,12 @@ export async function createPost(slug: string, content: string): Promise<BlogPos
 
   const post: BlogPost = { slug, frontmatter, content: body };
   invalidateBlogCache(slug);
+
+  // Fire-and-forget OG image generation
+  if (frontmatter.hero_image) {
+    triggerOgGeneration(slug, frontmatter.hero_image).catch(() => {});
+  }
+
   return post;
 }
 
@@ -173,6 +212,12 @@ export async function updatePost(slug: string, content: string): Promise<BlogPos
 
   const post: BlogPost = { slug, frontmatter, content: body };
   invalidateBlogCache(slug);
+
+  // Fire-and-forget OG image generation
+  if (frontmatter.hero_image) {
+    triggerOgGeneration(slug, frontmatter.hero_image).catch(() => {});
+  }
+
   return post;
 }
 
@@ -182,6 +227,11 @@ export async function deletePost(slug: string): Promise<void> {
 
   db.dbDeletePost(slug);
   invalidateBlogCache(slug);
+
+  // Clean up OG image from disk
+  import('@/lib/og-image-generator')
+    .then(({ deleteOgImage }) => deleteOgImage(slug))
+    .catch(() => {});
 }
 
 export function invalidateBlogCache(slug?: string): void {
