@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import sharp from 'sharp';
+import { stat } from 'fs/promises';
+import path from 'path';
 import { processAndSaveImage, parseImageParams, imageCorsHeaders } from '@/lib/image-optimizer';
-
-const UPLOAD_TOKEN = process.env.IMAGE_UPLOAD_TOKEN;
+import { validateImageOrManagementAuth } from '@/lib/auth';
+import { dbInsertImage } from '@/lib/db';
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -16,19 +19,22 @@ const ALLOWED_TYPES = [
   'image/avif',
 ];
 
-function validateAuth(request: Request): boolean {
-  if (!UPLOAD_TOKEN) {
-    console.error('IMAGE_UPLOAD_TOKEN not configured');
-    return false;
+async function trackImage(result: { filename: string; path: string; url: string }, originalName?: string) {
+  try {
+    const metadata = await sharp(result.path).metadata();
+    const fileStat = await stat(result.path);
+    dbInsertImage({
+      filename: result.filename,
+      original_name: originalName,
+      url: result.url,
+      width: metadata.width,
+      height: metadata.height,
+      size_bytes: fileStat.size,
+      mime_type: 'image/webp',
+    });
+  } catch (err) {
+    console.error('Failed to track image in DB:', err);
   }
-
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return false;
-  }
-
-  const token = authHeader.slice(7);
-  return token === UPLOAD_TOKEN;
 }
 
 export async function OPTIONS() {
@@ -42,7 +48,7 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   // Verify authentication
-  if (!validateAuth(request)) {
+  if (!validateImageOrManagementAuth(request)) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401, headers: imageCorsHeaders }
@@ -98,6 +104,7 @@ export async function POST(request: Request) {
       const buffer = Buffer.from(arrayBuffer);
 
       const result = await processAndSaveImage(buffer, imageOptions);
+      await trackImage(result, file.name);
 
       return NextResponse.json(
         {
@@ -132,6 +139,7 @@ export async function POST(request: Request) {
 
       const buffer = Buffer.from(arrayBuffer);
       const result = await processAndSaveImage(buffer, imageOptions);
+      await trackImage(result);
 
       return NextResponse.json(
         {

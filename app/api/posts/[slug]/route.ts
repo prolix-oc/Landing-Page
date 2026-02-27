@@ -1,28 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getPostBySlug, updatePost, deletePost } from '@/lib/blog';
-
-const MANAGEMENT_KEY = process.env.MANAGEMENT_API_KEY;
+import { validateManagementAuth } from '@/lib/auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-function validateAuth(request: Request): boolean {
-  if (!MANAGEMENT_KEY) {
-    console.error('MANAGEMENT_API_KEY not configured');
-    return false;
-  }
-
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return false;
-  }
-
-  const token = authHeader.slice(7);
-  return token === MANAGEMENT_KEY;
-}
 
 export async function OPTIONS() {
   return new NextResponse(null, { headers: corsHeaders });
@@ -65,7 +49,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  if (!validateAuth(request)) {
+  if (!validateManagementAuth(request)) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401, headers: corsHeaders }
@@ -91,7 +75,7 @@ export async function PUT(
       { headers: corsHeaders }
     );
   } catch (error) {
-    if (error instanceof Error && error.message.includes('ENOENT')) {
+    if (error instanceof Error && error.message === 'NOT_FOUND') {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
         { status: 404, headers: corsHeaders }
@@ -116,7 +100,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  if (!validateAuth(request)) {
+  if (!validateManagementAuth(request)) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401, headers: corsHeaders }
@@ -132,7 +116,7 @@ export async function DELETE(
       { headers: corsHeaders }
     );
   } catch (error) {
-    if (error instanceof Error && error.message.includes('ENOENT')) {
+    if (error instanceof Error && error.message === 'NOT_FOUND') {
       return NextResponse.json(
         { success: false, error: 'Post not found' },
         { status: 404, headers: corsHeaders }

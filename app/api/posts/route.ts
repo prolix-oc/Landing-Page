@@ -1,28 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAllPosts, createPost, aggregateFilters } from '@/lib/blog';
-
-const MANAGEMENT_KEY = process.env.MANAGEMENT_API_KEY;
+import { validateManagementAuth } from '@/lib/auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-function validateAuth(request: Request): boolean {
-  if (!MANAGEMENT_KEY) {
-    console.error('MANAGEMENT_API_KEY not configured');
-    return false;
-  }
-
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return false;
-  }
-
-  const token = authHeader.slice(7);
-  return token === MANAGEMENT_KEY;
-}
 
 export async function OPTIONS() {
   return new NextResponse(null, { headers: corsHeaders });
@@ -62,7 +46,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!validateAuth(request)) {
+  if (!validateManagementAuth(request)) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401, headers: corsHeaders }

@@ -1,9 +1,13 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import matter from 'gray-matter';
 import type { BlogPost, BlogPostSummary, BlogPostFrontmatter, BlogFilterOption } from '@/lib/types/blog-post';
-
-const POSTS_DIR = path.join(process.cwd(), 'data', 'posts');
+import {
+  dbGetAllPosts,
+  dbGetPostBySlug,
+  dbCreatePost,
+  dbUpdatePost,
+  dbDeletePost,
+  type PostRow,
+} from '@/lib/db';
 
 // In-memory LRU cache
 interface CacheEntry<T> {
@@ -42,84 +46,56 @@ function validateFrontmatter(data: Record<string, unknown>): BlogPostFrontmatter
   return { title, tags, category, date, updated, excerpt, draft };
 }
 
-function postToSummary(post: BlogPost): BlogPostSummary {
+function rowToSummary(row: PostRow): BlogPostSummary {
   return {
-    slug: post.slug,
-    title: post.frontmatter.title,
-    tags: post.frontmatter.tags,
-    category: post.frontmatter.category,
-    date: post.frontmatter.date,
-    updated: post.frontmatter.updated,
-    excerpt: post.frontmatter.excerpt,
+    slug: row.slug,
+    title: row.title,
+    tags: JSON.parse(row.tags) as string[],
+    category: row.category,
+    date: row.date,
+    updated: row.updated ?? undefined,
+    excerpt: row.excerpt,
   };
 }
 
+function rowToBlogPost(row: PostRow): BlogPost {
+  const { data, content } = matter(row.raw_content);
+  const frontmatter = validateFrontmatter(data);
+  return { slug: row.slug, frontmatter, content };
+}
+
 export async function getAllPosts(): Promise<BlogPostSummary[]> {
-  // Check index cache
   if (indexCache.entry && !isExpired(indexCache.entry.timestamp, INDEX_TTL)) {
     return indexCache.entry.data;
   }
 
   try {
-    await fs.mkdir(POSTS_DIR, { recursive: true });
-    const files = await fs.readdir(POSTS_DIR);
-    const mdFiles = files.filter(f => f.endsWith('.md'));
-
-    const posts: BlogPostSummary[] = [];
-
-    for (const file of mdFiles) {
-      try {
-        const slug = file.replace(/\.md$/, '');
-        const filePath = path.join(POSTS_DIR, file);
-        const raw = await fs.readFile(filePath, 'utf-8');
-        const { data } = matter(raw);
-        const frontmatter = validateFrontmatter(data);
-
-        // Skip drafts in production
-        if (frontmatter.draft && process.env.NODE_ENV === 'production') continue;
-
-        posts.push({
-          slug,
-          title: frontmatter.title,
-          tags: frontmatter.tags,
-          category: frontmatter.category,
-          date: frontmatter.date,
-          updated: frontmatter.updated,
-          excerpt: frontmatter.excerpt,
-        });
-      } catch (err) {
-        console.error(`Error parsing post ${file}:`, err);
-      }
-    }
-
-    // Sort by date descending (newest first)
-    posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const includeDrafts = process.env.NODE_ENV !== 'production';
+    const rows = dbGetAllPosts(includeDrafts);
+    const posts = rows.map(rowToSummary);
 
     indexCache.entry = { data: posts, timestamp: Date.now() };
     return posts;
-  } catch (err) {
-    console.error('Error reading posts directory:', err);
+  } catch {
+    // DB unavailable (e.g. during Next.js build under Node.js)
     return [];
   }
 }
 
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
-  // Check post cache
   const cached = postCache.get(slug);
   if (cached && !isExpired(cached.timestamp, POST_TTL)) {
     return cached.data;
   }
 
   try {
-    const filePath = path.join(POSTS_DIR, `${slug}.md`);
-    const raw = await fs.readFile(filePath, 'utf-8');
-    const { data, content } = matter(raw);
-    const frontmatter = validateFrontmatter(data);
+    const row = dbGetPostBySlug(slug);
+    if (!row) return null;
 
     // Skip drafts in production
-    if (frontmatter.draft && process.env.NODE_ENV === 'production') return null;
+    if (row.draft && process.env.NODE_ENV === 'production') return null;
 
-    const post: BlogPost = { slug, frontmatter, content };
+    const post = rowToBlogPost(row);
 
     // LRU eviction
     if (postCache.size >= MAX_POST_CACHE_SIZE) {
@@ -130,28 +106,26 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 
     return post;
   } catch {
+    // DB unavailable (e.g. during Next.js build under Node.js)
     return null;
   }
 }
 
 export async function createPost(slug: string, content: string): Promise<BlogPost> {
-  const filePath = path.join(POSTS_DIR, `${slug}.md`);
-
-  // Check if already exists
-  try {
-    await fs.access(filePath);
-    throw new Error('CONFLICT');
-  } catch (err) {
-    if (err instanceof Error && err.message === 'CONFLICT') throw err;
-    // File doesn't exist, proceed
-  }
-
-  // Validate the content has valid frontmatter
   const { data, content: body } = matter(content);
   const frontmatter = validateFrontmatter(data);
 
-  await fs.mkdir(POSTS_DIR, { recursive: true });
-  await fs.writeFile(filePath, content, 'utf-8');
+  dbCreatePost({
+    slug,
+    raw_content: content,
+    title: frontmatter.title,
+    category: frontmatter.category,
+    date: frontmatter.date,
+    updated: frontmatter.updated,
+    excerpt: frontmatter.excerpt,
+    tags: frontmatter.tags,
+    draft: frontmatter.draft ?? false,
+  });
 
   const post: BlogPost = { slug, frontmatter, content: body };
   invalidateBlogCache();
@@ -159,16 +133,19 @@ export async function createPost(slug: string, content: string): Promise<BlogPos
 }
 
 export async function updatePost(slug: string, content: string): Promise<BlogPost> {
-  const filePath = path.join(POSTS_DIR, `${slug}.md`);
-
-  // Verify it exists
-  await fs.access(filePath);
-
-  // Validate frontmatter
   const { data, content: body } = matter(content);
   const frontmatter = validateFrontmatter(data);
 
-  await fs.writeFile(filePath, content, 'utf-8');
+  dbUpdatePost(slug, {
+    raw_content: content,
+    title: frontmatter.title,
+    category: frontmatter.category,
+    date: frontmatter.date,
+    updated: frontmatter.updated,
+    excerpt: frontmatter.excerpt,
+    tags: frontmatter.tags,
+    draft: frontmatter.draft ?? false,
+  });
 
   const post: BlogPost = { slug, frontmatter, content: body };
   invalidateBlogCache();
@@ -176,8 +153,7 @@ export async function updatePost(slug: string, content: string): Promise<BlogPos
 }
 
 export async function deletePost(slug: string): Promise<void> {
-  const filePath = path.join(POSTS_DIR, `${slug}.md`);
-  await fs.unlink(filePath);
+  dbDeletePost(slug);
   invalidateBlogCache();
 }
 
