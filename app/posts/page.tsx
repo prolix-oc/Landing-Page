@@ -370,7 +370,7 @@ function PostsContent() {
                             className="columns-1 md:columns-2 xl:columns-3 gap-5"
                           >
                             {Array.from({ length: postsPerPage }).map((_, index) => (
-                              <div key={`skeleton-${index}`} className="break-inside-avoid mb-5 bg-white/[0.03] border border-white/[0.06] rounded-2xl animate-pulse overflow-hidden">
+                              <div key={`skeleton-${index}`} className="break-inside-avoid mb-5 inline-block w-full isolate [transform:translateZ(0)] bg-white/[0.03] border border-white/[0.06] rounded-2xl animate-pulse overflow-hidden">
                                 {index % 3 !== 2 && (
                                   <div className="bg-white/[0.04] h-[180px]" />
                                 )}
@@ -407,7 +407,7 @@ function PostsContent() {
                                   delay: index * 0.03,
                                   ease: [0.25, 0.1, 0.25, 1]
                                 } : { duration: 0 }}
-                                className="break-inside-avoid mb-5"
+                                className="break-inside-avoid mb-5 inline-block w-full isolate [transform:translateZ(0)]"
                               >
                                 <Link
                                   href={`/posts/${post.slug}`}

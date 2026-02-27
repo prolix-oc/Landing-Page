@@ -1,4 +1,5 @@
 import matter from 'gray-matter';
+import { revalidatePath } from 'next/cache';
 import type { BlogPost, BlogPostSummary, BlogPostFrontmatter, BlogFilterOption } from '@/lib/types/blog-post';
 import type { PostRow } from '@/lib/db';
 
@@ -147,7 +148,7 @@ export async function createPost(slug: string, content: string): Promise<BlogPos
   });
 
   const post: BlogPost = { slug, frontmatter, content: body };
-  invalidateBlogCache();
+  invalidateBlogCache(slug);
   return post;
 }
 
@@ -171,7 +172,7 @@ export async function updatePost(slug: string, content: string): Promise<BlogPos
   });
 
   const post: BlogPost = { slug, frontmatter, content: body };
-  invalidateBlogCache();
+  invalidateBlogCache(slug);
   return post;
 }
 
@@ -180,12 +181,22 @@ export async function deletePost(slug: string): Promise<void> {
   if (!db) throw new Error('Database unavailable');
 
   db.dbDeletePost(slug);
-  invalidateBlogCache();
+  invalidateBlogCache(slug);
 }
 
-export function invalidateBlogCache(): void {
+export function invalidateBlogCache(slug?: string): void {
   indexCache.entry = null;
   postCache.clear();
+
+  // Revalidate Next.js page cache so stale static HTML is regenerated
+  try {
+    revalidatePath('/posts');
+    if (slug) {
+      revalidatePath(`/posts/${slug}`);
+    }
+  } catch {
+    // revalidatePath may throw during build or outside request context — safe to ignore
+  }
 }
 
 export async function aggregateFilters(posts: BlogPostSummary[]): Promise<{
