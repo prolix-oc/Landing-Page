@@ -126,24 +126,25 @@ function computeSmartCrop(
 }
 
 function createGradientOverlay(): Buffer {
-  // Semi-transparent black gradient bar at the bottom 80px
+  // Semi-transparent black gradient bar at the bottom 140px
+  const barHeight = 140;
   const svg = `<svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="black" stop-opacity="0"/>
-        <stop offset="100%" stop-color="black" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="black" stop-opacity="0.75"/>
       </linearGradient>
     </defs>
-    <rect x="0" y="${OG_HEIGHT - 80}" width="${OG_WIDTH}" height="80" fill="url(#g)"/>
+    <rect x="0" y="${OG_HEIGHT - barHeight}" width="${OG_WIDTH}" height="${barHeight}" fill="url(#g)"/>
   </svg>`;
   return Buffer.from(svg);
 }
 
 function createTextOverlay(): Buffer {
   const svg = `<svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-    <text x="${OG_WIDTH - 28}" y="${OG_HEIGHT - 24}"
+    <text x="${OG_WIDTH - 40}" y="${OG_HEIGHT - 38}"
           font-family="system-ui, -apple-system, sans-serif"
-          font-size="24" font-weight="600" fill="white"
+          font-size="44" font-weight="700" fill="white"
           text-anchor="end" dominant-baseline="middle"
           opacity="0.95">Lucid.cards</text>
   </svg>`;
@@ -208,13 +209,20 @@ export async function generateOgImage(
     });
   }
 
-  // Load logo SVG resized to 48px height
+  // Load logo SVG resized to 80px height
+  const logoHeight = 80;
   const logoBuffer = await sharp(LOGO_PATH)
-    .resize({ height: 48 })
+    .resize({ height: logoHeight })
     .png()
     .toBuffer();
   const logoMeta = await sharp(logoBuffer).metadata();
   const logoWidth = logoMeta.width!;
+
+  // Position: logo sits left of "Lucid.cards" text, both vertically centered in the bottom bar
+  // Text is ~240px wide at 44px font, right-anchored at OG_WIDTH - 40
+  const textBlockWidth = 250;
+  const logoLeft = OG_WIDTH - 40 - textBlockWidth - logoWidth - 8;
+  const logoTop = OG_HEIGHT - Math.round(logoHeight / 2) - 38;
 
   // Composite: gradient + logo + text
   const ogBuffer = await cropped
@@ -222,8 +230,8 @@ export async function generateOgImage(
       { input: createGradientOverlay(), top: 0, left: 0 },
       {
         input: logoBuffer,
-        top: OG_HEIGHT - 64,
-        left: OG_WIDTH - logoWidth - 160,
+        top: logoTop,
+        left: logoLeft,
       },
       { input: createTextOverlay(), top: 0, left: 0 },
     ])
