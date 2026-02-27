@@ -289,6 +289,13 @@ export function dbDeletePost(slug: string): void {
   db.prepare('DELETE FROM posts WHERE slug = $slug').run({ slug });
 }
 
+export function dbPublishAllDrafts(): number {
+  const db = getDb();
+  db.prepare('UPDATE posts SET draft = 0 WHERE draft = 1').run();
+  const result = db.prepare('SELECT COUNT(*) as cnt FROM posts WHERE draft = 0').get() as { cnt: number };
+  return result.cnt;
+}
+
 // --- Image types ---
 
 export interface ImageRow {

@@ -78,19 +78,21 @@ function rowToBlogPost(row: PostRow): BlogPost {
   return { slug: row.slug, frontmatter, content };
 }
 
-export async function getAllPosts(): Promise<BlogPostSummary[]> {
-  if (indexCache.entry && !isExpired(indexCache.entry.timestamp, INDEX_TTL)) {
+export async function getAllPosts(includeDrafts = false): Promise<BlogPostSummary[]> {
+  // Only use cache for the default (non-draft) listing
+  if (!includeDrafts && indexCache.entry && !isExpired(indexCache.entry.timestamp, INDEX_TTL)) {
     return indexCache.entry.data;
   }
 
   const db = await loadDb();
   if (!db) return [];
 
-  const includeDrafts = process.env.NODE_ENV !== 'production';
   const rows = db.dbGetAllPosts(includeDrafts);
   const posts = rows.map(rowToSummary);
 
-  indexCache.entry = { data: posts, timestamp: Date.now() };
+  if (!includeDrafts) {
+    indexCache.entry = { data: posts, timestamp: Date.now() };
+  }
   return posts;
 }
 
