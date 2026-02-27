@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import SmartPagination from '@/app/components/SmartPagination';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import SortDropdown, { SortOption } from '@/app/components/SortDropdown';
@@ -32,7 +32,6 @@ function PostsContent() {
   const [currentPage, setCurrentPage] = useState(0);
   const [postsPerPage, setPostsPerPage] = useState(9);
   const [sortBy, setSortBy] = useState<SortOption>('recent');
-  const [isContentLoaded, setIsContentLoaded] = useState(false);
 
   const [allCategories, setAllCategories] = useState<BlogFilterOption[]>([]);
   const [allTags, setAllTags] = useState<BlogFilterOption[]>([]);
@@ -125,7 +124,6 @@ function PostsContent() {
           setFilteredPosts(data.posts || []);
           setAllCategories(data.categories || []);
           setAllTags(data.tags || []);
-          setTimeout(() => setIsContentLoaded(true), 100);
         }
       } catch (error) {
         console.error('Error fetching posts:', error);
@@ -360,43 +358,13 @@ function PostsContent() {
                     </div>
                   ) : (
                     <>
-                      <AnimatePresence mode="wait">
-                        {!isContentLoaded ? (
-                          <motion.div
-                            key="skeleton"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="columns-1 md:columns-2 xl:columns-3 gap-5"
-                          >
-                            {Array.from({ length: postsPerPage }).map((_, index) => (
-                              <div key={`skeleton-${index}`} className="break-inside-avoid mb-5 inline-block w-full isolate [transform:translateZ(0)] bg-white/[0.03] border border-white/[0.06] rounded-2xl animate-pulse overflow-hidden">
-                                {index % 3 !== 2 && (
-                                  <div className="bg-white/[0.04] h-[180px]" />
-                                )}
-                                <div className="p-5">
-                                  <div className="h-4 bg-white/[0.06] rounded w-1/3 mb-3" />
-                                  <div className="h-6 bg-white/[0.06] rounded w-3/4 mb-3" />
-                                  <div className="space-y-2 mb-4">
-                                    <div className="h-3 bg-white/[0.04] rounded w-full" />
-                                    <div className="h-3 bg-white/[0.04] rounded w-2/3" />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <div className="h-5 bg-white/[0.04] rounded-full w-12" />
-                                    <div className="h-5 bg-white/[0.04] rounded-full w-16" />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key={`posts-${sortBy}-${currentPage}`}
-                            initial={animationsEnabled ? { opacity: 0 } : false}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.2 }}
-                            className="columns-1 md:columns-2 xl:columns-3 gap-5"
-                          >
+                      <motion.div
+                        key={`posts-${sortBy}-${currentPage}`}
+                        initial={animationsEnabled ? { opacity: 0 } : false}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className="columns-1 md:columns-2 xl:columns-3 gap-5"
+                      >
                             {paginatedPosts.map((post, index) => (
                               <motion.div
                                 key={post.slug}
@@ -483,11 +451,9 @@ function PostsContent() {
                                 </Link>
                               </motion.div>
                             ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      </motion.div>
 
-                      {totalPages > 1 && isContentLoaded && (
+                      {totalPages > 1 && (
                         <div className="h-24" />
                       )}
                     </>
@@ -500,7 +466,7 @@ function PostsContent() {
       </div>
 
       {/* Sticky Pagination */}
-      {!loading && totalPages > 1 && isContentLoaded && (
+      {!loading && totalPages > 1 && (
         <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
           <div className="pt-4 pb-6">
             <div className="container mx-auto px-4">
