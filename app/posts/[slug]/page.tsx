@@ -16,8 +16,24 @@ export async function generateMetadata(
     };
   }
 
-  const ogImages = post.frontmatter.hero_image ? [{ url: post.frontmatter.hero_image }] : undefined;
-  const description = post.frontmatter.excerpt || `Read "${post.frontmatter.title}" on Lucid.cards`;
+  // OG image: serve a smaller 1200x630 version for embed previews
+  const ogImages = post.frontmatter.hero_image
+    ? [{ url: `${post.frontmatter.hero_image}?w=1200&h=630&fit=cover&q=75`, width: 1200, height: 630 }]
+    : undefined;
+
+  // Description: use excerpt, or strip markdown from content and truncate
+  const description = post.frontmatter.excerpt || (() => {
+    const plain = post.content
+      .replace(/^---[\s\S]*?---\n*/m, '')  // frontmatter fence
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links → text
+      .replace(/#{1,6}\s+/g, '')           // headings
+      .replace(/[*_~`>|]/g, '')            // inline formatting
+      .replace(/\n{2,}/g, ' ')             // collapse paragraphs
+      .replace(/\n/g, ' ')                 // remaining newlines
+      .trim();
+    return plain.length > 200 ? plain.slice(0, 197) + '...' : plain;
+  })();
 
   return {
     title: `${post.frontmatter.title} - Lucid.cards`,

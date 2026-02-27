@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readFile, stat, unlink } from 'fs/promises';
 import path from 'path';
-import { imageCorsHeaders } from '@/lib/image-optimizer';
+import { imageCorsHeaders, parseImageParams, optimizeBuffer } from '@/lib/image-optimizer';
 import { validateImageOrManagementAuth } from '@/lib/auth';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public/uploads');
@@ -76,12 +76,23 @@ export async function GET(
 
     const fileBuffer = await readFile(check.filePath);
 
-    return new NextResponse(new Uint8Array(fileBuffer), {
+    // Support on-the-fly resizing via query params (?w=1200&h=630&q=75&fit=cover)
+    const { searchParams } = new URL(request.url);
+    const resizeOptions = parseImageParams(searchParams);
+    const needsResize = resizeOptions.width || resizeOptions.height || resizeOptions.quality;
+
+    const outputBuffer = needsResize
+      ? await optimizeBuffer(fileBuffer, resizeOptions)
+      : fileBuffer;
+
+    return new NextResponse(new Uint8Array(outputBuffer), {
       headers: {
         ...imageCorsHeaders,
         'Content-Type': 'image/webp',
-        'Content-Length': fileBuffer.length.toString(),
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Content-Length': outputBuffer.length.toString(),
+        'Cache-Control': needsResize
+          ? 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400'
+          : 'public, max-age=31536000, immutable',
       },
     });
   } catch (error) {
