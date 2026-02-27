@@ -17,7 +17,7 @@ export default function PostContent({ post }: { post: BlogPost }) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative">
       {/* Back Link */}
       <div className="fixed top-6 left-6 z-50">
         <AnimatedLink
@@ -30,86 +30,88 @@ export default function PostContent({ post }: { post: BlogPost }) {
         </AnimatedLink>
       </div>
 
-      <div className="relative container mx-auto px-4 pt-20 sm:pt-24 pb-12 sm:pb-16 max-w-6xl">
-        {/* Post Header */}
-        <header className="text-center mb-10 sm:mb-12 max-w-4xl mx-auto">
-          {/* Category badge */}
-          <div className="mb-4">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1 rounded-full">
-              <Layers className="w-3 h-3" />
-              {frontmatter.category}
-            </span>
-          </div>
+      <div className="relative mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-12 sm:pb-16">
+        {/* Three-column flex on xl+: spacer | content | TOC — keeps content centered */}
+        <div className="xl:flex xl:justify-center xl:gap-8">
+          {/* Left spacer — balances the TOC so the center column stays centered */}
+          <div className="hidden xl:block w-56 shrink-0" aria-hidden="true" />
 
-          {/* Title */}
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white mb-4">
-            {frontmatter.title}
-          </h1>
+          {/* Center column: header, hero, mobile TOC, post body */}
+          <div className="w-full max-w-4xl mx-auto xl:mx-0 min-w-0">
+            {/* Post Header */}
+            <header className="text-center mb-10 sm:mb-12">
+              {/* Category badge */}
+              <div className="mb-4">
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1 rounded-full">
+                  <Layers className="w-3 h-3" />
+                  {frontmatter.category}
+                </span>
+              </div>
 
-          {/* Date row */}
-          <div className="flex items-center justify-center gap-4 text-sm text-gray-400 mb-5">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-sky-400" />
-              {new Date(frontmatter.date).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </span>
-            {frontmatter.updated && (
-              <>
-                <div className="w-1 h-1 rounded-full bg-gray-600" />
-                <span className="text-gray-500">
-                  Updated {new Date(frontmatter.updated).toLocaleDateString('en-US', {
+              {/* Title */}
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white mb-4">
+                {frontmatter.title}
+              </h1>
+
+              {/* Date row */}
+              <div className="flex items-center justify-center gap-4 text-sm text-gray-400 mb-5">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-sky-400" />
+                  {new Date(frontmatter.date).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                   })}
                 </span>
-              </>
+                {frontmatter.updated && (
+                  <>
+                    <div className="w-1 h-1 rounded-full bg-gray-600" />
+                    <span className="text-gray-500">
+                      Updated {new Date(frontmatter.updated).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Tags */}
+              {frontmatter.tags.length > 0 && (
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <Tag className="w-3.5 h-3.5 text-gray-500" />
+                  {frontmatter.tags.map(tag => (
+                    <span key={tag} className="text-xs text-gray-400 bg-white/[0.05] border border-white/[0.08] px-2.5 py-1 rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </header>
+
+            {/* Hero Image */}
+            {frontmatter.hero_image && (
+              <div className="mb-10">
+                <button
+                  type="button"
+                  onClick={() => setLightboxSrc(frontmatter.hero_image!)}
+                  className="group block w-full cursor-zoom-in rounded-2xl overflow-hidden border border-white/[0.08] hover:border-sky-500/40 hover:shadow-lg hover:shadow-sky-500/10 transition-all duration-300"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={frontmatter.hero_image}
+                    alt={frontmatter.title}
+                    className="w-full object-cover max-h-[480px]"
+                  />
+                </button>
+              </div>
             )}
-          </div>
 
-          {/* Tags */}
-          {frontmatter.tags.length > 0 && (
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <Tag className="w-3.5 h-3.5 text-gray-500" />
-              {frontmatter.tags.map(tag => (
-                <span key={tag} className="text-xs text-gray-400 bg-white/[0.05] border border-white/[0.08] px-2.5 py-1 rounded-full">
-                  {tag}
-                </span>
-              ))}
+            {/* Mobile TOC */}
+            <div className="xl:hidden mb-6">
+              <TableOfContents content={content} variant="mobile" />
             </div>
-          )}
-        </header>
-
-        {/* Hero Image */}
-        {frontmatter.hero_image && (
-          <div className="max-w-4xl mx-auto mb-10">
-            <button
-              type="button"
-              onClick={() => setLightboxSrc(frontmatter.hero_image!)}
-              className="group block w-full cursor-zoom-in rounded-2xl overflow-hidden border border-white/[0.08] hover:border-sky-500/40 hover:shadow-lg hover:shadow-sky-500/10 transition-all duration-300"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={frontmatter.hero_image}
-                alt={frontmatter.title}
-                className="w-full object-cover max-h-[480px]"
-              />
-            </button>
-          </div>
-        )}
-
-        {/* Mobile TOC */}
-        <div className="lg:hidden max-w-3xl mx-auto mb-6">
-          <TableOfContents content={content} variant="mobile" />
-        </div>
-
-        {/* Content area with TOC sidebar */}
-        <div className="lg:flex lg:gap-8 max-w-6xl mx-auto items-start">
-          {/* Main content */}
-          <div className="flex-1 min-w-0 max-w-4xl">
 
             {/* Post Body */}
             <div className="relative">
@@ -223,9 +225,11 @@ export default function PostContent({ post }: { post: BlogPost }) {
             </div>
           </div>
 
-          {/* Desktop TOC sidebar */}
-          <div className="hidden lg:block w-56 shrink-0">
-            <TableOfContents content={content} variant="sidebar" />
+          {/* Desktop TOC sidebar — sticky, only visible on xl+ */}
+          <div className="hidden xl:block w-56 shrink-0">
+            <div className="sticky top-24">
+              <TableOfContents content={content} variant="sidebar" />
+            </div>
           </div>
         </div>
       </div>
