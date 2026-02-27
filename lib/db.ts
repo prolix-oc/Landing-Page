@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { Database } from 'bun:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
@@ -9,16 +9,17 @@ const POSTS_DIR = path.join(process.cwd(), 'data', 'posts');
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 // Lazy singleton — initialized on first access.
-let _db: Database.Database | null = null;
+let _db: InstanceType<typeof Database> | null = null;
 
-function getDb(): Database.Database {
+function getDb(): InstanceType<typeof Database> {
   if (_db) return _db;
 
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
-  _db = new Database(DB_PATH);
-  _db.pragma('journal_mode = WAL');
-  _db.pragma('foreign_keys = ON');
+  // strict: true allows named params without prefix ($slug → { slug })
+  _db = new Database(DB_PATH, { strict: true });
+  _db.exec('PRAGMA journal_mode = WAL');
+  _db.exec('PRAGMA foreign_keys = ON');
 
   _db.exec(`
     CREATE TABLE IF NOT EXISTS posts (
@@ -60,9 +61,9 @@ function getDb(): Database.Database {
   return _db;
 }
 
-function migrateMarkdownFiles(db: Database.Database): void {
-  const count = db.prepare('SELECT COUNT(*) as cnt FROM posts').get() as { cnt: number };
-  if (count.cnt > 0) return;
+function migrateMarkdownFiles(db: InstanceType<typeof Database>): void {
+  const count = db.prepare('SELECT COUNT(*) as cnt FROM posts').get() as { cnt: number } | null;
+  if (count && count.cnt > 0) return;
 
   if (!fs.existsSync(POSTS_DIR)) return;
 
@@ -73,7 +74,7 @@ function migrateMarkdownFiles(db: Database.Database): void {
 
   const insert = db.prepare(`
     INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft)
-    VALUES (@slug, @raw_content, @title, @category, @date, @updated, @excerpt, @tags, @draft)
+    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft)
   `);
 
   const migrate = db.transaction(() => {
@@ -102,9 +103,9 @@ function migrateMarkdownFiles(db: Database.Database): void {
   migrate();
 }
 
-function migrateExistingImages(db: Database.Database): void {
-  const count = db.prepare('SELECT COUNT(*) as cnt FROM images').get() as { cnt: number };
-  if (count.cnt > 0) return;
+function migrateExistingImages(db: InstanceType<typeof Database>): void {
+  const count = db.prepare('SELECT COUNT(*) as cnt FROM images').get() as { cnt: number } | null;
+  if (count && count.cnt > 0) return;
 
   if (!fs.existsSync(UPLOADS_DIR)) return;
 
@@ -115,7 +116,7 @@ function migrateExistingImages(db: Database.Database): void {
 
   const insert = db.prepare(`
     INSERT INTO images (filename, original_name, url, width, height, size_bytes, mime_type, uploaded_at)
-    VALUES (@filename, @original_name, @url, @width, @height, @size_bytes, @mime_type, @uploaded_at)
+    VALUES ($filename, $original_name, $url, $width, $height, $size_bytes, $mime_type, $uploaded_at)
   `);
 
   const migrate = db.transaction(() => {
@@ -153,11 +154,11 @@ function migrateExistingImages(db: Database.Database): void {
   );
 }
 
-async function backfillImageDimensions(db: Database.Database): Promise<void> {
+async function backfillImageDimensions(db: InstanceType<typeof Database>): Promise<void> {
   const rows = db.prepare('SELECT filename FROM images WHERE width IS NULL').all() as { filename: string }[];
   if (rows.length === 0) return;
 
-  const update = db.prepare('UPDATE images SET width = @width, height = @height WHERE filename = @filename');
+  const update = db.prepare('UPDATE images SET width = $width, height = $height WHERE filename = $filename');
 
   for (const row of rows) {
     try {
@@ -203,7 +204,7 @@ export function dbGetAllPosts(includeDrafts = false): PostRow[] {
 
 export function dbGetPostBySlug(slug: string): PostRow | null {
   const db = getDb();
-  return (db.prepare('SELECT * FROM posts WHERE slug = @slug').get({ slug }) as PostRow | undefined) ?? null;
+  return (db.prepare('SELECT * FROM posts WHERE slug = $slug').get({ slug }) as PostRow | null) ?? null;
 }
 
 export function dbCreatePost(params: {
@@ -223,7 +224,7 @@ export function dbCreatePost(params: {
   const db = getDb();
   db.prepare(`
     INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft)
-    VALUES (@slug, @raw_content, @title, @category, @date, @updated, @excerpt, @tags, @draft)
+    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft)
   `).run({
     slug: params.slug,
     raw_content: params.raw_content,
@@ -249,19 +250,22 @@ export function dbUpdatePost(slug: string, params: {
   tags: string[];
   draft: boolean;
 }): PostRow {
+  const existing = dbGetPostBySlug(slug);
+  if (!existing) throw new Error('NOT_FOUND');
+
   const db = getDb();
-  const result = db.prepare(`
+  db.prepare(`
     UPDATE posts
-    SET raw_content = @raw_content,
-        title = @title,
-        category = @category,
-        date = @date,
-        updated = @updated,
-        excerpt = @excerpt,
-        tags = @tags,
-        draft = @draft,
+    SET raw_content = $raw_content,
+        title = $title,
+        category = $category,
+        date = $date,
+        updated = $updated,
+        excerpt = $excerpt,
+        tags = $tags,
+        draft = $draft,
         updated_at = datetime('now')
-    WHERE slug = @slug
+    WHERE slug = $slug
   `).run({
     slug,
     raw_content: params.raw_content,
@@ -274,15 +278,15 @@ export function dbUpdatePost(slug: string, params: {
     draft: params.draft ? 1 : 0,
   });
 
-  if (result.changes === 0) throw new Error('NOT_FOUND');
-
   return dbGetPostBySlug(slug)!;
 }
 
 export function dbDeletePost(slug: string): void {
+  const existing = dbGetPostBySlug(slug);
+  if (!existing) throw new Error('NOT_FOUND');
+
   const db = getDb();
-  const result = db.prepare('DELETE FROM posts WHERE slug = @slug').run({ slug });
-  if (result.changes === 0) throw new Error('NOT_FOUND');
+  db.prepare('DELETE FROM posts WHERE slug = $slug').run({ slug });
 }
 
 // --- Image types ---
@@ -313,7 +317,7 @@ export function dbInsertImage(params: {
   const db = getDb();
   db.prepare(`
     INSERT INTO images (filename, original_name, url, width, height, size_bytes, mime_type)
-    VALUES (@filename, @original_name, @url, @width, @height, @size_bytes, @mime_type)
+    VALUES ($filename, $original_name, $url, $width, $height, $size_bytes, $mime_type)
   `).run({
     filename: params.filename,
     original_name: params.original_name ?? null,
@@ -334,11 +338,13 @@ export function dbGetAllImages(): ImageRow[] {
 
 export function dbGetImageByFilename(filename: string): ImageRow | null {
   const db = getDb();
-  return (db.prepare('SELECT * FROM images WHERE filename = @filename').get({ filename }) as ImageRow | undefined) ?? null;
+  return (db.prepare('SELECT * FROM images WHERE filename = $filename').get({ filename }) as ImageRow | null) ?? null;
 }
 
 export function dbDeleteImage(filename: string): void {
+  const existing = dbGetImageByFilename(filename);
+  if (!existing) throw new Error('NOT_FOUND');
+
   const db = getDb();
-  const result = db.prepare('DELETE FROM images WHERE filename = @filename').run({ filename });
-  if (result.changes === 0) throw new Error('NOT_FOUND');
+  db.prepare('DELETE FROM images WHERE filename = $filename').run({ filename });
 }

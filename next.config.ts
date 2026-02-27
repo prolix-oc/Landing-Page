@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['better-sqlite3'],
+  // bun:sqlite is auto-externalized by Next.js 16+ (PR #77616)
   experimental: {
     // Enable View Transitions API for hardware-accelerated page transitions
     // Provides smooth, GPU-composited transitions between pages

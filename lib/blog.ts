@@ -1,13 +1,27 @@
 import matter from 'gray-matter';
 import type { BlogPost, BlogPostSummary, BlogPostFrontmatter, BlogFilterOption } from '@/lib/types/blog-post';
-import {
-  dbGetAllPosts,
-  dbGetPostBySlug,
-  dbCreatePost,
-  dbUpdatePost,
-  dbDeletePost,
-  type PostRow,
-} from '@/lib/db';
+import type { PostRow } from '@/lib/db';
+
+// Dynamic import of the DB module. bun:sqlite is externalized by Turbopack
+// but the externalized require runs at chunk-evaluation time. Using import()
+// creates a chunk boundary so the bun:sqlite chunk is only loaded when this
+// function is called — not when blog.ts itself is loaded by pages during build.
+type DbModule = typeof import('@/lib/db');
+let _dbModule: DbModule | null = null;
+
+async function loadDb(): Promise<DbModule | null> {
+  if (_dbModule) return _dbModule;
+
+  try {
+    _dbModule = await import('@/lib/db');
+    return _dbModule;
+  } catch (err) {
+    // Don't cache failures — the module may become available at runtime
+    // even if it failed during build analysis.
+    console.error('[blog] Failed to load DB module:', err);
+    return null;
+  }
+}
 
 // In-memory LRU cache
 interface CacheEntry<T> {
@@ -69,17 +83,15 @@ export async function getAllPosts(): Promise<BlogPostSummary[]> {
     return indexCache.entry.data;
   }
 
-  try {
-    const includeDrafts = process.env.NODE_ENV !== 'production';
-    const rows = dbGetAllPosts(includeDrafts);
-    const posts = rows.map(rowToSummary);
+  const db = await loadDb();
+  if (!db) return [];
 
-    indexCache.entry = { data: posts, timestamp: Date.now() };
-    return posts;
-  } catch {
-    // DB unavailable (e.g. during Next.js build under Node.js)
-    return [];
-  }
+  const includeDrafts = process.env.NODE_ENV !== 'production';
+  const rows = db.dbGetAllPosts(includeDrafts);
+  const posts = rows.map(rowToSummary);
+
+  indexCache.entry = { data: posts, timestamp: Date.now() };
+  return posts;
 }
 
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
@@ -88,34 +100,35 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
     return cached.data;
   }
 
-  try {
-    const row = dbGetPostBySlug(slug);
-    if (!row) return null;
+  const db = await loadDb();
+  if (!db) return null;
 
-    // Skip drafts in production
-    if (row.draft && process.env.NODE_ENV === 'production') return null;
+  const row = db.dbGetPostBySlug(slug);
+  if (!row) return null;
 
-    const post = rowToBlogPost(row);
+  // Skip drafts in production
+  if (row.draft && process.env.NODE_ENV === 'production') return null;
 
-    // LRU eviction
-    if (postCache.size >= MAX_POST_CACHE_SIZE) {
-      const oldestKey = postCache.keys().next().value;
-      if (oldestKey) postCache.delete(oldestKey);
-    }
-    postCache.set(slug, { data: post, timestamp: Date.now() });
+  const post = rowToBlogPost(row);
 
-    return post;
-  } catch {
-    // DB unavailable (e.g. during Next.js build under Node.js)
-    return null;
+  // LRU eviction
+  if (postCache.size >= MAX_POST_CACHE_SIZE) {
+    const oldestKey = postCache.keys().next().value;
+    if (oldestKey) postCache.delete(oldestKey);
   }
+  postCache.set(slug, { data: post, timestamp: Date.now() });
+
+  return post;
 }
 
 export async function createPost(slug: string, content: string): Promise<BlogPost> {
+  const db = await loadDb();
+  if (!db) throw new Error('Database unavailable');
+
   const { data, content: body } = matter(content);
   const frontmatter = validateFrontmatter(data);
 
-  dbCreatePost({
+  db.dbCreatePost({
     slug,
     raw_content: content,
     title: frontmatter.title,
@@ -133,10 +146,13 @@ export async function createPost(slug: string, content: string): Promise<BlogPos
 }
 
 export async function updatePost(slug: string, content: string): Promise<BlogPost> {
+  const db = await loadDb();
+  if (!db) throw new Error('Database unavailable');
+
   const { data, content: body } = matter(content);
   const frontmatter = validateFrontmatter(data);
 
-  dbUpdatePost(slug, {
+  db.dbUpdatePost(slug, {
     raw_content: content,
     title: frontmatter.title,
     category: frontmatter.category,
@@ -153,7 +169,10 @@ export async function updatePost(slug: string, content: string): Promise<BlogPos
 }
 
 export async function deletePost(slug: string): Promise<void> {
-  dbDeletePost(slug);
+  const db = await loadDb();
+  if (!db) throw new Error('Database unavailable');
+
+  db.dbDeletePost(slug);
   invalidateBlogCache();
 }
 

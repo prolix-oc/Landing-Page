@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { validateManagementAuth } from '@/lib/auth';
-import { dbGetAllImages } from '@/lib/db';
 import { imageCorsHeaders } from '@/lib/image-optimizer';
 
 export async function OPTIONS() {
@@ -21,6 +20,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    const { dbGetAllImages } = await import('@/lib/db');
     const images = dbGetAllImages();
 
     return NextResponse.json(

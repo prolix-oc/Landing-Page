@@ -4,7 +4,6 @@ import { stat } from 'fs/promises';
 import path from 'path';
 import { processAndSaveImage, parseImageParams, imageCorsHeaders } from '@/lib/image-optimizer';
 import { validateImageOrManagementAuth } from '@/lib/auth';
-import { dbInsertImage } from '@/lib/db';
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -21,6 +20,7 @@ const ALLOWED_TYPES = [
 
 async function trackImage(result: { filename: string; path: string; url: string }, originalName?: string) {
   try {
+    const { dbInsertImage } = await import('@/lib/db');
     const metadata = await sharp(result.path).metadata();
     const fileStat = await stat(result.path);
     dbInsertImage({

@@ -3,7 +3,6 @@ import { readFile, stat, unlink } from 'fs/promises';
 import path from 'path';
 import { imageCorsHeaders } from '@/lib/image-optimizer';
 import { validateImageOrManagementAuth } from '@/lib/auth';
-import { dbDeleteImage } from '@/lib/db';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public/uploads');
 
@@ -135,6 +134,7 @@ export async function DELETE(
 
   // Delete from DB (best-effort; file is already gone)
   try {
+    const { dbDeleteImage } = await import('@/lib/db');
     dbDeleteImage(check.filename);
   } catch {
     // File deleted but wasn't tracked — that's fine
