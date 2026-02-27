@@ -57,7 +57,9 @@ function validateFrontmatter(data: Record<string, unknown>): BlogPostFrontmatter
     throw new Error('Post frontmatter missing required field: title');
   }
 
-  return { title, tags, category, date, updated, excerpt, draft };
+  const hero_image = typeof data.hero_image === 'string' ? data.hero_image : undefined;
+
+  return { title, tags, category, date, updated, excerpt, draft, hero_image };
 }
 
 function rowToSummary(row: PostRow): BlogPostSummary {
@@ -69,6 +71,7 @@ function rowToSummary(row: PostRow): BlogPostSummary {
     date: row.date,
     updated: row.updated ?? undefined,
     excerpt: row.excerpt,
+    hero_image: row.hero_image ?? undefined,
   };
 }
 
@@ -140,6 +143,7 @@ export async function createPost(slug: string, content: string): Promise<BlogPos
     excerpt: frontmatter.excerpt,
     tags: frontmatter.tags,
     draft: frontmatter.draft ?? false,
+    hero_image: frontmatter.hero_image,
   });
 
   const post: BlogPost = { slug, frontmatter, content: body };
@@ -163,6 +167,7 @@ export async function updatePost(slug: string, content: string): Promise<BlogPos
     excerpt: frontmatter.excerpt,
     tags: frontmatter.tags,
     draft: frontmatter.draft ?? false,
+    hero_image: frontmatter.hero_image,
   });
 
   const post: BlogPost = { slug, frontmatter, content: body };

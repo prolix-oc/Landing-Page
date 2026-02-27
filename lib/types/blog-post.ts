@@ -6,6 +6,7 @@ export interface BlogPostFrontmatter {
   updated?: string;
   excerpt: string;
   draft?: boolean;
+  hero_image?: string;
 }
 
 export interface BlogPost {
@@ -22,6 +23,7 @@ export interface BlogPostSummary {
   date: string;
   updated?: string;
   excerpt: string;
+  hero_image?: string;
 }
 
 export interface BlogFilterOption {

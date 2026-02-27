@@ -16,6 +16,8 @@ export async function generateMetadata(
     };
   }
 
+  const ogImages = post.frontmatter.hero_image ? [{ url: post.frontmatter.hero_image }] : undefined;
+
   return {
     title: `${post.frontmatter.title} - Lucid.cards`,
     description: post.frontmatter.excerpt,
@@ -26,11 +28,13 @@ export async function generateMetadata(
       publishedTime: post.frontmatter.date,
       modifiedTime: post.frontmatter.updated,
       tags: post.frontmatter.tags,
+      images: ogImages,
     },
     twitter: {
       card: 'summary_large_image',
       title: post.frontmatter.title,
       description: post.frontmatter.excerpt,
+      images: ogImages,
     },
   };
 }

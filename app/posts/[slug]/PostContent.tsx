@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import AnimatedLink from '@/app/components/AnimatedLink';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -7,9 +8,13 @@ import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { ArrowLeft, Calendar, Tag, Layers } from 'lucide-react';
 import type { BlogPost } from '@/lib/types/blog-post';
+import { extractTextFromNode, generateHeadingId } from '@/lib/heading-utils';
+import ImageLightbox from '@/app/components/ImageLightbox';
+import TableOfContents from '@/app/components/TableOfContents';
 
 export default function PostContent({ post }: { post: BlogPost }) {
   const { frontmatter, content } = post;
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -25,9 +30,9 @@ export default function PostContent({ post }: { post: BlogPost }) {
         </AnimatedLink>
       </div>
 
-      <div className="relative container mx-auto px-4 pt-20 sm:pt-24 pb-12 sm:pb-16">
+      <div className="relative container mx-auto px-4 pt-20 sm:pt-24 pb-12 sm:pb-16 max-w-6xl">
         {/* Post Header */}
-        <header className="text-center mb-10 sm:mb-12 max-w-3xl mx-auto">
+        <header className="text-center mb-10 sm:mb-12 max-w-4xl mx-auto">
           {/* Category badge */}
           <div className="mb-4">
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-400 bg-sky-500/10 border border-sky-500/20 px-3 py-1 rounded-full">
@@ -78,100 +83,155 @@ export default function PostContent({ post }: { post: BlogPost }) {
           )}
         </header>
 
-        {/* Post Body */}
-        <div className="relative max-w-3xl mx-auto">
-          <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
-
-          <div className="relative p-6 sm:p-8 lg:p-10">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkBreaks]}
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                h1: ({ ...props }) => (
-                  <h1 className="text-3xl sm:text-4xl font-bold text-white mt-10 mb-4 first:mt-0" {...props} />
-                ),
-                h2: ({ ...props }) => (
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mt-8 mb-3 first:mt-0" {...props} />
-                ),
-                h3: ({ ...props }) => (
-                  <h3 className="text-xl sm:text-2xl font-semibold text-white mt-6 mb-3 first:mt-0" {...props} />
-                ),
-                h4: ({ ...props }) => (
-                  <h4 className="text-lg font-semibold text-white mt-5 mb-2" {...props} />
-                ),
-                p: ({ ...props }) => (
-                  <p className="text-gray-300 leading-relaxed mb-4 last:mb-0" {...props} />
-                ),
-                a: ({ ...props }) => (
-                  <a className="text-sky-400 hover:text-sky-300 underline underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />
-                ),
-                strong: ({ ...props }) => (
-                  <strong className="text-white font-semibold" {...props} />
-                ),
-                em: ({ ...props }) => (
-                  <em className="text-sky-300/80" {...props} />
-                ),
-                ul: ({ ...props }) => (
-                  <ul className="text-gray-300 space-y-1.5 mb-4 ml-4 list-disc marker:text-sky-500/50" {...props} />
-                ),
-                ol: ({ ...props }) => (
-                  <ol className="text-gray-300 space-y-1.5 mb-4 ml-4 list-decimal marker:text-sky-500/50" {...props} />
-                ),
-                li: ({ ...props }) => (
-                  <li className="leading-relaxed pl-1" {...props} />
-                ),
-                blockquote: ({ ...props }) => (
-                  <blockquote className="border-l-2 border-sky-500/50 pl-4 py-1 my-4 text-gray-400 italic" {...props} />
-                ),
-                code: ({ className, children, ...props }) => {
-                  const isInline = !className;
-                  if (isInline) {
-                    return (
-                      <code className="text-sky-300 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
-                        {children}
-                      </code>
-                    );
-                  }
-                  return (
-                    <code className={`${className} text-sm`} {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-                pre: ({ ...props }) => (
-                  <pre className="bg-black/40 border border-white/[0.06] rounded-xl p-4 overflow-x-auto mb-4 text-sm leading-relaxed" {...props} />
-                ),
-                hr: () => (
-                  <hr className="border-white/[0.08] my-8" />
-                ),
-                img: ({ alt, ...props }) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img alt={alt} className="rounded-xl border border-white/[0.08] my-4 max-w-full" {...props} />
-                ),
-                table: ({ ...props }) => (
-                  <div className="overflow-x-auto mb-4">
-                    <table className="w-full border-collapse" {...props} />
-                  </div>
-                ),
-                thead: ({ ...props }) => (
-                  <thead className="border-b border-white/[0.1]" {...props} />
-                ),
-                th: ({ ...props }) => (
-                  <th className="text-left text-sm font-semibold text-white px-3 py-2" {...props} />
-                ),
-                td: ({ ...props }) => (
-                  <td className="text-sm text-gray-300 px-3 py-2 border-b border-white/[0.05]" {...props} />
-                ),
-                del: ({ ...props }) => (
-                  <del className="text-gray-500" {...props} />
-                ),
-              }}
+        {/* Hero Image */}
+        {frontmatter.hero_image && (
+          <div className="max-w-4xl mx-auto mb-10">
+            <button
+              type="button"
+              onClick={() => setLightboxSrc(frontmatter.hero_image!)}
+              className="group block w-full cursor-zoom-in rounded-2xl overflow-hidden border border-white/[0.08] hover:border-sky-500/40 hover:shadow-lg hover:shadow-sky-500/10 transition-all duration-300"
             >
-              {content}
-            </ReactMarkdown>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={frontmatter.hero_image}
+                alt={frontmatter.title}
+                className="w-full object-cover max-h-[480px]"
+              />
+            </button>
           </div>
+        )}
+
+        {/* Content area with TOC sidebar */}
+        <div className="flex gap-8 max-w-6xl mx-auto items-start">
+          {/* Main content */}
+          <div className="flex-1 min-w-0 max-w-3xl mx-auto">
+            {/* Mobile TOC */}
+            <div className="lg:hidden">
+              <TableOfContents content={content} />
+            </div>
+
+            {/* Post Body */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-sm rounded-2xl sm:rounded-3xl border border-white/[0.05]" />
+
+              <div className="relative p-6 sm:p-8 lg:p-10">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    h1: ({ children, ...props }) => {
+                      const text = extractTextFromNode(children);
+                      const id = generateHeadingId(text);
+                      return <h1 id={id} className="text-3xl sm:text-4xl font-bold text-white mt-10 mb-4 first:mt-0 scroll-mt-20" {...props}>{children}</h1>;
+                    },
+                    h2: ({ children, ...props }) => {
+                      const text = extractTextFromNode(children);
+                      const id = generateHeadingId(text);
+                      return <h2 id={id} className="text-2xl sm:text-3xl font-bold text-white mt-8 mb-3 first:mt-0 scroll-mt-20" {...props}>{children}</h2>;
+                    },
+                    h3: ({ children, ...props }) => {
+                      const text = extractTextFromNode(children);
+                      const id = generateHeadingId(text);
+                      return <h3 id={id} className="text-xl sm:text-2xl font-semibold text-white mt-6 mb-3 first:mt-0 scroll-mt-20" {...props}>{children}</h3>;
+                    },
+                    h4: ({ children, ...props }) => {
+                      const text = extractTextFromNode(children);
+                      const id = generateHeadingId(text);
+                      return <h4 id={id} className="text-lg font-semibold text-white mt-5 mb-2 scroll-mt-20" {...props}>{children}</h4>;
+                    },
+                    p: ({ ...props }) => (
+                      <p className="text-gray-300 leading-relaxed mb-4 last:mb-0" {...props} />
+                    ),
+                    a: ({ ...props }) => (
+                      <a className="text-sky-400 hover:text-sky-300 underline underline-offset-2 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />
+                    ),
+                    strong: ({ ...props }) => (
+                      <strong className="text-white font-semibold" {...props} />
+                    ),
+                    em: ({ ...props }) => (
+                      <em className="text-sky-300/80" {...props} />
+                    ),
+                    ul: ({ ...props }) => (
+                      <ul className="text-gray-300 space-y-1.5 mb-4 ml-4 list-disc marker:text-sky-500/50" {...props} />
+                    ),
+                    ol: ({ ...props }) => (
+                      <ol className="text-gray-300 space-y-1.5 mb-4 ml-4 list-decimal marker:text-sky-500/50" {...props} />
+                    ),
+                    li: ({ ...props }) => (
+                      <li className="leading-relaxed pl-1" {...props} />
+                    ),
+                    blockquote: ({ ...props }) => (
+                      <blockquote className="border-l-2 border-sky-500/50 pl-4 py-1 my-4 text-gray-400 italic" {...props} />
+                    ),
+                    code: ({ className, children, ...props }) => {
+                      const isInline = !className;
+                      if (isInline) {
+                        return (
+                          <code className="text-sky-300 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
+                      return (
+                        <code className={`${className} text-sm`} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                    pre: ({ ...props }) => (
+                      <pre className="bg-black/40 border border-white/[0.06] rounded-xl p-4 overflow-x-auto mb-4 text-sm leading-relaxed" {...props} />
+                    ),
+                    hr: () => (
+                      <hr className="border-white/[0.08] my-8" />
+                    ),
+                    img: ({ alt, src, ...props }) => {
+                      const imgSrc = typeof src === 'string' ? src : undefined;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => imgSrc && setLightboxSrc(imgSrc)}
+                          className="block cursor-zoom-in rounded-xl overflow-hidden border border-white/[0.08] hover:border-sky-500/40 hover:shadow-lg hover:shadow-sky-500/10 transition-all duration-300 my-4"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img alt={alt} src={imgSrc} className="max-w-full" {...props} />
+                        </button>
+                      );
+                    },
+                    table: ({ ...props }) => (
+                      <div className="overflow-x-auto mb-4">
+                        <table className="w-full border-collapse" {...props} />
+                      </div>
+                    ),
+                    thead: ({ ...props }) => (
+                      <thead className="border-b border-white/[0.1]" {...props} />
+                    ),
+                    th: ({ ...props }) => (
+                      <th className="text-left text-sm font-semibold text-white px-3 py-2" {...props} />
+                    ),
+                    td: ({ ...props }) => (
+                      <td className="text-sm text-gray-300 px-3 py-2 border-b border-white/[0.05]" {...props} />
+                    ),
+                    del: ({ ...props }) => (
+                      <del className="text-gray-500" {...props} />
+                    ),
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop TOC sidebar */}
+          <TableOfContents content={content} />
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        src={lightboxSrc}
+        onClose={() => setLightboxSrc(null)}
+      />
     </div>
   );
 }

@@ -55,6 +55,13 @@ function getDb(): InstanceType<typeof Database> {
     CREATE INDEX IF NOT EXISTS idx_images_filename ON images(filename);
   `);
 
+  // Add hero_image column if it doesn't exist
+  try {
+    _db.exec('ALTER TABLE posts ADD COLUMN hero_image TEXT');
+  } catch {
+    // Column already exists — ignore
+  }
+
   migrateMarkdownFiles(_db);
   migrateExistingImages(_db);
 
@@ -73,8 +80,8 @@ function migrateMarkdownFiles(db: InstanceType<typeof Database>): void {
   console.log(`[db] Migrating ${files.length} markdown file(s) into database...`);
 
   const insert = db.prepare(`
-    INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft)
-    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft)
+    INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft, hero_image)
+    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft, $hero_image)
   `);
 
   const migrate = db.transaction(() => {
@@ -91,8 +98,9 @@ function migrateMarkdownFiles(db: InstanceType<typeof Database>): void {
         const excerpt = typeof data.excerpt === 'string' ? data.excerpt : '';
         const tags = Array.isArray(data.tags) ? JSON.stringify(data.tags.filter((t: unknown) => typeof t === 'string')) : '[]';
         const draft = data.draft === true ? 1 : 0;
+        const hero_image = typeof data.hero_image === 'string' ? data.hero_image : null;
 
-        insert.run({ slug, raw_content: raw, title, category, date, updated, excerpt, tags, draft });
+        insert.run({ slug, raw_content: raw, title, category, date, updated, excerpt, tags, draft, hero_image });
         console.log(`[db] Migrated: ${file}`);
       } catch (err) {
         console.error(`[db] Failed to migrate ${file}:`, err);
@@ -188,6 +196,7 @@ export interface PostRow {
   excerpt: string;
   tags: string; // JSON string
   draft: number; // 0 or 1
+  hero_image: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -217,14 +226,15 @@ export function dbCreatePost(params: {
   excerpt: string;
   tags: string[];
   draft: boolean;
+  hero_image?: string;
 }): PostRow {
   const existing = dbGetPostBySlug(params.slug);
   if (existing) throw new Error('CONFLICT');
 
   const db = getDb();
   db.prepare(`
-    INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft)
-    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft)
+    INSERT INTO posts (slug, raw_content, title, category, date, updated, excerpt, tags, draft, hero_image)
+    VALUES ($slug, $raw_content, $title, $category, $date, $updated, $excerpt, $tags, $draft, $hero_image)
   `).run({
     slug: params.slug,
     raw_content: params.raw_content,
@@ -235,6 +245,7 @@ export function dbCreatePost(params: {
     excerpt: params.excerpt,
     tags: JSON.stringify(params.tags),
     draft: params.draft ? 1 : 0,
+    hero_image: params.hero_image ?? null,
   });
 
   return dbGetPostBySlug(params.slug)!;
@@ -249,6 +260,7 @@ export function dbUpdatePost(slug: string, params: {
   excerpt: string;
   tags: string[];
   draft: boolean;
+  hero_image?: string;
 }): PostRow {
   const existing = dbGetPostBySlug(slug);
   if (!existing) throw new Error('NOT_FOUND');
@@ -264,6 +276,7 @@ export function dbUpdatePost(slug: string, params: {
         excerpt = $excerpt,
         tags = $tags,
         draft = $draft,
+        hero_image = $hero_image,
         updated_at = datetime('now')
     WHERE slug = $slug
   `).run({
@@ -276,6 +289,7 @@ export function dbUpdatePost(slug: string, params: {
     excerpt: params.excerpt,
     tags: JSON.stringify(params.tags),
     draft: params.draft ? 1 : 0,
+    hero_image: params.hero_image ?? null,
   });
 
   return dbGetPostBySlug(slug)!;

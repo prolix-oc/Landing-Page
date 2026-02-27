@@ -367,19 +367,24 @@ function PostsContent() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+                            className="columns-1 md:columns-2 xl:columns-3 gap-5"
                           >
                             {Array.from({ length: postsPerPage }).map((_, index) => (
-                              <div key={`skeleton-${index}`} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 animate-pulse">
-                                <div className="h-4 bg-white/[0.06] rounded w-1/3 mb-3" />
-                                <div className="h-6 bg-white/[0.06] rounded w-3/4 mb-3" />
-                                <div className="space-y-2 mb-4">
-                                  <div className="h-3 bg-white/[0.04] rounded w-full" />
-                                  <div className="h-3 bg-white/[0.04] rounded w-2/3" />
-                                </div>
-                                <div className="flex gap-2">
-                                  <div className="h-5 bg-white/[0.04] rounded-full w-12" />
-                                  <div className="h-5 bg-white/[0.04] rounded-full w-16" />
+                              <div key={`skeleton-${index}`} className="break-inside-avoid mb-5 bg-white/[0.03] border border-white/[0.06] rounded-2xl animate-pulse overflow-hidden">
+                                {index % 3 !== 2 && (
+                                  <div className="bg-white/[0.04] h-[180px]" />
+                                )}
+                                <div className="p-5">
+                                  <div className="h-4 bg-white/[0.06] rounded w-1/3 mb-3" />
+                                  <div className="h-6 bg-white/[0.06] rounded w-3/4 mb-3" />
+                                  <div className="space-y-2 mb-4">
+                                    <div className="h-3 bg-white/[0.04] rounded w-full" />
+                                    <div className="h-3 bg-white/[0.04] rounded w-2/3" />
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <div className="h-5 bg-white/[0.04] rounded-full w-12" />
+                                    <div className="h-5 bg-white/[0.04] rounded-full w-16" />
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -390,7 +395,7 @@ function PostsContent() {
                             initial={animationsEnabled ? { opacity: 0 } : false}
                             animate={{ opacity: 1 }}
                             transition={{ duration: 0.2 }}
-                            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+                            className="columns-1 md:columns-2 xl:columns-3 gap-5"
                           >
                             {paginatedPosts.map((post, index) => (
                               <motion.div
@@ -402,6 +407,7 @@ function PostsContent() {
                                   delay: index * 0.03,
                                   ease: [0.25, 0.1, 0.25, 1]
                                 } : { duration: 0 }}
+                                className="break-inside-avoid mb-5"
                               >
                                 <Link
                                   href={`/posts/${post.slug}`}
@@ -412,6 +418,20 @@ function PostsContent() {
 
                                   {/* Accent bar */}
                                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-500 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-10" />
+
+                                  {/* Hero image */}
+                                  {post.hero_image && (
+                                    <div className="relative">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={post.hero_image}
+                                        alt=""
+                                        loading="lazy"
+                                        className="w-full object-cover min-h-[120px] max-h-[280px] rounded-t-2xl"
+                                      />
+                                      <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/40 to-transparent" />
+                                    </div>
+                                  )}
 
                                   <div className="relative p-5">
                                     {/* Category + Date */}
