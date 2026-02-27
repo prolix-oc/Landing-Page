@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://lucid.cards'),
   title: "Lucid.cards - Character Cards, Chat Presets & Extensions",
   description: "A curated collection of character cards, chat completion presets, world books, and extensions for SillyTavern",
   icons: {
