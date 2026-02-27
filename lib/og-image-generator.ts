@@ -46,13 +46,23 @@ async function detectPeople(imagePath: string): Promise<BoundingBox | null> {
     const detector = await getDetector();
     if (!detector) return null;
 
-    // Convert image to a data URL for the pipeline
-    const buffer = await fs.promises.readFile(imagePath);
-    const base64 = buffer.toString('base64');
-    const mimeType = imagePath.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
-    const dataUrl = `data:${mimeType};base64,${base64}`;
+    // Use sharp to decode the image into raw RGBA pixels, then build
+    // a RawImage that the Transformers.js pipeline understands natively.
+    // This avoids data-URL / fetch issues in Node.js / Bun.
+    const { data, info } = await sharp(imagePath)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
 
-    const results: DetectionResult[] = await detector(dataUrl);
+    const { RawImage } = await import('@huggingface/transformers');
+    const image = new RawImage(
+      new Uint8ClampedArray(data.buffer),
+      info.width,
+      info.height,
+      info.channels,
+    );
+
+    const results: DetectionResult[] = await detector(image);
 
     // Filter for people with confidence > 0.5
     const people = results.filter(
