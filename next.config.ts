@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     // Enable View Transitions API for hardware-accelerated page transitions
     // Provides smooth, GPU-composited transitions between pages
     // Gracefully degrades on Safari/Firefox (instant navigation)
-    viewTransition: true,
+    viewTransition: false,
   },
 };
 
