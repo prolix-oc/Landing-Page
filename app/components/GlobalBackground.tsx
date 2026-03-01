@@ -86,6 +86,8 @@ export default function GlobalBackground() {
           colors,
           animationSpeed: 0.3,
           pauseOnOutsideViewport: true,
+          transition: true,
+          transitionDuration: 800,
         }}
         isPaused={isPaused}
       />
