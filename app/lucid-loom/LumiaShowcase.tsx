@@ -130,8 +130,8 @@ function LumiaCard({
           }}
         />
 
-        {/* Glassmorphic card container */}
-        <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-3xl transition-all duration-500 group-hover:border-white/[0.15] group-hover:bg-white/[0.06]" />
+        {/* Card overlay — no backdrop-blur (8 simultaneous blur layers kills GPU) */}
+        <div className="absolute inset-0 bg-white/[0.03] border border-white/[0.08] rounded-3xl transition-all duration-500 group-hover:border-white/[0.15] group-hover:bg-white/[0.06]" />
 
         {/* Avatar area */}
         <div className="relative h-full p-5 flex flex-col">
@@ -162,7 +162,7 @@ function LumiaCard({
             )}
 
             {/* Pronouns badge */}
-            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
+            <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-gray-900/70 border border-white/10">
               <span className="text-[10px] font-medium text-white/80 uppercase tracking-wider">
                 {GENDER_PRONOUNS[lumia.genderIdentity]}
               </span>
@@ -214,7 +214,7 @@ function LoadingSkeleton() {
           key={i}
           className={`relative rounded-3xl overflow-hidden animate-pulse ${pos.span}`}
         >
-          <div className="absolute inset-0 bg-white/[0.03] backdrop-blur-md border border-white/[0.08]" />
+          <div className="absolute inset-0 bg-white/[0.03] border border-white/[0.08]" />
           <div className="relative min-h-[220px] p-5 flex flex-col">
             <div className="flex-1 rounded-2xl bg-white/[0.05] mb-4" />
             <div className="h-6 w-2/3 rounded-lg bg-white/[0.05] mb-2" />
