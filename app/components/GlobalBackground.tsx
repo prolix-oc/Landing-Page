@@ -104,10 +104,23 @@ export default function GlobalBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
-  // Init once — fade in wrapper after first paint to prevent white flash
+  // Init once — fade in wrapper after first paint to prevent white flash.
+  // Patch getContext to add preserveDrawingBuffer so View Transitions can
+  // snapshot the canvas without getting a black frame.
   useEffect(() => {
     if (!instance || !canvasRef.current) return;
-    instance.init(canvasRef.current, {
+    const canvas = canvasRef.current;
+
+    const origGetContext = canvas.getContext.bind(canvas);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (canvas as any).getContext = (type: string, attrs?: Record<string, unknown>) => {
+      if (type === 'webgl' || type === 'webgl2') {
+        return origGetContext(type, { ...attrs, preserveDrawingBuffer: true });
+      }
+      return origGetContext(type, attrs);
+    };
+
+    instance.init(canvas, {
       colors,
       animationSpeed: 0.3,
     });
