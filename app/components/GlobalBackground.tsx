@@ -1,8 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import { MeshGradient } from '@mesh-gradient/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMeshGradient } from '@mesh-gradient/react';
 
 type ColorTuple = [string, string, string, string];
 
@@ -19,16 +19,26 @@ const routeThemes: Record<string, ColorTuple> = {
 
 const defaultColors = routeThemes['/'];
 
+const GRADIENT_OPTIONS = { animationSpeed: 0.3 } as const;
+const CROSSFADE_MS = 1000;
+
+function resolveColors(pathname: string): ColorTuple {
+  return (
+    routeThemes[pathname]
+    || Object.entries(routeThemes).find(
+      ([route]) => route !== '/' && pathname.startsWith(route),
+    )?.[1]
+    || defaultColors
+  );
+}
+
 function usePageVisibility(): boolean {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsVisible(document.visibilityState === 'visible');
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    const handler = () => setIsVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
   }, []);
 
   return isVisible;
@@ -43,31 +53,96 @@ function useReducedMotion(): boolean {
   });
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   return prefersReducedMotion;
+}
+
+// Individual gradient layer — imperative init via useMeshGradient
+function GradientLayer({
+  colors,
+  isPaused,
+  visible,
+}: {
+  colors: ColorTuple;
+  isPaused: boolean;
+  visible: boolean;
+}) {
+  const { instance } = useMeshGradient();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const initColors = useRef(colors);
+
+  // Init once
+  useEffect(() => {
+    if (!instance || !canvasRef.current) return;
+    instance.init(canvasRef.current, {
+      colors: initColors.current,
+      ...GRADIENT_OPTIONS,
+    });
+  }, [instance]);
+
+  // Update colors without the library's fade-through-black transition
+  useEffect(() => {
+    if (!instance?.isInitialized) return;
+    instance.update({ colors, transition: false });
+  }, [instance, colors]);
+
+  // Play/pause
+  useEffect(() => {
+    if (!instance?.isInitialized) return;
+    if (isPaused) instance.pause();
+    else instance.play();
+  }, [instance, isPaused]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full"
+      style={{
+        opacity: visible ? 1 : 0,
+        transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+      }}
+    />
+  );
 }
 
 export default function GlobalBackground() {
   const pathname = usePathname();
   const isPageVisible = usePageVisibility();
   const prefersReducedMotion = useReducedMotion();
-
   const isPaused = !isPageVisible || prefersReducedMotion;
 
-  const colors = useMemo(() => {
-    return (
-      routeThemes[pathname]
-      || Object.entries(routeThemes).find(
-        ([route]) => route !== '/' && pathname.startsWith(route),
-      )?.[1]
-      || defaultColors
-    );
-  }, [pathname]);
+  const colors = useMemo(() => resolveColors(pathname), [pathname]);
+
+  // Track which layer (A or B) is currently visible
+  const [activeLayer, setActiveLayer] = useState<'a' | 'b'>('a');
+  const [colorsA, setColorsA] = useState<ColorTuple>(colors);
+  const [colorsB, setColorsB] = useState<ColorTuple>(colors);
+  const isFirstRender = useRef(true);
+
+  // On color change: push new colors to the inactive layer, then flip visibility
+  const prevColors = useRef(colors);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (prevColors.current === colors) return;
+    prevColors.current = colors;
+
+    if (activeLayer === 'a') {
+      setColorsB(colors);
+      // Small delay so the inactive canvas renders the new colors before we fade to it
+      requestAnimationFrame(() => setActiveLayer('b'));
+    } else {
+      setColorsA(colors);
+      requestAnimationFrame(() => setActiveLayer('a'));
+    }
+  }, [colors, activeLayer]);
 
   return (
     <div
@@ -76,20 +151,18 @@ export default function GlobalBackground() {
         isolation: 'isolate',
         contain: 'paint',
         opacity: 0.55,
-        // Exclude from View Transitions so the gradient persists across navigations
         viewTransitionName: 'none',
       }}
     >
-      <MeshGradient
-        className="w-full h-full"
-        options={{
-          colors,
-          animationSpeed: 0.3,
-          pauseOnOutsideViewport: true,
-          transition: true,
-          transitionDuration: 800,
-        }}
+      <GradientLayer
+        colors={colorsA}
         isPaused={isPaused}
+        visible={activeLayer === 'a'}
+      />
+      <GradientLayer
+        colors={colorsB}
+        isPaused={isPaused}
+        visible={activeLayer === 'b'}
       />
     </div>
   );
