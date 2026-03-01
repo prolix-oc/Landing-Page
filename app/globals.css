@@ -620,7 +620,7 @@ body.page-transitioning {
   pointer-events: none;
 }
 
-body.page-transitioning > *:not([data-persistent]) {
+body.page-transitioning > * {
   animation: pageFadeOut 0.15s ease-out forwards;
 }
 
@@ -704,12 +704,6 @@ button:active:not(.no-click-feedback) {
   /* Exclude flex containers that can cause layout stretching during transitions */
   .vt-exclude {
     view-transition-name: none !important;
-  }
-
-  /* Keep the mesh gradient background persistent — no animation during transitions */
-  ::view-transition-old(global-background),
-  ::view-transition-new(global-background) {
-    animation: none;
   }
 
   /* Forward navigation (default) - slide left */

@@ -7,7 +7,6 @@ import { useMeshGradient } from '@mesh-gradient/react';
 type ColorTuple = [string, string, string, string];
 
 // Route-based color themes — 4 deep-toned hex colors per route.
-// Intentionally dark/muted; the wrapper opacity controls overall intensity.
 const routeThemes: Record<string, ColorTuple> = {
   '/': ['#581c87', '#164e63', '#1e3a5f', '#3b0764'],
   '/character-cards': ['#164e63', '#581c87', '#1e3a5f', '#0e4a5c'],
@@ -48,12 +47,10 @@ function patchColors(instance: Record<string, unknown>, colors: ColorTuple) {
     | undefined;
   if (!uniforms) return;
 
-  // Base color = colors[0]
   if (uniforms.u_baseColor) {
     uniforms.u_baseColor.value = hexToNormRgb(colors[0]);
   }
 
-  // Wave layers = colors[1..3]
   const layers = uniforms.u_waveLayers?.value;
   if (layers) {
     for (let i = 0; i < layers.length && i + 1 < colors.length; i++) {
@@ -104,23 +101,10 @@ export default function GlobalBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
-  // Init once — fade in wrapper after first paint to prevent white flash.
-  // Patch getContext to add preserveDrawingBuffer so View Transitions can
-  // snapshot the canvas without getting a black frame.
+  // Init once
   useEffect(() => {
     if (!instance || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-
-    const origGetContext = canvas.getContext.bind(canvas);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (canvas as any).getContext = (type: string, attrs?: Record<string, unknown>) => {
-      if (type === 'webgl' || type === 'webgl2') {
-        return origGetContext(type, { ...attrs, preserveDrawingBuffer: true });
-      }
-      return origGetContext(type, attrs);
-    };
-
-    instance.init(canvas, {
+    instance.init(canvasRef.current, {
       colors,
       animationSpeed: 0.3,
     });
@@ -145,18 +129,26 @@ export default function GlobalBackground() {
   }, [instance, isPaused]);
 
   return (
+    // Wrapper matches the old orb system exactly — no opacity, no transition.
+    // pageFadeOut targets body > * (this wrapper), but since it has no opacity
+    // of its own, the visual impact is negligible (just like the old orbs).
     <div
-      data-persistent
       className="fixed inset-0 overflow-hidden pointer-events-none -z-10"
       style={{
         isolation: 'isolate',
         contain: 'paint',
-        opacity: ready ? 0.55 : 0,
-        transition: 'opacity 0.6s ease-in-out',
-        viewTransitionName: 'global-background',
       }}
     >
-      <canvas ref={canvasRef} className="w-full h-full" />
+      {/* Opacity lives on the canvas, not the wrapper. pageFadeOut only
+          reaches body > * (the wrapper), not grandchildren like this canvas. */}
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full"
+        style={{
+          opacity: ready ? 0.55 : 0,
+          transition: 'opacity 0.6s ease-in-out',
+        }}
+      />
     </div>
   );
 }
