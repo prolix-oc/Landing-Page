@@ -258,22 +258,6 @@ a:active {
   animation: fadeInScale 0.6s ease-out;
 }
 
-/* Background pulse animation - opacity + scale only (no blur animation for GPU perf) */
-@keyframes orbPulse {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.05);
-  }
-}
-
-.blur-pulse {
-  animation: orbPulse 8s ease-in-out infinite;
-}
-
 /* Breathing gradient animation for cards - continuously loops the gradient position */
 @keyframes breathingGradient {
   0%, 100% {
@@ -489,60 +473,6 @@ a:active {
 .stagger-grid-item:nth-child(5) { animation-delay: 0.5s; }
 .stagger-grid-item:nth-child(6) { animation-delay: 0.6s; }
 
-/* ==================== */
-/* Floating Orb Animations (GPU Optimized) */
-/* ==================== */
-
-/* Orb animation keyframes - using translate3d for proper GPU compositing */
-@keyframes orb-float-1 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  25% { transform: translate3d(60px, -40px, 0) scale(1.05); }
-  50% { transform: translate3d(30px, 50px, 0) scale(0.95); }
-  75% { transform: translate3d(-20px, 20px, 0) scale(1.02); }
-}
-
-@keyframes orb-float-2 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  33% { transform: translate3d(-50px, 40px, 0) scale(1.08); }
-  66% { transform: translate3d(30px, -30px, 0) scale(0.92); }
-}
-
-@keyframes orb-float-3 {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(40px, -60px, 0) scale(1.1); }
-}
-
-/* Orb classes with enhanced GPU optimization to prevent rendering artifacts */
-.orb-1,
-.orb-2,
-.orb-3 {
-  /* Force dedicated GPU layer */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  /* Isolate compositing to prevent bleed */
-  isolation: isolate;
-  contain: paint;
-  /* Prevent subpixel rendering issues */
-  -webkit-font-smoothing: antialiased;
-}
-
-.orb-1 {
-  animation: orb-float-1 25s ease-in-out infinite;
-  will-change: transform;
-  transition: background-color 1s ease;
-}
-
-.orb-2 {
-  animation: orb-float-2 30s ease-in-out infinite;
-  will-change: transform;
-}
-
-.orb-3 {
-  animation: orb-float-3 22s ease-in-out infinite;
-  will-change: transform;
-}
-
 /* Simple fade in animation for page transitions */
 @keyframes simpleFadeIn {
   from { opacity: 0; }
@@ -708,25 +638,14 @@ button:active:not(.no-click-feedback) {
 
 /* CSS custom properties for blur control (easier to tune globally) */
 :root {
-  --orb-blur: 80px;
-  --orb-blur-safari: 30px; /* Reduced from 50px for better GPU perf */
   --backdrop-blur: 12px;
   --backdrop-blur-safari: 8px;
 }
 
 /* Safari-specific overrides using feature detection */
-/* Safari struggles with large blur radii - reduce them */
 @supports (-webkit-hyphens: none) {
   :root {
-    --orb-blur: var(--orb-blur-safari);
     --backdrop-blur: var(--backdrop-blur-safari);
-  }
-
-  /* Reduce orb blur for Safari */
-  .orb-1, .orb-2, .orb-3 {
-    filter: blur(var(--orb-blur-safari)) !important;
-    -webkit-filter: blur(var(--orb-blur-safari)) !important;
-    opacity: 0.4;
   }
 
   /* Reduce backdrop blur for Safari */
@@ -736,23 +655,11 @@ button:active:not(.no-click-feedback) {
     -webkit-backdrop-filter: blur(var(--backdrop-blur-safari)) !important;
     backdrop-filter: blur(var(--backdrop-blur-safari)) !important;
   }
-
-  /* Disable complex animations on Safari for perf */
-  .blur-pulse {
-    animation: none !important;
-    opacity: 0.4;
-  }
 }
 
 /* Alternative Safari detection for older versions */
 @media not all and (min-resolution: 0.001dpcm) {
   @supports (-webkit-appearance: none) {
-    .orb-1, .orb-2, .orb-3 {
-      filter: blur(30px) !important; /* Reduced from 50px for better GPU perf */
-      -webkit-filter: blur(30px) !important;
-      opacity: 0.4;
-    }
-
     .backdrop-blur-xl,
     .backdrop-blur-lg {
       -webkit-backdrop-filter: blur(8px) !important;
@@ -766,16 +673,8 @@ button:active:not(.no-click-feedback) {
   }
 }
 
-/* Reduced motion preference - disable all blur animations */
+/* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  .orb-1, .orb-2, .orb-3 {
-    animation: none !important;
-  }
-
-  .blur-pulse {
-    animation: none !important;
-  }
-
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
