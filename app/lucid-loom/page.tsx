@@ -404,7 +404,12 @@ export default function LucidLoomPage() {
           </RevealSection>
 
           {/* Glow spanning quote and Stories in Motion header */}
-          <div className="absolute -bottom-48 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-purple-600/20 rounded-full blur-[150px] pointer-events-none" />
+          <div
+            className="absolute -bottom-48 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle, rgba(147, 51, 234, 0.20) 0%, rgba(147, 51, 234, 0.14) 20%, rgba(147, 51, 234, 0.08) 40%, rgba(147, 51, 234, 0.03) 60%, rgba(147, 51, 234, 0.01) 80%, transparent 100%)',
+            }}
+          />
         </div>
       </section>
 
@@ -734,9 +739,24 @@ export default function LucidLoomPage() {
       <section className="relative min-h-screen flex items-center justify-center px-4 vt-exclude">
         {/* Background effects */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-purple-950/20 to-gray-950" />
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-pink-600/15 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-600/10 rounded-full blur-[120px]" />
+        <div
+          className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(147, 51, 234, 0.20) 0%, rgba(147, 51, 234, 0.14) 20%, rgba(147, 51, 234, 0.08) 40%, rgba(147, 51, 234, 0.03) 60%, rgba(147, 51, 234, 0.01) 80%, transparent 100%)',
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(219, 39, 119, 0.15) 0%, rgba(219, 39, 119, 0.105) 20%, rgba(219, 39, 119, 0.06) 40%, rgba(219, 39, 119, 0.023) 60%, rgba(219, 39, 119, 0.008) 80%, transparent 100%)',
+          }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.10) 0%, rgba(6, 182, 212, 0.07) 20%, rgba(6, 182, 212, 0.04) 40%, rgba(6, 182, 212, 0.015) 60%, rgba(6, 182, 212, 0.005) 80%, transparent 100%)',
+          }}
+        />
 
         {/* Floating decorative cards - mirroring hero */}
         <FloatingCard delay={0.2} className="absolute top-24 right-[12%] hidden lg:block" variant="swoopArc" />
