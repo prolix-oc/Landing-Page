@@ -72,7 +72,13 @@ export default function GlobalBackground() {
   return (
     <div
       className="fixed inset-0 overflow-hidden pointer-events-none -z-10"
-      style={{ isolation: 'isolate', contain: 'paint', opacity: 0.55 }}
+      style={{
+        isolation: 'isolate',
+        contain: 'paint',
+        opacity: 0.55,
+        // Exclude from View Transitions so the gradient persists across navigations
+        viewTransitionName: 'none',
+      }}
     >
       <MeshGradient
         className="w-full h-full"
