@@ -31,6 +31,37 @@ function resolveColors(pathname: string): ColorTuple {
   );
 }
 
+// Convert hex to normalised [r,g,b] matching the library's internal format
+function hexToNormRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+}
+
+/**
+ * Patch color uniforms directly on the MeshGradient instance.
+ * The shader reads uniform .value every frame, so the change is seamless —
+ * no destroy/init cycle, no canvas clear, no flash.
+ */
+function patchColors(instance: Record<string, unknown>, colors: ColorTuple) {
+  const uniforms = (instance as Record<string, unknown>).uniforms as
+    | { u_baseColor?: { value: number[] }; u_waveLayers?: { value: Array<{ value: { color: { value: number[] } } }> } }
+    | undefined;
+  if (!uniforms) return;
+
+  // Base color = colors[0]
+  if (uniforms.u_baseColor) {
+    uniforms.u_baseColor.value = hexToNormRgb(colors[0]);
+  }
+
+  // Wave layers = colors[1..3]
+  const layers = uniforms.u_waveLayers?.value;
+  if (layers) {
+    for (let i = 0; i < layers.length && i + 1 < colors.length; i++) {
+      layers[i].value.color.value = hexToNormRgb(colors[i + 1]);
+    }
+  }
+}
+
 function usePageVisibility(): boolean {
   const [isVisible, setIsVisible] = useState(true);
 
@@ -80,18 +111,17 @@ export default function GlobalBackground() {
       colors,
       animationSpeed: 0.3,
     });
-    // Let one frame paint before revealing
     requestAnimationFrame(() => setReady(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instance]);
 
-  // Update colors instantly on route change (no library transition = no fade-through-black)
+  // On route change: patch uniforms directly (no destroy/init cycle)
   const prevColors = useRef(colors);
   useEffect(() => {
     if (!instance?.isInitialized) return;
     if (prevColors.current === colors) return;
     prevColors.current = colors;
-    instance.update({ colors, transition: false });
+    patchColors(instance as unknown as Record<string, unknown>, colors);
   }, [instance, colors]);
 
   // Play / pause
