@@ -109,7 +109,7 @@ export default function GlobalBackground() {
         contain: 'paint',
         opacity: ready ? 0.55 : 0,
         transition: 'opacity 0.6s ease-in-out',
-        viewTransitionName: 'none',
+        viewTransitionName: 'global-background',
       }}
     >
       <canvas ref={canvasRef} className="w-full h-full" />

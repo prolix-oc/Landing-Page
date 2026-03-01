@@ -706,6 +706,12 @@ button:active:not(.no-click-feedback) {
     view-transition-name: none !important;
   }
 
+  /* Keep the mesh gradient background persistent — no animation during transitions */
+  ::view-transition-old(global-background),
+  ::view-transition-new(global-background) {
+    animation: none;
+  }
+
   /* Forward navigation (default) - slide left */
   ::view-transition-old(root) {
     animation: vt-forward-out var(--vt-duration) var(--vt-ease) forwards;
