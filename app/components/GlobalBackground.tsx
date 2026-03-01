@@ -6,14 +6,15 @@ import { MeshGradient } from '@mesh-gradient/react';
 
 type ColorTuple = [string, string, string, string];
 
-// Route-based color themes — 4 hex colors per route for the mesh gradient
+// Route-based color themes — 4 deep-toned hex colors per route for the mesh gradient.
+// These are intentionally dark/muted; the wrapper opacity controls overall intensity.
 const routeThemes: Record<string, ColorTuple> = {
-  '/': ['#9333ea', '#06b6d4', '#3b82f6', '#6d28d9'],
-  '/character-cards': ['#06b6d4', '#9333ea', '#3b82f6', '#0891b2'],
-  '/world-books': ['#06b6d4', '#9333ea', '#3b82f6', '#0891b2'],
-  '/chat-presets': ['#06b6d4', '#9333ea', '#3b82f6', '#1e40af'],
-  '/lucid-loom': ['#9333ea', '#06b6d4', '#ec4899', '#7c3aed'],
-  '/extensions': ['#ea580c', '#d97706', '#dc2626', '#c2410c'],
+  '/': ['#581c87', '#164e63', '#1e3a5f', '#3b0764'],
+  '/character-cards': ['#164e63', '#581c87', '#1e3a5f', '#0e4a5c'],
+  '/world-books': ['#164e63', '#581c87', '#1e3a5f', '#0e4a5c'],
+  '/chat-presets': ['#164e63', '#581c87', '#1e3a5f', '#172554'],
+  '/lucid-loom': ['#581c87', '#164e63', '#831843', '#4c1d95'],
+  '/extensions': ['#7c2d12', '#78350f', '#7f1d1d', '#6c2710'],
 };
 
 const defaultColors = routeThemes['/'];
@@ -71,13 +72,13 @@ export default function GlobalBackground() {
   return (
     <div
       className="fixed inset-0 overflow-hidden pointer-events-none -z-10"
-      style={{ isolation: 'isolate', contain: 'paint' }}
+      style={{ isolation: 'isolate', contain: 'paint', opacity: 0.55 }}
     >
       <MeshGradient
         className="w-full h-full"
         options={{
           colors,
-          animationSpeed: 0.4,
+          animationSpeed: 0.3,
           pauseOnOutsideViewport: true,
         }}
         isPaused={isPaused}
