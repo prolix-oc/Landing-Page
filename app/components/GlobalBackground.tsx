@@ -146,6 +146,7 @@ export default function GlobalBackground() {
 
   return (
     <div
+      data-persistent
       className="fixed inset-0 overflow-hidden pointer-events-none -z-10"
       style={{
         isolation: 'isolate',

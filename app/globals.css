@@ -620,7 +620,7 @@ body.page-transitioning {
   pointer-events: none;
 }
 
-body.page-transitioning > * {
+body.page-transitioning > *:not([data-persistent]) {
   animation: pageFadeOut 0.15s ease-out forwards;
 }
 
