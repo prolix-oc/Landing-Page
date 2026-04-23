@@ -8,8 +8,10 @@ const OG_ASPECT = OG_WIDTH / OG_HEIGHT; // ~1.905
 const OG_DIR = path.join(process.cwd(), 'public', 'uploads', 'og');
 const LOGO_PATH = path.join(process.cwd(), 'fanned-cards.svg');
 
+type Detector = (image: unknown) => Promise<DetectionResult[]>;
+
 // Lazy-loaded singleton for the object detection pipeline
-let detectorPromise: Promise<any> | null = null;
+let detectorPromise: Promise<Detector | null> | null = null;
 
 async function getDetector() {
   if (detectorPromise) return detectorPromise;
@@ -17,7 +19,7 @@ async function getDetector() {
   detectorPromise = (async () => {
     try {
       const { pipeline } = await import('@huggingface/transformers');
-      return await pipeline('object-detection', 'Xenova/detr-resnet-50');
+      return await pipeline('object-detection', 'Xenova/detr-resnet-50') as unknown as Detector;
     } catch (err) {
       console.error('[og] Failed to load object detection model:', err);
       detectorPromise = null;

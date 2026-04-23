@@ -85,7 +85,8 @@ import {
 import {
   getPersistentCache,
   setPersistentCache,
-  getPersistentCacheStats
+  getPersistentCacheStats,
+  deletePersistentCache
 } from './persistent-cache';
 
 // Import GraphQL client (used exclusively when USE_GITHUB_GRAPHQL=true)
@@ -729,15 +730,25 @@ export function clearCache(): void {
   slugCache.clear();
 }
 
-export function invalidateCachePath(path: string, cacheType: 'github' | 'commit' = 'github'): boolean {
+export async function invalidateCachePath(path: string, cacheType: 'github' | 'commit' = 'github'): Promise<boolean> {
   const cacheKey = `${cacheType}:${path}`;
-  const existed = cache.has(cacheKey);
-  
+  const memoryInvalidated = cache.delete(cacheKey);
+  const persistentInvalidated = await deletePersistentCache(cacheKey);
+
+  const relatedPersistentKeys = cacheType === 'github'
+    ? [`graphql:tree:${path}:false`, `graphql:object:${path}`]
+    : [`graphql:commit:${path}`];
+
+  const relatedInvalidations = await Promise.all(
+    relatedPersistentKeys.map(key => deletePersistentCache(key))
+  );
+
+  const existed = memoryInvalidated || persistentInvalidated || relatedInvalidations.some(Boolean);
+
   if (existed) {
-    cache.delete(cacheKey);
     console.log(`[Cache Invalidation] Invalidated ${cacheType} cache for: ${path}`);
   }
-  
+
   return existed;
 }
 
@@ -769,14 +780,15 @@ export function invalidateThumbnailCache(path: string): boolean {
   return existed;
 }
 
-export function invalidateJsonDataCache(path: string): boolean {
-  const existed = jsonDataCache.has(path);
-  
+export async function invalidateJsonDataCache(path: string): Promise<boolean> {
+  const memoryInvalidated = jsonDataCache.delete(path);
+  const persistentInvalidated = await deletePersistentCache(`json:${path}`);
+  const existed = memoryInvalidated || persistentInvalidated;
+
   if (existed) {
-    jsonDataCache.delete(path);
     console.log(`[Cache Invalidation] Invalidated JSON data cache for: ${path}`);
   }
-  
+
   return existed;
 }
 

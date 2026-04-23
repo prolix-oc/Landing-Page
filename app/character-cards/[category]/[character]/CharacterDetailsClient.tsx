@@ -179,11 +179,16 @@ export default function CharacterDetailsClient({ character }: { character: Chara
   };
 
   const selectedAlternate = getScenarioIndex();
+  const imageUrl = character.alternates?.[selectedAlternate]?.thumbnailUrl ||
+                  character.alternates?.[selectedAlternate]?.pngUrl ||
+                  character.thumbnailUrl ||
+                  character.pngUrl;
   const [accentColor, setAccentColor] = useState<string>('#60a5fa');
-  const [accentReady, setAccentReady] = useState(false);
+  const [accentReadyFor, setAccentReadyFor] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['firstMessage']));
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showFullScreenImage, setShowFullScreenImage] = useState(false);
+  const accentReady = !!imageUrl && accentReadyFor === imageUrl;
 
   const toggleSection = (sectionId: string) => {
     setOpenSections(prev => {
@@ -201,14 +206,6 @@ export default function CharacterDetailsClient({ character }: { character: Chara
   useEffect(() => {
     const fac = new FastAverageColor();
     let cancelled = false;
-
-    // Fade out accent orb while extracting new color
-    setAccentReady(false);
-
-    const imageUrl = character.alternates?.[selectedAlternate]?.thumbnailUrl ||
-                    character.alternates?.[selectedAlternate]?.pngUrl ||
-                    character.thumbnailUrl ||
-                    character.pngUrl;
 
     if (imageUrl) {
       fac.getColorAsync(imageUrl, {
@@ -264,13 +261,13 @@ export default function CharacterDetailsClient({ character }: { character: Chara
           setAccentColor(finalHex);
           // Allow a frame for the new gradient to render before fading in
           requestAnimationFrame(() => {
-            if (!cancelled) setAccentReady(true);
+            if (!cancelled) setAccentReadyFor(imageUrl);
           });
         })
         .catch(() => {
           if (cancelled) return;
           setAccentColor('#60a5fa');
-          setAccentReady(true);
+          setAccentReadyFor(imageUrl);
         });
     }
 
@@ -278,7 +275,7 @@ export default function CharacterDetailsClient({ character }: { character: Chara
       cancelled = true;
       fac.destroy();
     };
-  }, [selectedAlternate, character]);
+  }, [imageUrl]);
 
   useEffect(() => {
     const handleScroll = () => {

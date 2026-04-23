@@ -90,13 +90,13 @@ function getAncestorDirectories(filePath: string): string[] {
  * For added/removed files: invalidates ALL ancestor directories (new folders may have been created)
  * For modified files: invalidates only the immediate parent directory
  */
-function processPushPayload(payload: GitHubPushPayload): {
+async function processPushPayload(payload: GitHubPushPayload): Promise<{
   invalidated: number;
   paths: string[];
   filesAdded: number;
   filesModified: number;
   filesRemoved: number;
-} {
+}> {
   const addedFiles = new Set<string>();
   const modifiedFiles = new Set<string>();
   const removedFiles = new Set<string>();
@@ -114,16 +114,21 @@ function processPushPayload(payload: GitHubPushPayload): {
 
   // Process added files - invalidate ALL ancestor directories
   // (A new file in a new folder means parent directory listings changed)
-  addedFiles.forEach(filePath => {
+  for (const filePath of addedFiles) {
+    if (await invalidateCachePath(filePath)) {
+      invalidatedCount++;
+      invalidatedPaths.push(`github:${filePath}`);
+    }
+
     // Invalidate commit cache
-    if (invalidateCachePath(filePath, 'commit')) {
+    if (await invalidateCachePath(filePath, 'commit')) {
       invalidatedCount++;
       invalidatedPaths.push(`commit:${filePath}`);
     }
 
     // Invalidate JSON data cache
     if (filePath.toLowerCase().endsWith('.json')) {
-      if (invalidateJsonDataCache(filePath)) {
+      if (await invalidateJsonDataCache(filePath)) {
         invalidatedCount++;
         invalidatedPaths.push(`jsonData:${filePath}`);
       }
@@ -131,19 +136,24 @@ function processPushPayload(payload: GitHubPushPayload): {
 
     // Track ALL ancestor directories for added files
     getAncestorDirectories(filePath).forEach(dir => directoriesToInvalidate.add(dir));
-  });
+  }
 
   // Process removed files - invalidate ALL ancestor directories
-  removedFiles.forEach(filePath => {
+  for (const filePath of removedFiles) {
+    if (await invalidateCachePath(filePath)) {
+      invalidatedCount++;
+      invalidatedPaths.push(`github:${filePath}`);
+    }
+
     // Invalidate commit cache
-    if (invalidateCachePath(filePath, 'commit')) {
+    if (await invalidateCachePath(filePath, 'commit')) {
       invalidatedCount++;
       invalidatedPaths.push(`commit:${filePath}`);
     }
 
     // Invalidate JSON data cache
     if (filePath.toLowerCase().endsWith('.json')) {
-      if (invalidateJsonDataCache(filePath)) {
+      if (await invalidateJsonDataCache(filePath)) {
         invalidatedCount++;
         invalidatedPaths.push(`jsonData:${filePath}`);
       }
@@ -151,24 +161,29 @@ function processPushPayload(payload: GitHubPushPayload): {
 
     // Track ALL ancestor directories for removed files
     getAncestorDirectories(filePath).forEach(dir => directoriesToInvalidate.add(dir));
-  });
+  }
 
   // Process modified files - only immediate parent needs invalidation
-  modifiedFiles.forEach(filePath => {
+  for (const filePath of modifiedFiles) {
     // Skip if already processed as added/removed
     if (addedFiles.has(filePath) || removedFiles.has(filePath)) {
-      return;
+      continue;
+    }
+
+    if (await invalidateCachePath(filePath)) {
+      invalidatedCount++;
+      invalidatedPaths.push(`github:${filePath}`);
     }
 
     // Invalidate commit cache
-    if (invalidateCachePath(filePath, 'commit')) {
+    if (await invalidateCachePath(filePath, 'commit')) {
       invalidatedCount++;
       invalidatedPaths.push(`commit:${filePath}`);
     }
 
     // Invalidate JSON data cache
     if (filePath.toLowerCase().endsWith('.json')) {
-      if (invalidateJsonDataCache(filePath)) {
+      if (await invalidateJsonDataCache(filePath)) {
         invalidatedCount++;
         invalidatedPaths.push(`jsonData:${filePath}`);
       }
@@ -179,15 +194,15 @@ function processPushPayload(payload: GitHubPushPayload): {
     if (parentDir) {
       directoriesToInvalidate.add(parentDir);
     }
-  });
+  }
 
   // Invalidate all collected directories
-  directoriesToInvalidate.forEach(dirPath => {
-    if (invalidateCachePath(dirPath)) {
+  for (const dirPath of directoriesToInvalidate) {
+    if (await invalidateCachePath(dirPath)) {
       invalidatedCount++;
       invalidatedPaths.push(`github:${dirPath}`);
     }
-  });
+  }
 
   return {
     invalidated: invalidatedCount,
@@ -254,7 +269,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Process the push payload
-    const result = processPushPayload(payload);
+    const result = await processPushPayload(payload);
     
     console.log(
       `[Webhook] Processed push: +${result.filesAdded} -${result.filesRemoved} ~${result.filesModified} files`

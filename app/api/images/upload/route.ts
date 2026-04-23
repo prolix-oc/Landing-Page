@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { stat } from 'fs/promises';
-import path from 'path';
 import { processAndSaveImage, parseImageParams, imageCorsHeaders } from '@/lib/image-optimizer';
 import { validateImageOrManagementAuth } from '@/lib/auth';
 
